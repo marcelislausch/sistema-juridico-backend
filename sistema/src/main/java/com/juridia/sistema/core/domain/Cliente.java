@@ -1,0 +1,31 @@
+package com.juridia.sistema.core.domain;
+
+import jakarta.persistence.*;
+import lombok.Data;
+import lombok.ToString;
+import java.util.List;
+
+@Data
+@Entity
+@Table(name = "tb_cliente")
+public class Cliente {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    private String nome;
+
+    @Column(name = "cpf_cnpj", unique = true, nullable = false, length = 14)
+    private String cpfCnpj;
+
+    private String telefone;
+
+    private String email;
+
+    // Relacionamento 1:N (Um cliente para muitos processos)
+    @ToString.Exclude
+    @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL)
+    private List<Processo> processos;
+}
