@@ -1,9 +1,11 @@
 package com.juridia.sistema.core.domain;
 
+import com.juridia.sistema.core.domain.enums.TipoLancamento;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.UUID;
 
 @Data
 @Entity
@@ -11,8 +13,8 @@ import java.time.LocalDate;
 public class Financeiro {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @Column(nullable = false)
     private String descricao; // Ex: Honorários Contratuais - Parcela 1/3 ou Valor da Causa

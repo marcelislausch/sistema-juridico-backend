@@ -3,6 +3,7 @@ package com.juridia.sistema.core.domain;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDate;
+import java.util.UUID;
 
 @Data
 @Entity
@@ -10,8 +11,8 @@ import java.time.LocalDate;
 public class Processo {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @Column(name = "numero_cnj", unique = true, nullable = false)
     private String numeroCnj;

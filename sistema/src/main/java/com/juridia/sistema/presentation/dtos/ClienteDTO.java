@@ -2,7 +2,9 @@ package com.juridia.sistema.presentation.dtos;
 
 import com.juridia.sistema.core.domain.Cliente;
 
-public record ClienteDTO(Long id, String nome, String cpfCnpj, String telefone, String email) {
+import java.util.UUID;
+
+public record ClienteDTO(UUID id, String nome, String cpfCnpj, String telefone, String email) {
 
     // Converte de DTO para Entidade (ignora o ID na hora de salvar)
     public Cliente toEntity() {

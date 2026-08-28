@@ -1,4 +1,4 @@
-package com.juridia.sistema.core.domain;
+package com.juridia.sistema.core.domain.enums;
 
 public enum PerfilAcesso {
     ADMIN,
