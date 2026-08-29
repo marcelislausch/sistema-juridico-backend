@@ -8,10 +8,10 @@
 		<version>4.1.1</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.juridia</groupId>
-	<artifactId>sistema</artifactId>
+	<groupId>com.sistemajuridico</groupId>
+	<artifactId>backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name/>
+	<name>sistema-juridico-backend</name>
 	<description/>
 	<url/>
 	<licenses>
