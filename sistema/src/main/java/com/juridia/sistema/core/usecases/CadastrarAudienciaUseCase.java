@@ -6,6 +6,7 @@ import com.juridia.sistema.infrastructure.persistence.AudienciaRepository;
 import com.juridia.sistema.infrastructure.persistence.ProcessoRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,6 +22,10 @@ public class CadastrarAudienciaUseCase {
     }
 
     public Audiencia executar(Audiencia audiencia, UUID processoId) {
+        if (audiencia.getDataHora() != null && audiencia.getDataHora().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Não é possível agendar uma nova audiência com data retroativa.");
+        }
+
         Optional<Processo> processoBusca = processoRepository.findById(processoId);
         if (!processoBusca.isPresent()) {
             throw new RuntimeException("Processo não encontrado no sistema!");

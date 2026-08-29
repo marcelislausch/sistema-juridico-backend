@@ -1,6 +1,8 @@
 package com.juridia.sistema.presentation.controllers;
 
 import com.juridia.sistema.core.domain.Audiencia;
+import com.juridia.sistema.core.domain.enums.StatusAudienciaEnum;
+import com.juridia.sistema.core.usecases.AlterarStatusAudienciaUseCase;
 import com.juridia.sistema.core.usecases.CadastrarAudienciaUseCase;
 import com.juridia.sistema.core.usecases.ListarAudienciasPorProcessoUseCase;
 import com.juridia.sistema.presentation.dtos.AudienciaDTO;
@@ -18,11 +20,14 @@ public class AudienciaController {
 
     private final CadastrarAudienciaUseCase cadastrarAudienciaUseCase;
     private final ListarAudienciasPorProcessoUseCase listarAudienciasPorProcessoUseCase;
+    private final AlterarStatusAudienciaUseCase alterarStatusAudienciaUseCase;
 
     public AudienciaController(CadastrarAudienciaUseCase cadastrarAudienciaUseCase,
-                               ListarAudienciasPorProcessoUseCase listarAudienciasPorProcessoUseCase) {
+                               ListarAudienciasPorProcessoUseCase listarAudienciasPorProcessoUseCase,
+                               AlterarStatusAudienciaUseCase alterarStatusAudienciaUseCase) {
         this.cadastrarAudienciaUseCase = cadastrarAudienciaUseCase;
         this.listarAudienciasPorProcessoUseCase = listarAudienciasPorProcessoUseCase;
+        this.alterarStatusAudienciaUseCase = alterarStatusAudienciaUseCase;
     }
 
     @PostMapping
@@ -41,5 +46,11 @@ public class AudienciaController {
         }
 
         return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<AudienciaDTO> alterarStatus(@PathVariable UUID id, @RequestParam StatusAudienciaEnum status) {
+        Audiencia audienciaAtualizada = alterarStatusAudienciaUseCase.executar(id, status);
+        return ResponseEntity.ok(AudienciaDTO.fromEntity(audienciaAtualizada));
     }
 }
