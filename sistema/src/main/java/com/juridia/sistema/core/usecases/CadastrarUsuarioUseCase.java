@@ -2,6 +2,7 @@ package com.juridia.sistema.core.usecases;
 
 import com.juridia.sistema.core.domain.Usuario;
 import com.juridia.sistema.infrastructure.persistence.UsuarioRepository;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -20,6 +21,10 @@ public class CadastrarUsuarioUseCase {
         if (busca.isPresent()) {
             throw new RuntimeException("E-mail já cadastrado!");
         }
+
+        String senhaCrip = new BCryptPasswordEncoder().encode(usuario.getSenhaHash());
+        usuario.setSenhaHash(senhaCrip);
+
         return usuarioRepository.save(usuario);
     }
 }
