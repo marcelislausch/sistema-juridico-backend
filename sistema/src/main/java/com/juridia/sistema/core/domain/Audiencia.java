@@ -1,5 +1,6 @@
 package com.juridia.sistema.core.domain;
 
+import com.juridia.sistema.core.domain.enums.StatusAudienciaEnum;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -21,6 +22,9 @@ public class Audiencia {
     private String local; // Ex: 1ª Vara Cível de Ijuí ou Link do Teams/Zoom
 
     private String observacoes;
+
+    @Enumerated(EnumType.STRING)
+    private StatusAudienciaEnum status;
 
     @ManyToOne
     @JoinColumn(name = "processo_id", nullable = false)
