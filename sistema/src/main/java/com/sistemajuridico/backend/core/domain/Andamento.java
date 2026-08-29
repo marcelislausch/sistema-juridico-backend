@@ -3,14 +3,16 @@ package com.sistemajuridico.backend.core.domain;
 import com.sistemajuridico.backend.core.domain.enums.TipoAndamentoEnum;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "tb_andamento")
-public class Andamento {
+public class Andamento extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -28,4 +30,3 @@ public class Andamento {
     @JoinColumn(name = "processo_id", nullable = false)
     private Processo processo;
 }
-

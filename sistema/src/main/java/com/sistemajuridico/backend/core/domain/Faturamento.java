@@ -5,15 +5,17 @@ import com.sistemajuridico.backend.core.domain.enums.StatusFaturamentoEnum;
 import com.sistemajuridico.backend.core.domain.enums.TipoFaturamentoEnum;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "tb_faturamento")
-public class Faturamento {
+public class Faturamento extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -42,4 +44,3 @@ public class Faturamento {
     @JoinColumn(name = "processo_id")
     private Processo processo;
 }
-

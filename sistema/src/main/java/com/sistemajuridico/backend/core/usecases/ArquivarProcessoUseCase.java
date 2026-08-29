@@ -8,10 +8,11 @@ import com.sistemajuridico.backend.core.domain.enums.StatusFaturamentoEnum;
 import com.sistemajuridico.backend.infrastructure.persistence.FaturamentoRepository;
 import com.sistemajuridico.backend.infrastructure.persistence.ProcessoRepository;
 import com.sistemajuridico.backend.infrastructure.persistence.UsuarioRepository;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -29,18 +30,19 @@ public class ArquivarProcessoUseCase {
         this.faturamentoRepository = faturamentoRepository;
     }
 
-    public Processo executar(UUID processoId, UUID usuarioLogadoId) {
-        Optional<Processo> processoBusca = processoRepository.findById(processoId);
-        if (!processoBusca.isPresent()) {
-            throw new RuntimeException("Processo não encontrado no sistema!");
+    public Processo executar(UUID processoId) {
+        Processo processo = processoRepository.findById(processoId)
+                .orElseThrow(() -> new RuntimeException("Processo não encontrado no sistema!"));
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.getName() == null) {
+            throw new RuntimeException("Usuário não autenticado no sistema!");
         }
 
-        Optional<Usuario> usuarioBusca = usuarioRepository.findById(usuarioLogadoId);
-        if (!usuarioBusca.isPresent()) {
-            throw new RuntimeException("Usuário não encontrado no sistema!");
-        }
+        String emailLogado = authentication.getName();
+        Usuario usuario = usuarioRepository.findByEmail(emailLogado)
+                .orElseThrow(() -> new RuntimeException("Usuário autenticado não encontrado no sistema!"));
 
-        Usuario usuario = usuarioBusca.get();
         if (usuario.getPerfil() != PerfilAcessoEnum.ADVOGADO && usuario.getPerfil() != PerfilAcessoEnum.ADMIN) {
             throw new RuntimeException("Acesso negado: Apenas advogados ou administradores podem arquivar processos.");
         }
@@ -50,10 +52,8 @@ public class ArquivarProcessoUseCase {
             throw new RuntimeException("Operação bloqueada: Este processo possui faturamentos pendentes de pagamento.");
         }
 
-        Processo processo = processoBusca.get();
         processo.setFaseAtual("ARQUIVADO");
 
         return processoRepository.save(processo);
     }
 }
-

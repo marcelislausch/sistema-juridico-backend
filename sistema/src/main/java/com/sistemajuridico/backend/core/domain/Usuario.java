@@ -3,13 +3,15 @@ package com.sistemajuridico.backend.core.domain;
 import com.sistemajuridico.backend.core.domain.enums.PerfilAcessoEnum;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.UUID;
 
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "tb_usuario")
-public class Usuario {
+public class Usuario extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

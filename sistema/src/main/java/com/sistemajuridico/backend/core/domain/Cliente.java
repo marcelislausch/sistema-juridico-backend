@@ -3,14 +3,17 @@ package com.sistemajuridico.backend.core.domain;
 import com.sistemajuridico.backend.core.domain.enums.TipoClienteEnum;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
+
 import java.util.List;
 import java.util.UUID;
 
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "tb_cliente")
-public class Cliente {
+public class Cliente extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

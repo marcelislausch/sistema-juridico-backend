@@ -32,9 +32,7 @@ public class ProcessoController {
     @PostMapping
     public ResponseEntity<ProcessoDTO> criar(@RequestBody ProcessoDTO dto) {
         Processo processo = dto.toEntity();
-        //Manda para a regra de negócio (passando o clienteId separado para o Use Case buscar no banco)
-        Processo processoSalvo = cadastrarProcessoUseCase.executar(processo, dto.clienteId());
-
+        Processo processoSalvo = cadastrarProcessoUseCase.executar(processo, dto.clienteId(), dto.advogadoId());
         return ResponseEntity.status(HttpStatus.CREATED).body(ProcessoDTO.fromEntity(processoSalvo));
     }
 
@@ -50,8 +48,8 @@ public class ProcessoController {
     }
 
     @PatchMapping("/{id}/arquivar")
-    public ResponseEntity<ProcessoDTO> arquivar(@PathVariable UUID id, @RequestParam UUID usuarioId) {
-        Processo processoArquivado = arquivarProcessoUseCase.executar(id, usuarioId);
+    public ResponseEntity<ProcessoDTO> arquivar(@PathVariable UUID id) {
+        Processo processoArquivado = arquivarProcessoUseCase.executar(id);
         return ResponseEntity.ok(ProcessoDTO.fromEntity(processoArquivado));
     }
 }

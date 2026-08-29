@@ -2,13 +2,16 @@ package com.sistemajuridico.backend.core.domain;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+
 import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "tb_processo")
-public class Processo {
+public class Processo extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
