@@ -1,6 +1,6 @@
 package com.juridia.sistema.core.domain;
 
-import com.juridia.sistema.core.domain.enums.PerfilAcesso;
+import com.juridia.sistema.core.domain.enums.PerfilAcessoEnum;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -26,7 +26,7 @@ public class Usuario {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "perfil_acesso", nullable = false)
-    private PerfilAcesso perfil;
+    private PerfilAcessoEnum perfil;
 
     @Column(unique = true)
     private String oab;

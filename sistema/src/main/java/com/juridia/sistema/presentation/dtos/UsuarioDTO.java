@@ -1,7 +1,7 @@
 package com.juridia.sistema.presentation.dtos;
 
 import com.juridia.sistema.core.domain.Usuario;
-import com.juridia.sistema.core.domain.enums.PerfilAcesso;
+import com.juridia.sistema.core.domain.enums.PerfilAcessoEnum;
 
 import java.util.UUID;
 
@@ -10,7 +10,7 @@ public record UsuarioDTO(
         String nome,
         String email,
         String senha,
-        PerfilAcesso perfil,
+        PerfilAcessoEnum perfil,
         String oab,
         boolean ativo
 ) {
