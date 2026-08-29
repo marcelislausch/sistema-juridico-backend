@@ -1,6 +1,7 @@
 package com.juridia.sistema.presentation.controllers;
 
 import com.juridia.sistema.core.domain.Processo;
+import com.juridia.sistema.core.usecases.ArquivarProcessoUseCase;
 import com.juridia.sistema.core.usecases.CadastrarProcessoUseCase;
 import com.juridia.sistema.core.usecases.ListarProcessosPorClienteUseCase;
 import com.juridia.sistema.presentation.dtos.ProcessoDTO;
@@ -18,11 +19,14 @@ public class ProcessoController {
 
     private final CadastrarProcessoUseCase cadastrarProcessoUseCase;
     private final ListarProcessosPorClienteUseCase listarProcessosPorClienteUseCase;
+    private final ArquivarProcessoUseCase arquivarProcessoUseCase;
 
     public ProcessoController(CadastrarProcessoUseCase cadastrarProcessoUseCase,
-                              ListarProcessosPorClienteUseCase listarProcessosPorClienteUseCase) {
+                              ListarProcessosPorClienteUseCase listarProcessosPorClienteUseCase,
+                              ArquivarProcessoUseCase arquivarProcessoUseCase) {
         this.cadastrarProcessoUseCase = cadastrarProcessoUseCase;
         this.listarProcessosPorClienteUseCase = listarProcessosPorClienteUseCase;
+        this.arquivarProcessoUseCase = arquivarProcessoUseCase;
     }
 
     @PostMapping
@@ -43,5 +47,11 @@ public class ProcessoController {
         }
 
         return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{id}/arquivar")
+    public ResponseEntity<ProcessoDTO> arquivar(@PathVariable UUID id, @RequestParam UUID usuarioId) {
+        Processo processoArquivado = arquivarProcessoUseCase.executar(id, usuarioId);
+        return ResponseEntity.ok(ProcessoDTO.fromEntity(processoArquivado));
     }
 }

@@ -1,15 +1,25 @@
 package com.juridia.sistema.presentation.dtos;
 
 import com.juridia.sistema.core.domain.Cliente;
+import com.juridia.sistema.core.domain.enums.TipoClienteEnum;
 
 import java.util.UUID;
 
-public record ClienteDTO(UUID id, String nome, String cpfCnpj, String telefone, String email) {
+public record ClienteDTO(
+        UUID id,
+        String nome,
+        TipoClienteEnum tipo,
+        String cpfCnpj,
+        String telefone,
+        String email
+) {
 
     // Converte de DTO para Entidade (ignora o ID na hora de salvar)
     public Cliente toEntity() {
         Cliente cliente = new Cliente();
+        cliente.setId(this.id());
         cliente.setNome(this.nome());
+        cliente.setTipo(this.tipo());
         cliente.setCpfCnpj(this.cpfCnpj());
         cliente.setTelefone(this.telefone());
         cliente.setEmail(this.email());
@@ -21,6 +31,7 @@ public record ClienteDTO(UUID id, String nome, String cpfCnpj, String telefone, 
         return new ClienteDTO(
                 cliente.getId(),
                 cliente.getNome(),
+                cliente.getTipo(),
                 cliente.getCpfCnpj(),
                 cliente.getTelefone(),
                 cliente.getEmail()
