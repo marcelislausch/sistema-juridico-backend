@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,9 +29,26 @@ public class Cliente extends AuditableEntity {
     @Column(name = "cpf_cnpj", unique = true, nullable = false, length = 14)
     private String cpfCnpj;
 
+    @Column(name = "data_nascimento")
+    private LocalDate dataNascimento;
+
     private String telefone;
 
     private String email;
+
+    private String cep;
+
+    private String logradouro;
+
+    private String numero;
+
+    private String complemento;
+
+    private String bairro;
+
+    private String cidade;
+
+    private String uf;
 
     // Relacionamento 1:N (Um cliente para muitos processos)
     @ToString.Exclude

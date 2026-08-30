@@ -5,7 +5,9 @@ import com.sistemajuridico.backend.core.domain.enums.TipoClienteEnum;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Past;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 public record ClienteDTO(
@@ -20,10 +22,27 @@ public record ClienteDTO(
         @NotBlank(message = "O CPF/CNPJ é obrigatório")
         String cpfCnpj,
 
+        @Past(message = "A data de nascimento deve ser uma data no passado")
+        LocalDate dataNascimento,
+
         String telefone,
 
         @Email(message = "Formato de e-mail inválido")
-        String email
+        String email,
+
+        String cep,
+
+        String logradouro,
+
+        String numero,
+
+        String complemento,
+
+        String bairro,
+
+        String cidade,
+
+        String uf
 ) {
 
     public Cliente toEntity() {
@@ -32,8 +51,16 @@ public record ClienteDTO(
         cliente.setNome(this.nome());
         cliente.setTipo(this.tipo());
         cliente.setCpfCnpj(this.cpfCnpj());
+        cliente.setDataNascimento(this.dataNascimento());
         cliente.setTelefone(this.telefone());
         cliente.setEmail(this.email());
+        cliente.setCep(this.cep());
+        cliente.setLogradouro(this.logradouro());
+        cliente.setNumero(this.numero());
+        cliente.setComplemento(this.complemento());
+        cliente.setBairro(this.bairro());
+        cliente.setCidade(this.cidade());
+        cliente.setUf(this.uf());
         return cliente;
     }
 
@@ -43,8 +70,16 @@ public record ClienteDTO(
                 cliente.getNome(),
                 cliente.getTipo(),
                 cliente.getCpfCnpj(),
+                cliente.getDataNascimento(),
                 cliente.getTelefone(),
-                cliente.getEmail()
+                cliente.getEmail(),
+                cliente.getCep(),
+                cliente.getLogradouro(),
+                cliente.getNumero(),
+                cliente.getComplemento(),
+                cliente.getBairro(),
+                cliente.getCidade(),
+                cliente.getUf()
         );
     }
 }
