@@ -3,13 +3,16 @@ package com.sistemajuridico.backend.presentation.controllers;
 import com.sistemajuridico.backend.core.domain.Cliente;
 import com.sistemajuridico.backend.core.usecases.AtualizarClienteUseCase;
 import com.sistemajuridico.backend.core.usecases.CadastrarClienteUseCase;
+import com.sistemajuridico.backend.core.usecases.GerarProcuracaoClienteUseCase;
 import com.sistemajuridico.backend.core.usecases.ListarClientesUseCase;
 import com.sistemajuridico.backend.presentation.dtos.ClienteDTO;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,13 +27,16 @@ public class ClienteController {
     private final CadastrarClienteUseCase cadastrarClienteUseCase;
     private final AtualizarClienteUseCase atualizarClienteUseCase;
     private final ListarClientesUseCase listarClientesUseCase;
+    private final GerarProcuracaoClienteUseCase gerarProcuracaoClienteUseCase;
 
     public ClienteController(CadastrarClienteUseCase cadastrarClienteUseCase,
                              AtualizarClienteUseCase atualizarClienteUseCase,
-                             ListarClientesUseCase listarClientesUseCase) {
+                             ListarClientesUseCase listarClientesUseCase,
+                             GerarProcuracaoClienteUseCase gerarProcuracaoClienteUseCase) {
         this.cadastrarClienteUseCase = cadastrarClienteUseCase;
         this.atualizarClienteUseCase = atualizarClienteUseCase;
         this.listarClientesUseCase = listarClientesUseCase;
+        this.gerarProcuracaoClienteUseCase = gerarProcuracaoClienteUseCase;
     }
 
     @PostMapping
@@ -55,5 +61,14 @@ public class ClienteController {
         }
         Page<ClienteDTO> response = new PageImpl<>(dtoList, pageable, paginaClientes.getTotalElements());
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}/procuracao")
+    public ResponseEntity<byte[]> gerarProcuracao(@PathVariable UUID id) {
+        byte[] arquivoBytes = this.gerarProcuracaoClienteUseCase.executar(id);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"procuracao.txt\"")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(arquivoBytes);
     }
 }
