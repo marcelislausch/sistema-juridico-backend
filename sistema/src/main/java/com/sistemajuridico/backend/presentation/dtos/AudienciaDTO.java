@@ -21,6 +21,8 @@ public record AudienciaDTO(
 
         StatusAudienciaEnum status,
 
+        String resumoPreparatorioIa,
+
         @NotNull(message = "O ID do processo é obrigatório")
         UUID processoId
 ) {
@@ -32,6 +34,7 @@ public record AudienciaDTO(
         audiencia.setLocal(this.local());
         audiencia.setObservacoes(this.observacoes());
         audiencia.setStatus(this.status() != null ? this.status() : StatusAudienciaEnum.AGENDADA);
+        audiencia.setResumoPreparatorioIa(this.resumoPreparatorioIa());
         return audiencia;
     }
 
@@ -46,6 +49,7 @@ public record AudienciaDTO(
                 audiencia.getLocal(),
                 audiencia.getObservacoes(),
                 audiencia.getStatus(),
+                audiencia.getResumoPreparatorioIa(),
                 processoId
         );
     }

@@ -4,9 +4,11 @@ import com.sistemajuridico.backend.core.domain.Audiencia;
 import com.sistemajuridico.backend.core.domain.enums.StatusAudienciaEnum;
 import com.sistemajuridico.backend.core.usecases.AlterarStatusAudienciaUseCase;
 import com.sistemajuridico.backend.core.usecases.CadastrarAudienciaUseCase;
+import com.sistemajuridico.backend.core.usecases.GerarEAnexarResumoAudienciaUseCase;
 import com.sistemajuridico.backend.core.usecases.ListarAgendaGlobalUseCase;
 import com.sistemajuridico.backend.core.usecases.ListarAudienciasPorProcessoUseCase;
 import com.sistemajuridico.backend.presentation.dtos.AudienciaDTO;
+import com.sistemajuridico.backend.presentation.dtos.GerarResumoAudienciaDTO;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -26,15 +28,18 @@ public class AudienciaController {
     private final ListarAudienciasPorProcessoUseCase listarAudienciasPorProcessoUseCase;
     private final AlterarStatusAudienciaUseCase alterarStatusAudienciaUseCase;
     private final ListarAgendaGlobalUseCase listarAgendaGlobalUseCase;
+    private final GerarEAnexarResumoAudienciaUseCase gerarEAnexarResumoAudienciaUseCase;
 
     public AudienciaController(CadastrarAudienciaUseCase cadastrarAudienciaUseCase,
                                ListarAudienciasPorProcessoUseCase listarAudienciasPorProcessoUseCase,
                                AlterarStatusAudienciaUseCase alterarStatusAudienciaUseCase,
-                               ListarAgendaGlobalUseCase listarAgendaGlobalUseCase) {
+                               ListarAgendaGlobalUseCase listarAgendaGlobalUseCase,
+                               GerarEAnexarResumoAudienciaUseCase gerarEAnexarResumoAudienciaUseCase) {
         this.cadastrarAudienciaUseCase = cadastrarAudienciaUseCase;
         this.listarAudienciasPorProcessoUseCase = listarAudienciasPorProcessoUseCase;
         this.alterarStatusAudienciaUseCase = alterarStatusAudienciaUseCase;
         this.listarAgendaGlobalUseCase = listarAgendaGlobalUseCase;
+        this.gerarEAnexarResumoAudienciaUseCase = gerarEAnexarResumoAudienciaUseCase;
     }
 
     @PostMapping
@@ -70,6 +75,12 @@ public class AudienciaController {
     @PatchMapping("/{id}/status")
     public ResponseEntity<AudienciaDTO> alterarStatus(@PathVariable UUID id, @RequestParam StatusAudienciaEnum status) {
         Audiencia audienciaAtualizada = alterarStatusAudienciaUseCase.executar(id, status);
+        return ResponseEntity.ok(AudienciaDTO.fromEntity(audienciaAtualizada));
+    }
+
+    @PostMapping("/{id}/gerar-resumo-ia")
+    public ResponseEntity<AudienciaDTO> gerarResumoIa(@PathVariable UUID id, @RequestBody @Valid GerarResumoAudienciaDTO dto) {
+        Audiencia audienciaAtualizada = this.gerarEAnexarResumoAudienciaUseCase.executar(id, dto.conteudoPeca());
         return ResponseEntity.ok(AudienciaDTO.fromEntity(audienciaAtualizada));
     }
 }

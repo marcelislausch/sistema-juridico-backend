@@ -29,6 +29,9 @@ public class Audiencia extends AuditableEntity {
     @Enumerated(EnumType.STRING)
     private StatusAudienciaEnum status;
 
+    @Column(name = "resumo_preparatorio_ia", columnDefinition = "TEXT")
+    private String resumoPreparatorioIa;
+
     @ManyToOne
     @JoinColumn(name = "processo_id", nullable = false)
     private Processo processo;
