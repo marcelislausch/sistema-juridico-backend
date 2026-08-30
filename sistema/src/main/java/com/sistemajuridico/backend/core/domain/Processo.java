@@ -43,4 +43,9 @@ public class Processo extends AuditableEntity {
     @ToString.Exclude
     @OneToMany(mappedBy = "processo", cascade = CascadeType.ALL)
     private List<Documento> documentos;
+
+    // Relacionamento 1:N (Um processo para muitas tarefas)
+    @ToString.Exclude
+    @OneToMany(mappedBy = "processo", cascade = CascadeType.ALL)
+    private List<Tarefa> tarefas;
 }

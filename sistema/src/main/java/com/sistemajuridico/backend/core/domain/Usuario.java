@@ -4,7 +4,9 @@ import com.sistemajuridico.backend.core.domain.enums.PerfilAcessoEnum;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -34,4 +36,8 @@ public class Usuario extends AuditableEntity {
     private String oab;
 
     private boolean ativo = true;
+
+    @ToString.Exclude
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
+    private List<Tarefa> tarefas;
 }
