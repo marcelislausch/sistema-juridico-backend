@@ -38,6 +38,9 @@ public class AtualizarClienteUseCase {
         clienteExistente.setNome(dadosAtualizados.getNome());
         clienteExistente.setTipo(dadosAtualizados.getTipo());
         clienteExistente.setDataNascimento(dadosAtualizados.getDataNascimento());
+        clienteExistente.setEstadoCivil(dadosAtualizados.getEstadoCivil());
+        clienteExistente.setSexo(dadosAtualizados.getSexo());
+        clienteExistente.setProfissao(dadosAtualizados.getProfissao());
         clienteExistente.setTelefone(dadosAtualizados.getTelefone());
         clienteExistente.setEmail(dadosAtualizados.getEmail());
         clienteExistente.setCep(dadosAtualizados.getCep());

@@ -1,5 +1,7 @@
 package com.sistemajuridico.backend.core.domain;
 
+import com.sistemajuridico.backend.core.domain.enums.EstadoCivilEnum;
+import com.sistemajuridico.backend.core.domain.enums.SexoEnum;
 import com.sistemajuridico.backend.core.domain.enums.TipoClienteEnum;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -32,6 +34,15 @@ public class Cliente extends AuditableEntity {
     @Column(name = "data_nascimento")
     private LocalDate dataNascimento;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado_civil")
+    private EstadoCivilEnum estadoCivil;
+
+    @Enumerated(EnumType.STRING)
+    private SexoEnum sexo;
+
+    private String profissao;
+
     private String telefone;
 
     private String email;
@@ -54,4 +65,9 @@ public class Cliente extends AuditableEntity {
     @ToString.Exclude
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL)
     private List<Processo> processos;
+
+    // Relacionamento 1:N (Um cliente para muitos documentos)
+    @ToString.Exclude
+    @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL)
+    private List<Documento> documentos;
 }

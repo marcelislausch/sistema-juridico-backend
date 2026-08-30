@@ -1,6 +1,8 @@
 package com.sistemajuridico.backend.presentation.dtos;
 
 import com.sistemajuridico.backend.core.domain.Cliente;
+import com.sistemajuridico.backend.core.domain.enums.EstadoCivilEnum;
+import com.sistemajuridico.backend.core.domain.enums.SexoEnum;
 import com.sistemajuridico.backend.core.domain.enums.TipoClienteEnum;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -24,6 +26,12 @@ public record ClienteDTO(
 
         @Past(message = "A data de nascimento deve ser uma data no passado")
         LocalDate dataNascimento,
+
+        EstadoCivilEnum estadoCivil,
+
+        SexoEnum sexo,
+
+        String profissao,
 
         String telefone,
 
@@ -52,6 +60,9 @@ public record ClienteDTO(
         cliente.setTipo(this.tipo());
         cliente.setCpfCnpj(this.cpfCnpj());
         cliente.setDataNascimento(this.dataNascimento());
+        cliente.setEstadoCivil(this.estadoCivil());
+        cliente.setSexo(this.sexo());
+        cliente.setProfissao(this.profissao());
         cliente.setTelefone(this.telefone());
         cliente.setEmail(this.email());
         cliente.setCep(this.cep());
@@ -71,6 +82,9 @@ public record ClienteDTO(
                 cliente.getTipo(),
                 cliente.getCpfCnpj(),
                 cliente.getDataNascimento(),
+                cliente.getEstadoCivil(),
+                cliente.getSexo(),
+                cliente.getProfissao(),
                 cliente.getTelefone(),
                 cliente.getEmail(),
                 cliente.getCep(),

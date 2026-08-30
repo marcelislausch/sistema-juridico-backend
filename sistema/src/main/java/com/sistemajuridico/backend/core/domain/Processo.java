@@ -3,8 +3,10 @@ package com.sistemajuridico.backend.core.domain;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -36,4 +38,9 @@ public class Processo extends AuditableEntity {
     @ManyToOne
     @JoinColumn(name = "usuario_id")
     private Usuario advogado;
+
+    // Relacionamento 1:N (Um processo para muitos documentos)
+    @ToString.Exclude
+    @OneToMany(mappedBy = "processo", cascade = CascadeType.ALL)
+    private List<Documento> documentos;
 }
