@@ -2,6 +2,7 @@ package com.sistemajuridico.backend.core.usecases;
 
 import com.sistemajuridico.backend.core.domain.Audiencia;
 import com.sistemajuridico.backend.core.domain.enums.StatusAudienciaEnum;
+import com.sistemajuridico.backend.core.domain.exceptions.RecursoNaoEncontradoException;
 import com.sistemajuridico.backend.infrastructure.persistence.AudienciaRepository;
 import org.springframework.stereotype.Service;
 
@@ -18,15 +19,13 @@ public class AlterarStatusAudienciaUseCase {
     }
 
     public Audiencia executar(UUID audienciaId, StatusAudienciaEnum novoStatus) {
-        Optional<Audiencia> busca = audienciaRepository.findById(audienciaId);
-        if (!busca.isPresent()) {
-            throw new RuntimeException("Audiência não encontrada no sistema!");
+        Optional<Audiencia> optAudiencia = audienciaRepository.findById(audienciaId);
+        if (optAudiencia.isEmpty()) {
+            throw new RecursoNaoEncontradoException("Audiência não encontrada no sistema!");
         }
 
-        Audiencia audiencia = busca.get();
+        Audiencia audiencia = optAudiencia.get();
         audiencia.setStatus(novoStatus);
-
         return audienciaRepository.save(audiencia);
     }
 }
-

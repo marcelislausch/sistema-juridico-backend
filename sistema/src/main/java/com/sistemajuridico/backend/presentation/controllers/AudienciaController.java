@@ -6,6 +6,7 @@ import com.sistemajuridico.backend.core.usecases.AlterarStatusAudienciaUseCase;
 import com.sistemajuridico.backend.core.usecases.CadastrarAudienciaUseCase;
 import com.sistemajuridico.backend.core.usecases.ListarAudienciasPorProcessoUseCase;
 import com.sistemajuridico.backend.presentation.dtos.AudienciaDTO;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,7 +32,7 @@ public class AudienciaController {
     }
 
     @PostMapping
-    public ResponseEntity<AudienciaDTO> criar(@RequestBody AudienciaDTO dto) {
+    public ResponseEntity<AudienciaDTO> criar(@RequestBody @Valid AudienciaDTO dto) {
         Audiencia audiencia = dto.toEntity();
         Audiencia audienciaSalva = cadastrarAudienciaUseCase.executar(audiencia, dto.processoId());
         return ResponseEntity.status(HttpStatus.CREATED).body(AudienciaDTO.fromEntity(audienciaSalva));
@@ -54,4 +55,3 @@ public class AudienciaController {
         return ResponseEntity.ok(AudienciaDTO.fromEntity(audienciaAtualizada));
     }
 }
-

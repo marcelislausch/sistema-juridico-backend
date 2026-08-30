@@ -1,10 +1,13 @@
 package com.sistemajuridico.backend.core.usecases;
 
 import com.sistemajuridico.backend.core.domain.Usuario;
+import com.sistemajuridico.backend.core.domain.exceptions.RegraNegocioException;
 import com.sistemajuridico.backend.infrastructure.persistence.UsuarioRepository;
 import com.sistemajuridico.backend.infrastructure.security.TokenService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 public class AutenticarUsuarioUseCase {
@@ -22,11 +25,15 @@ public class AutenticarUsuarioUseCase {
     }
 
     public String executar(String email, String senha) {
-        Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Credenciais inválidas"));
+        Optional<Usuario> optUsuario = usuarioRepository.findByEmail(email);
+        if (optUsuario.isEmpty()) {
+            throw new RegraNegocioException("Credenciais inválidas");
+        }
+
+        Usuario usuario = optUsuario.get();
 
         if (!passwordEncoder.matches(senha, usuario.getSenhaHash())) {
-            throw new RuntimeException("Credenciais inválidas");
+            throw new RegraNegocioException("Credenciais inválidas");
         }
 
         return tokenService.gerarToken(usuario);

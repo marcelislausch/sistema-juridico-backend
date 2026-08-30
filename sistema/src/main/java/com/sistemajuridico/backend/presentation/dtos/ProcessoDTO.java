@@ -1,16 +1,27 @@
 package com.sistemajuridico.backend.presentation.dtos;
 
 import com.sistemajuridico.backend.core.domain.Processo;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 import java.time.LocalDate;
 import java.util.UUID;
 
 public record ProcessoDTO(
         UUID id,
+
+        @NotBlank(message = "O número CNJ é obrigatório")
         String numeroCnj,
+
         String assunto,
+
         String faseAtual,
+
         LocalDate dataCriacao,
+
+        @NotNull(message = "O ID do cliente é obrigatório")
         UUID clienteId,
+
         UUID advogadoId
 ) {
 

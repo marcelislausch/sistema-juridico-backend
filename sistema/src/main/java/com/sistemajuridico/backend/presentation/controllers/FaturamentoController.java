@@ -6,6 +6,7 @@ import com.sistemajuridico.backend.core.usecases.LiquidarFaturamentoUseCase;
 import com.sistemajuridico.backend.core.usecases.ListarFaturamentosUseCase;
 import com.sistemajuridico.backend.presentation.dtos.FaturamentoDTO;
 import com.sistemajuridico.backend.presentation.dtos.LiquidarFaturamentoDTO;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,14 +32,14 @@ public class FaturamentoController {
     }
 
     @PostMapping
-    public ResponseEntity<FaturamentoDTO> criar(@RequestBody FaturamentoDTO dto) {
+    public ResponseEntity<FaturamentoDTO> criar(@RequestBody @Valid FaturamentoDTO dto) {
         Faturamento faturamento = dto.toEntity();
         Faturamento faturamentoSalvo = cadastrarFaturamentoUseCase.executar(faturamento, dto.processoId());
         return ResponseEntity.status(HttpStatus.CREATED).body(FaturamentoDTO.fromEntity(faturamentoSalvo));
     }
 
     @PatchMapping("/{id}/pagar")
-    public ResponseEntity<FaturamentoDTO> liquidar(@PathVariable UUID id, @RequestBody LiquidarFaturamentoDTO dto) {
+    public ResponseEntity<FaturamentoDTO> liquidar(@PathVariable UUID id, @RequestBody @Valid LiquidarFaturamentoDTO dto) {
         Faturamento faturamentoLiquidado = liquidarFaturamentoUseCase.executar(id, dto.dataPagamento());
         return ResponseEntity.ok(FaturamentoDTO.fromEntity(faturamentoLiquidado));
     }
@@ -63,4 +64,3 @@ public class FaturamentoController {
         return ResponseEntity.ok(response);
     }
 }
-

@@ -4,6 +4,7 @@ import com.sistemajuridico.backend.core.domain.Andamento;
 import com.sistemajuridico.backend.core.usecases.CadastrarAndamentoUseCase;
 import com.sistemajuridico.backend.core.usecases.ListarAndamentosPorProcessoUseCase;
 import com.sistemajuridico.backend.presentation.dtos.AndamentoDTO;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,7 +27,7 @@ public class AndamentoController {
     }
 
     @PostMapping("/{processoId}/andamentos")
-    public ResponseEntity<AndamentoDTO> criar(@PathVariable UUID processoId, @RequestBody AndamentoDTO dto) {
+    public ResponseEntity<AndamentoDTO> criar(@PathVariable UUID processoId, @RequestBody @Valid AndamentoDTO dto) {
         Andamento andamento = dto.toEntity();
         Andamento andamentoSalvo = cadastrarAndamentoUseCase.executar(andamento, processoId);
         return ResponseEntity.status(HttpStatus.CREATED).body(AndamentoDTO.fromEntity(andamentoSalvo));
@@ -43,4 +44,3 @@ public class AndamentoController {
         return ResponseEntity.ok(response);
     }
 }
-

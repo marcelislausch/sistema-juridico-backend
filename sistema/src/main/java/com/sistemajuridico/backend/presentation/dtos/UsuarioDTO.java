@@ -2,16 +2,29 @@ package com.sistemajuridico.backend.presentation.dtos;
 
 import com.sistemajuridico.backend.core.domain.Usuario;
 import com.sistemajuridico.backend.core.domain.enums.PerfilAcessoEnum;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.UUID;
 
 public record UsuarioDTO(
         UUID id,
+
+        @NotBlank(message = "O nome é obrigatório")
         String nome,
+
+        @NotBlank(message = "O e-mail é obrigatório")
+        @Email(message = "Formato de e-mail inválido")
         String email,
+
         String senha,
+
+        @NotNull(message = "O perfil de acesso é obrigatório")
         PerfilAcessoEnum perfil,
+
         String oab,
+
         boolean ativo
 ) {
 
@@ -39,4 +52,3 @@ public record UsuarioDTO(
         );
     }
 }
-

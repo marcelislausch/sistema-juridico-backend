@@ -1,6 +1,7 @@
 package com.sistemajuridico.backend.core.usecases;
 
 import com.sistemajuridico.backend.core.domain.Cliente;
+import com.sistemajuridico.backend.core.domain.exceptions.RegraNegocioException;
 import com.sistemajuridico.backend.core.domain.validators.DocumentoValidator;
 import com.sistemajuridico.backend.infrastructure.persistence.ClienteRepository;
 import org.springframework.stereotype.Service;
@@ -20,7 +21,7 @@ public class CadastrarClienteUseCase {
         }
 
         if (!DocumentoValidator.isCpfCnpjValido(cliente.getCpfCnpj())) {
-            throw new RuntimeException("CPF/CNPJ inválido! Verifique os dados informados.");
+            throw new RegraNegocioException("CPF/CNPJ inválido! Verifique os dados informados.");
         }
 
         return repository.save(cliente);

@@ -3,6 +3,7 @@ package com.sistemajuridico.backend.presentation.controllers;
 import com.sistemajuridico.backend.core.usecases.AutenticarUsuarioUseCase;
 import com.sistemajuridico.backend.presentation.dtos.LoginDTO;
 import com.sistemajuridico.backend.presentation.dtos.TokenDTO;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,7 +21,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<TokenDTO> login(@RequestBody LoginDTO dto) {
+    public ResponseEntity<TokenDTO> login(@RequestBody @Valid LoginDTO dto) {
         String token = autenticarUsuarioUseCase.executar(dto.email(), dto.senha());
         return ResponseEntity.ok(new TokenDTO(token));
     }

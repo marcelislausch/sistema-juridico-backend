@@ -2,8 +2,9 @@ package com.sistemajuridico.backend.core.usecases;
 
 import com.sistemajuridico.backend.core.domain.Cliente;
 import com.sistemajuridico.backend.infrastructure.persistence.ClienteRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import java.util.List;
 
 @Service
 public class ListarClientesUseCase {
@@ -14,7 +15,7 @@ public class ListarClientesUseCase {
         this.repository = repository;
     }
 
-    public List<Cliente> executar() {
-        return repository.findAll();
+    public Page<Cliente> executar(Pageable pageable) {
+        return repository.findAll(pageable);
     }
 }

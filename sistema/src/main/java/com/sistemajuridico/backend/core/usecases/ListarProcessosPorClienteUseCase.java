@@ -2,9 +2,10 @@ package com.sistemajuridico.backend.core.usecases;
 
 import com.sistemajuridico.backend.core.domain.Processo;
 import com.sistemajuridico.backend.infrastructure.persistence.ProcessoRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -16,8 +17,7 @@ public class ListarProcessosPorClienteUseCase {
         this.processoRepository = processoRepository;
     }
 
-    public List<Processo> executar(UUID clienteId) {
-        return processoRepository.findByClienteId(clienteId);
+    public Page<Processo> executar(UUID clienteId, Pageable pageable) {
+        return processoRepository.findByClienteId(clienteId, pageable);
     }
 }
-
