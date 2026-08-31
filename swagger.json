@@ -1,0 +1,1564 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Sistema Jurídico API",
+    "description": "Documentação oficial da API do LegalTech",
+    "version": "1.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Generated server url"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/clientes/{id}": {
+      "put": {
+        "tags": [
+          "cliente-controller"
+        ],
+        "operationId": "atualizar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClienteDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClienteDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/usuarios": {
+      "post": {
+        "tags": [
+          "usuario-controller"
+        ],
+        "operationId": "criar",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsuarioDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tarefas": {
+      "post": {
+        "tags": [
+          "tarefa-controller"
+        ],
+        "operationId": "criar_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TarefaDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarefaDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/processos": {
+      "post": {
+        "tags": [
+          "processo-controller"
+        ],
+        "operationId": "criar_2",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProcessoDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/processos/{processoId}/andamentos": {
+      "get": {
+        "tags": [
+          "andamento-controller"
+        ],
+        "operationId": "listarPorProcesso",
+        "parameters": [
+          {
+            "name": "processoId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AndamentoDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "andamento-controller"
+        ],
+        "operationId": "criar_3",
+        "parameters": [
+          {
+            "name": "processoId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AndamentoDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AndamentoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ia/resumos/audiencia": {
+      "post": {
+        "tags": [
+          "resumo-audiencia-controller"
+        ],
+        "operationId": "resumirParaAudiencia",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResumoPecaDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/faturamentos": {
+      "get": {
+        "tags": [
+          "faturamento-controller"
+        ],
+        "operationId": "listarTodos",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FaturamentoDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "faturamento-controller"
+        ],
+        "operationId": "criar_4",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FaturamentoDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/FaturamentoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documentos/upload": {
+      "post": {
+        "tags": [
+          "documento-controller"
+        ],
+        "operationId": "upload",
+        "parameters": [
+          {
+            "name": "titulo",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clienteId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "processoId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "arquivo"
+                ],
+                "type": "object",
+                "properties": {
+                  "arquivo": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/clientes": {
+      "get": {
+        "tags": [
+          "cliente-controller"
+        ],
+        "operationId": "listar",
+        "parameters": [
+          {
+            "name": "pageable",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageClienteDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "cliente-controller"
+        ],
+        "operationId": "criar_5",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClienteDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClienteDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/audiencias": {
+      "post": {
+        "tags": [
+          "audiencia-controller"
+        ],
+        "operationId": "criar_6",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AudienciaDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudienciaDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/audiencias/{id}/gerar-resumo-ia": {
+      "post": {
+        "tags": [
+          "audiencia-controller"
+        ],
+        "operationId": "gerarResumoIa",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GerarResumoAudienciaDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudienciaDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tarefas/{id}/concluir": {
+      "patch": {
+        "tags": [
+          "tarefa-controller"
+        ],
+        "operationId": "concluir",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarefaDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/processos/{id}/arquivar": {
+      "patch": {
+        "tags": [
+          "processo-controller"
+        ],
+        "operationId": "arquivar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/faturamentos/{id}/pagar": {
+      "patch": {
+        "tags": [
+          "faturamento-controller"
+        ],
+        "operationId": "liquidar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LiquidarFaturamentoDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/FaturamentoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/audiencias/{id}/status": {
+      "patch": {
+        "tags": [
+          "audiencia-controller"
+        ],
+        "operationId": "alterarStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "AGENDADA",
+                "REALIZADA",
+                "CANCELADA"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudienciaDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/usuarios/advogados": {
+      "get": {
+        "tags": [
+          "usuario-controller"
+        ],
+        "operationId": "listarAdvogados",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UsuarioDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tarefas/dashboard/{usuarioId}": {
+      "get": {
+        "tags": [
+          "tarefa-controller"
+        ],
+        "operationId": "listarDashboard",
+        "parameters": [
+          {
+            "name": "usuarioId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TarefaDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/processos/cliente/{clienteId}": {
+      "get": {
+        "tags": [
+          "processo-controller"
+        ],
+        "operationId": "listarPorCliente",
+        "parameters": [
+          {
+            "name": "clienteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageable",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageProcessoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/faturamentos/processo/{processoId}": {
+      "get": {
+        "tags": [
+          "faturamento-controller"
+        ],
+        "operationId": "listarPorProcesso_1",
+        "parameters": [
+          {
+            "name": "processoId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FaturamentoDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/{usuarioId}": {
+      "get": {
+        "tags": [
+          "dashboard-controller"
+        ],
+        "operationId": "obterDashboard",
+        "parameters": [
+          {
+            "name": "usuarioId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumoDashboardDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/clientes/{id}/procuracao": {
+      "get": {
+        "tags": [
+          "cliente-controller"
+        ],
+        "operationId": "gerarProcuracao",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/audiencias/processo/{processoId}": {
+      "get": {
+        "tags": [
+          "audiencia-controller"
+        ],
+        "operationId": "listarPorProcesso_2",
+        "parameters": [
+          {
+            "name": "processoId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AudienciaDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/audiencias/agenda": {
+      "get": {
+        "tags": [
+          "audiencia-controller"
+        ],
+        "operationId": "listarAgenda",
+        "parameters": [
+          {
+            "name": "inicio",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "fim",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AudienciaDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ClienteDTO": {
+        "required": [
+          "cpfCnpj",
+          "nome",
+          "tipo"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "FISICA",
+              "JURIDICA"
+            ]
+          },
+          "cpfCnpj": {
+            "type": "string"
+          },
+          "dataNascimento": {
+            "type": "string",
+            "format": "date"
+          },
+          "estadoCivil": {
+            "type": "string",
+            "enum": [
+              "SOLTEIRO",
+              "CASADO",
+              "VIUVO",
+              "UNIAO_ESTAVEL",
+              "DIVORCIADO"
+            ]
+          },
+          "sexo": {
+            "type": "string",
+            "enum": [
+              "MASCULINO",
+              "FEMININO",
+              "NEUTRO"
+            ]
+          },
+          "profissao": {
+            "type": "string"
+          },
+          "telefone": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "cep": {
+            "type": "string"
+          },
+          "logradouro": {
+            "type": "string"
+          },
+          "numero": {
+            "type": "string"
+          },
+          "complemento": {
+            "type": "string"
+          },
+          "bairro": {
+            "type": "string"
+          },
+          "cidade": {
+            "type": "string"
+          },
+          "uf": {
+            "type": "string"
+          }
+        }
+      },
+      "UsuarioDTO": {
+        "required": [
+          "email",
+          "nome",
+          "perfil"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "senha": {
+            "type": "string"
+          },
+          "perfil": {
+            "type": "string",
+            "enum": [
+              "ADMIN",
+              "ADVOGADO",
+              "SECRETARIA"
+            ]
+          },
+          "oab": {
+            "type": "string"
+          },
+          "ativo": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TarefaDTO": {
+        "required": [
+          "dataVencimento",
+          "descricao",
+          "usuarioId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "dataVencimento": {
+            "type": "string",
+            "format": "date"
+          },
+          "concluida": {
+            "type": "boolean"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "DILIGENCIA",
+              "PRAZO",
+              "CONTATO"
+            ]
+          },
+          "usuarioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "processoId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "ProcessoDTO": {
+        "required": [
+          "clienteId",
+          "numeroCnj"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "numeroCnj": {
+            "type": "string"
+          },
+          "assunto": {
+            "type": "string"
+          },
+          "faseAtual": {
+            "type": "string"
+          },
+          "dataCriacao": {
+            "type": "string",
+            "format": "date"
+          },
+          "clienteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "advogadoId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "AndamentoDTO": {
+        "required": [
+          "descricao",
+          "tipo"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dataHora": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "AUTOMATICO",
+              "MANUAL",
+              "IA"
+            ]
+          },
+          "processoId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "ResumoPecaDTO": {
+        "required": [
+          "conteudoPeca"
+        ],
+        "type": "object",
+        "properties": {
+          "conteudoPeca": {
+            "type": "string"
+          }
+        }
+      },
+      "FaturamentoDTO": {
+        "required": [
+          "dataVencimento",
+          "descricao",
+          "natureza",
+          "tipo",
+          "valor"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "valor": {
+            "type": "number"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "HONORARIOS",
+              "CUSTAS",
+              "DESPESAS_ESCRITORIO"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDENTE",
+              "PAGO",
+              "CANCELADO"
+            ]
+          },
+          "natureza": {
+            "type": "string",
+            "enum": [
+              "A_RECEBER",
+              "A_PAGAR"
+            ]
+          },
+          "dataVencimento": {
+            "type": "string",
+            "format": "date"
+          },
+          "dataPagamento": {
+            "type": "string",
+            "format": "date"
+          },
+          "processoId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "DocumentoDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nomeArquivo": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "caminhoStorage": {
+            "type": "string"
+          },
+          "indexadoIA": {
+            "type": "boolean"
+          },
+          "clienteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "processoId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "LoginDTO": {
+        "required": [
+          "email",
+          "senha"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "senha": {
+            "type": "string"
+          }
+        }
+      },
+      "TokenDTO": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        }
+      },
+      "AudienciaDTO": {
+        "required": [
+          "dataHora",
+          "local",
+          "processoId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dataHora": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "local": {
+            "type": "string"
+          },
+          "observacoes": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "AGENDADA",
+              "REALIZADA",
+              "CANCELADA"
+            ]
+          },
+          "resumoPreparatorioIa": {
+            "type": "string"
+          },
+          "processoId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "GerarResumoAudienciaDTO": {
+        "required": [
+          "conteudoPeca"
+        ],
+        "type": "object",
+        "properties": {
+          "conteudoPeca": {
+            "type": "string"
+          }
+        }
+      },
+      "LiquidarFaturamentoDTO": {
+        "required": [
+          "dataPagamento"
+        ],
+        "type": "object",
+        "properties": {
+          "dataPagamento": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "Pageable": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "minimum": 0,
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PageProcessoDTO": {
+        "type": "object",
+        "properties": {
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProcessoDTO"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageableObject": {
+        "type": "object",
+        "properties": {
+          "unpaged": {
+            "type": "boolean"
+          },
+          "paged": {
+            "type": "boolean"
+          },
+          "offset": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SortObject": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "type": "string"
+          },
+          "nullHandling": {
+            "type": "string"
+          },
+          "ascending": {
+            "type": "boolean"
+          },
+          "property": {
+            "type": "string"
+          },
+          "ignoreCase": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ResumoDashboardDTO": {
+        "type": "object",
+        "properties": {
+          "totalClientesAtivos": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalProcessosAndamento": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tarefasPendentesHoje": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "proximasTarefas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TarefaDTO"
+            }
+          },
+          "totalReceberHoje": {
+            "type": "number"
+          },
+          "proximasFaturasReceber": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FaturamentoDTO"
+            }
+          }
+        }
+      },
+      "PageClienteDTO": {
+        "type": "object",
+        "properties": {
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClienteDTO"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SortObject"
+            }
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "name": "bearerAuth",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

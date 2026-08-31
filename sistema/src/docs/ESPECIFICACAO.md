@@ -1,8 +1,9 @@
-# Documento de Especificação de Software (PRD) - v2.4
+# Documento de Especificação de Software (PRD) - v2.5
 
 **Projeto:** Sistema de Gestão Jurídica Inteligente (LegalTech)  
 **Perfil:** Backend Corporativo / Portfólio  
-**Padrão Arquitetural:** Clean Architecture (Arquitetura Hexagonal)
+**Padrão Arquitetural:** Clean Architecture (Arquitetura Hexagonal)  
+**Versão do Spring Boot:** 3.3.3 | **Java:** 21 LTS
 
 ---
 
@@ -10,88 +11,117 @@
 
 O sistema é estruturado em 5 grandes módulos lógicos:
 
-*   **IAM (Identity & Access Management):** Controle de usuários, perfis de acesso (`ADMIN`, `ADVOGADO`, `SECRETARIA`), autenticação via JWT *stateless*, criptografia de senhas com BCrypt, controle de acesso baseado em papéis (RBAC) e inicialização automática e segura do usuário administrador (*DatabaseSeeder*).
-*   **Core Legal & CRM:** Gestão completa de clientes (incluindo qualificação civil estendida e endereço), processos judiciais vinculados a advogados responsáveis e andamentos processuais em linha do tempo.
-*   **Financeiro, Agenda & Produtividade:** Gestão de faturamentos (com alertas de vencimentos na Dashboard), controle de fluxo financeiro com liquidação de faturas, agendamento de audiências judiciais e **Gestão de Tarefas (To-Do List diário)** para acompanhamento de prazos e diligências.
-*   **GED (Gestão Eletrônica de Documentos):** Armazenamento de arquivos vinculados a processos (Petições, Sentenças) e clientes (CNH, Comprovante de Residência). Inclui motor de **Geração Automática de Documentos**, emitindo Procurações e Contratos de Honorários a partir de templates, substituindo as tags de qualificação pelos dados do cliente.
-*   **Inteligência Artificial & Automação (Módulo Avançado):**
-    *   **Assistente RAG:** Chatbot alimentado pelo Spring AI que utiliza os PDFs do próprio processo como base de conhecimento exclusiva.
-    *   **Resumos Inteligentes:** Geração automática de relatórios pré-audiência (alerta D-1) e extração de resumos processuais simplificados para envio via WhatsApp aos clientes.
-    *   **RPA/Crawlers (Visão de Futuro):** Robôs autônomos para varredura do sistema e-Proc (TJRS), realizando leitura automática de novos andamentos e download de intimações/petições diretamente para o Storage.
+*   **IAM (Identity & Access Management) & Segurança:**
+    *   Controle de usuários e perfis de acesso (`ADMIN`, `ADVOGADO`, `SECRETARIA`).
+    *   Autenticação via JWT *stateless* com assinatura HMAC256.
+    *   Criptografia de senhas com BCrypt.
+    *   Controle de acesso granular baseado em papéis (RBAC com `@PreAuthorize` e `@EnableMethodSecurity`).
+    *   Inicialização automática e segura do usuário administrador via `DatabaseSeeder` com `@Value`.
+    *   Configuração global de CORS (`CorsConfig`) habilitando integração com frontends modernos (como Lovable).
+*   **Core Legal & CRM:**
+    *   Gestão de clientes com qualificação civil estendida (estado civil, profissão, sexo, endereço completo e data de nascimento).
+    *   Gestão de processos judiciais vinculados a advogados responsáveis e clientes.
+    *   Histórico e linha do tempo de andamentos processuais.
+*   **Financeiro, Agenda & Produtividade:**
+    *   **Faturamento:** Controle de receitas e despesas (`A_RECEBER`, `A_PAGAR`), tipos (`HONORARIOS`, `CUSTAS`, `DESPESAS_ESCRITORIO`), liquidação com registro de data efetiva e status (`PENDENTE`, `PAGO`, `CANCELADO`).
+    *   **Gestão de Tarefas (To-Do List):** Tarefas vinculadas a usuários e processos (`DILIGENCIA`, `PRAZO`, `CONTATO`) com acompanhamento de vencimento e conclusão.
+    *   **Agenda de Audiências:** Agendamento com validação contra retroatividade, pauta global por período (`/api/audiencias/agenda`) e alteração de status (`AGENDADA`, `REALIZADA`, `CANCELADA`).
+    *   **Dashboard Executiva:** Agregação de métricas em tempo real para o advogado (total de clientes ativos, processos em andamento, tarefas pendentes hoje, próximas 5 tarefas, montante financeiro a receber hoje e próximas faturas).
+*   **GED (Gestão Eletrônica de Documentos):**
+    *   Armazenamento físico de arquivos via `LocalStorageService` (`uploads/documentos`) vinculado a clientes e processos.
+    *   **Motor de Geração de Documentos:** `DocumentGeneratorService` e `MockDocumentGeneratorService` emitindo Procuração oficial com preenchimento dinâmico dos dados do outorgante e download via endpoint `/api/clientes/{id}/procuracao`.
+*   **Inteligência Artificial & Automação (Spring AI):**
+    *   Integração nativa com Spring AI (`spring-ai-openai-spring-boot-starter`).
+    *   **Resumo Preparatório de Audiências:** Caso de uso `GerarEAnexarResumoAudienciaUseCase` que sintetiza peças processuais volumosas e persiste o resultado diretamente no campo `resumoPreparatorioIa` da entidade `Audiencia` (`POST /api/audiencias/{id}/gerar-resumo-ia`).
+    *   Endpoint dedicado para consultas avulsas de IA (`POST /api/ia/resumos/audiencia`).
 
 ---
 
-## 2. Modelo de Domínio (Entidades e Regras de Negócio)
+## 2. Modelo de Domínio e Entidades
 
 Todas as entidades herdam de `AuditableEntity`, possuindo rastreabilidade automática de auditoria (`criadoEm`, `criadoPor`, `atualizadoEm`, `atualizadoPor`).
 
 | Entidade | Atributos Principais | Relacionamentos | Regras de Negócio e Endpoints |
 | :--- | :--- | :--- | :--- |
-| **Usuario** | `id`, `nome`, `email`, `senhaHash`, `perfil` (`ADMIN`, `ADVOGADO`, `SECRETARIA`), `oab`, `ativo` | 1:N Processos, 1:N Tarefas | O e-mail deve ser único. Cadastro estrito a administradores (RBAC). |
-| **Cliente** | `id`, `nome`, `tipo` (`FISICA`, `JURIDICA`), `cpfCnpj`, `dataNascimento`, `estadoCivil`, `profissao`, `sexo`, `telefone`, `email`, `cep`, `logradouro`... | 1:N Processos, 1:N Documentos | Validação de CPF/CNPJ. Fornece a base de dados para preenchimento automático das tags nos templates de Procuração e Contratos. |
-| **Processo** | `id`, `numeroCnj`, `assunto`, `faseAtual`, `dataCriacao` | N:1 Cliente, N:1 Usuario | Não pode ser arquivado se possuir faturas com status `PENDENTE`. |
-| **Andamento** | `id`, `dataHora`, `descricao`, `tipo` (`AUTOMATICO`, `MANUAL`, `IA`) | N:1 Processo | Registro de histórico processual. Base de dados para extração de resumos de IA para WhatsApp. |
-| **Tarefa** *(Novo)* | `id`, `descricao`, `dataVencimento`, `concluida` (Boolean), `tipo` (`DILIGENCIA`, `PRAZO`, `CONTATO`) | N:1 Usuario, N:1 Processo (Opc) | Alimenta a "To-Do List" diária do advogado (ex: buscar matrícula, redigir petição, contatar cliente). |
-| **Faturamento**| `id`, `descricao`, `valor`, `tipo`, `natureza`, `dataVencimento`, `dataPagamento`, `status` | N:1 Processo (Opcional) | Liquidação exige data efetiva e atualiza status para `PAGO`. Gera alertas na Dashboard para valores vencendo hoje ou atrasados. |
-| **Audiencia** | `id`, `dataHora`, `local`, `observacoes`, `status` | N:1 Processo | Pauta acessada via `/api/audiencias/agenda`. Dispara gatilho automático 1 dia útil antes (D-1) com resumo do processo. |
-| **Documento** | `id`, `nomeArquivo`, `tipoDoc` (`PETICAO`, `SENTENCA`, `CNH`, `COMPROVANTE_RESIDENCIA`, `OUTROS`), `caminhoStorage`, `indexadoIA` | N:1 Processo (Opc), N:1 Cliente (Opc) | PDFs salvos via `StorageService`. Vinculado a clientes para scans pessoais e a processos para peças processuais. |
+| **Usuario** | `id`, `nome`, `email`, `senhaHash`, `perfil` (`ADMIN`, `ADVOGADO`, `SECRETARIA`), `oab`, `ativo` | 1:N Processos, 1:N Tarefas | E-mail único. Cadastro restrito a administradores (RBAC). |
+| **Cliente** | `id`, `nome`, `tipo` (`FISICA`, `JURIDICA`), `cpfCnpj`, `dataNascimento`, `estadoCivil`, `profissao`, `sexo`, `telefone`, `email`, `cep`, `logradouro`, `numero`, `complemento`, `bairro`, `cidade`, `uf` | 1:N Processos, 1:N Documentos | Validação estrita de CPF/CNPJ. Emissão de procuração via `GET /api/clientes/{id}/procuracao`. |
+| **Processo** | `id`, `numeroCnj`, `assunto`, `faseAtual`, `dataCriacao` | N:1 Cliente, N:1 Usuario, 1:N Documentos, 1:N Tarefas | CNJ único. Não pode ser arquivado se possuir faturas `PENDENTE`. |
+| **Andamento** | `id`, `dataHora`, `descricao`, `tipo` (`AUTOMATICO`, `MANUAL`, `IA`) | N:1 Processo | Histórico cronológico processual. |
+| **Tarefa** | `id`, `descricao`, `dataVencimento`, `concluida`, `tipo` (`DILIGENCIA`, `PRAZO`, `CONTATO`) | N:1 Usuario, N:1 Processo (Opc) | Alimenta o To-Do list e Dashboard. Endpoints: `POST /api/tarefas`, `PATCH /api/tarefas/{id}/concluir`, `GET /api/tarefas/dashboard/{usuarioId}`. |
+| **Faturamento**| `id`, `descricao`, `valor`, `tipo`, `status`, `natureza`, `dataVencimento`, `dataPagamento` | N:1 Processo (Opc) | Alimenta fluxo de caixa e alertas da Dashboard. Endpoints: `POST /api/faturamentos`, `PATCH /api/faturamentos/{id}/pagar`, `GET /api/faturamentos/processo/{processoId}`. |
+| **Audiencia** | `id`, `dataHora`, `local`, `observacoes`, `status`, `resumoPreparatorioIa` | N:1 Processo | Data futura obrigatória no agendamento. Pauta global via `/api/audiencias/agenda`. Resumo IA integrado via `POST /api/audiencias/{id}/gerar-resumo-ia`. |
+| **Documento** | `id`, `nomeArquivo`, `titulo`, `caminhoStorage`, `indexadoIA` | N:1 Processo (Opc), N:1 Cliente (Opc) | Upload Multipart em `/api/documentos/upload`. Armazenamento em disco via `LocalStorageService`. |
 
 ---
 
-## 3. Implementações Transversais e Arquitetura
+## 3. Diretrizes Técnicas e Decisões Arquiteturais
 
-### 3.1. Padronização de Exceções de Domínio (Clean Architecture)
-A aplicação intercepta erros globalmente através da classe `GlobalExceptionHandler` (`@RestControllerAdvice`), padronizando o payload de resposta HTTP:
-*   **HTTP 422 Unprocessable Entity:** Lançado para violações de regras de negócio (`RegraNegocioException`).
-*   **HTTP 404 Not Found:** Lançado quando um recurso solicitado não é encontrado (`RecursoNaoEncontradoException`).
-*   **HTTP 400 Bad Request:** Lançado para erros de validação de payload (`MethodArgumentNotValidException`).
-*   **HTTP 409 Conflict:** Lançado para violações de integridade de dados/chaves únicas (`DataIntegrityViolationException`).
+### 3.1. Paradigma Java Puro e Imperativo
+*   Proibição expressa de Expressões Lambda (`->`), Stream API (`.stream()`) e métodos funcionais de `Optional` (`.orElseThrow()`, `.map()`).
+*   Verificação clássica de `Optional`:
+    ```java
+    Optional<Entidade> opt = repository.findById(id);
+    if (opt.isEmpty()) {
+        throw new RecursoNaoEncontradoException("Recurso não encontrado!");
+    }
+    Entidade entidade = opt.get();
+    ```
+*   Transformações de coleções utilizando laços `for` tradicionais e instanciação explícita de `new ArrayList<>()`.
 
-### 3.2. Bean Validation nos DTOs
-Todas as entradas nos controladores utilizam a anotação `@Valid` combinada com validações declarativas do `jakarta.validation`.
+### 3.2. Tratamento Global de Exceções
+Padronizado no `GlobalExceptionHandler` (`@RestControllerAdvice`):
+*   **HTTP 400 Bad Request:** Validação de DTOs (`MethodArgumentNotValidException`).
+*   **HTTP 404 Not Found:** Recursos inexistentes (`RecursoNaoEncontradoException`).
+*   **HTTP 409 Conflict:** Violação de unicidade (`DataIntegrityViolationException`).
+*   **HTTP 422 Unprocessable Entity:** Regras de negócio violadas (`RegraNegocioException`).
 
-### 3.3. Paginação com Spring Data
-Endpoints de listagem volumosos utilizam `Pageable` e retornam `Page<T>`.
+### 3.3. Segurança & CORS
+*   Autenticação JWT com filtro `JwtAuthenticationFilter`.
+*   CORS centralizado em `CorsConfig` (`WebMvcConfigurer`) e habilitado na cadeia de segurança (`.cors(Customizer.withDefaults())`).
 
-### 3.4. Controle de Acesso Baseado em Perfis (RBAC)
-Configurado via Spring Security com `@EnableMethodSecurity`.
-
-### 3.5. Inicialização Segura de Administrador (DatabaseSeeder)
-Implementado via `CommandLineRunner` na inicialização do contexto utilizando variáveis de ambiente, evitando credenciais *hardcoded*.
-
-### 3.6. Auditoria Automática JPA
-Habilitada via `@EnableJpaAuditing` interceptando o `SecurityContextHolder`.
-
-### 3.7. Serviço de Geração de Documentos (Módulo GED)
-O sistema contará com um `DocumentGeneratorService` responsável por ler os templates base (Procuração e Contrato de Honorários), localizar as tags de qualificação destacadas em vermelho/XXX, e substituir iterativamente pelos dados do `Cliente`, gerando o arquivo final.
-*   **Template Procuração:** [Link Google Docs](https://docs.google.com/document/d/16AW-2cO6NQX7p7mK8iHfhQc_wimWcbeO/edit?usp=sharing&ouid=103994287021892020300&rtpof=true&sd=true)
-*   **Template Contrato:** [Link Google Docs](https://docs.google.com/document/d/16OXIdms-sYaEJvpaaOTvvqBP9eCtpESV/edit?usp=sharing&ouid=103994287021892020300&rtpof=true&sd=true)
+### 3.4. Resiliência e Integração com IA
+*   Configuração do Spring AI com OpenAI/Gemini chat client.
+*   Previsão de retry e fallback via **Spring Retry** (`@Retryable(value = {RestClientException.class}, maxAttempts = 3, backoff = @Backoff(delay = 2000))`) para resiliência contra indisponibilidades transitórias (HTTP 503) das APIs de LLM.
 
 ---
 
-## 4. Estrutura de Pastas (Clean Architecture)
+## 4. Estrutura de Pacotes
 
 ```text
 └── src/main/java/com/sistemajuridico/backend/
-    ├── core/                               # Domínio e Regras de Negócio (Java Puro)
-    │   ├── domain/                         # Entidades e Superclasse de Auditoria
-    │   │   ├── AuditableEntity.java
-    │   │   ├── Cliente.java, Processo.java, Tarefa.java...
-    │   │   ├── enums/                      # TipoDocumentoEnum, StatusAudienciaEnum...
-    │   │   ├── exceptions/                 # RegraNegocioException, RecursoNaoEncontradoException
-    │   │   └── validators/                 # DocumentoValidator (CPF/CNPJ)
-    │   └── usecases/                       # Casos de Uso com lógica imperativa pura
+    ├── core/
+    │   ├── domain/
+    │   │   ├── enums/                      # PerfilAcessoEnum, TipoTarefaEnum, StatusAudienciaEnum...
+    │   │   ├── exceptions/                 # RegraNegocioException, RecursoNaoEncontradoException...
+    │   │   ├── validators/                 # DocumentoValidator (CPF/CNPJ)
+    │   │   └── *.java                      # Cliente, Processo, Tarefa, Audiencia, Faturamento...
+    │   └── usecases/                       # Casos de uso imperativos clássicos
     │       ├── AutenticarUsuarioUseCase.java
-    │       ├── CadastrarClienteUseCase.java...
-    │       └── GerarProcuracaoClienteUseCase.java...
+    │       ├── CadastrarClienteUseCase.java / AtualizarClienteUseCase.java
+    │       ├── CriarTarefaUseCase.java / ConcluirTarefaUseCase.java
+    │       ├── CadastrarFaturamentoUseCase.java / LiquidarFaturamentoUseCase.java
+    │       ├── DashboardAdvogadoUseCase.java
+    │       ├── GerarEAnexarResumoAudienciaUseCase.java
+    │       └── GerarProcuracaoClienteUseCase.java / UploadDocumentoUseCase.java
     │
-    ├── infrastructure/                     # Camada Técnica e Integrações
+    ├── infrastructure/
+    │   ├── ai/                             # ResumoAIService, SpringAIResumoService
+    │   ├── document/                       # DocumentGeneratorService, MockDocumentGeneratorService
     │   ├── persistence/                    # Repositories JPA e DatabaseSeeder
-    │   ├── security/                       # SecurityConfig, JwtAuthenticationFilter, TokenService
-    │   ├── storage/                        # StorageService e LocalStorageService
-    │   ├── document/                       # DocumentGeneratorService (Parse de templates)
-    │   └── ia/                             # Spring AI e Vetorização RAG
+    │   ├── security/                       # SecurityConfig, CorsConfig, TokenService, JwtFilter
+    │   └── storage/                        # StorageService, LocalStorageService
     │
-    └── presentation/                       # Adaptadores de Entrada (REST API)
-        ├── controllers/                    # Endpoints REST e GlobalExceptionHandler
-        └── dtos/                           # Records de Entrada e Saída com Bean Validation
+    └── presentation/
+        ├── controllers/                    # REST Controllers
+        └── dtos/                           # Records de entrada/saída com Bean Validation
+```
+
+---
+
+## 5. Próximos Passos Backend (Backlog)
+
+1. **Geração Automática de Contrato de Honorários:** Expandir `DocumentGeneratorService` para incluir o template do Contrato de Honorários Advocatícios.
+2. **Resiliência Spring Retry:** Anotar as chamadas do serviço de IA (`SpringAIResumoService`) com `@Retryable` e `@Recover` para tratamento gracioso de falhas 503 da API de IA.
+3. **Agendamento de Alertas Pré-Audiência (D-1):** Implementar rotina agendada com Spring `@Scheduled` para identificar audiências do dia seguinte e disparar a geração antecipada de resumos.
+4. **Assistente RAG com Vetorização:** Configurar armazenamento vetorial (pgvector) e pipeline de ingestão de PDFs de processos para consultas contextuais do advogado.
+5. **Relatórios Exportáveis:** Endpoints para exportação consolidada de relatórios financeiros e pauta de audiências em formato PDF/Excel.
