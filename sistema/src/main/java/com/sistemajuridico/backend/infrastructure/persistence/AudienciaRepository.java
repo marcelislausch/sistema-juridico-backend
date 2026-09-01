@@ -12,4 +12,5 @@ import java.util.UUID;
 public interface AudienciaRepository extends JpaRepository<Audiencia, UUID> {
     List<Audiencia> findByProcessoId(UUID processoId);
     List<Audiencia> findByDataHoraBetween(LocalDateTime inicio, LocalDateTime fim);
+    List<Audiencia> findByDataHoraBetweenOrderByDataHoraAsc(LocalDateTime inicio, LocalDateTime fim);
 }

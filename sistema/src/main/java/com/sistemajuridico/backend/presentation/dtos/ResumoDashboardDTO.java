@@ -9,6 +9,9 @@ public record ResumoDashboardDTO(
         Integer tarefasPendentesHoje,
         List<TarefaDTO> proximasTarefas,
         BigDecimal totalReceberHoje,
-        List<FaturamentoDTO> proximasFaturasReceber
+        List<FaturamentoDTO> proximasFaturasReceber,
+        Integer audienciasHoje,
+        List<AudienciaDTO> proximasAudiencias
 ) {
 }
+
