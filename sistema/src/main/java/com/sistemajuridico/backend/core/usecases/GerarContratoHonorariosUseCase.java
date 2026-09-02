@@ -1,28 +1,25 @@
 package com.sistemajuridico.backend.core.usecases;
 
 import com.sistemajuridico.backend.core.domain.Cliente;
-import com.sistemajuridico.backend.core.domain.exceptions.RecursoNaoEncontradoException;
 import com.sistemajuridico.backend.infrastructure.document.DocumentGeneratorService;
-import com.sistemajuridico.backend.infrastructure.persistence.ClienteRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class GerarProcuracaoClienteUseCase {
+public class GerarContratoHonorariosUseCase {
 
     private final BuscarClientePorIdUseCase buscarClientePorIdUseCase;
     private final DocumentGeneratorService documentGeneratorService;
 
-    public GerarProcuracaoClienteUseCase(BuscarClientePorIdUseCase buscarClientePorIdUseCase,
-                                         DocumentGeneratorService documentGeneratorService) {
+    public GerarContratoHonorariosUseCase(BuscarClientePorIdUseCase buscarClientePorIdUseCase,
+                                          DocumentGeneratorService documentGeneratorService) {
         this.buscarClientePorIdUseCase = buscarClientePorIdUseCase;
         this.documentGeneratorService = documentGeneratorService;
     }
 
     public byte[] executar(UUID clienteId) {
         Cliente cliente = this.buscarClientePorIdUseCase.executar(clienteId);
-        return this.documentGeneratorService.gerarProcuracao(cliente);
+        return this.documentGeneratorService.gerarContratoHonorarios(cliente);
     }
 }

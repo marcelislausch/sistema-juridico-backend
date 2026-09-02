@@ -2,7 +2,9 @@ package com.sistemajuridico.backend.presentation.controllers;
 
 import com.sistemajuridico.backend.core.domain.Cliente;
 import com.sistemajuridico.backend.core.usecases.AtualizarClienteUseCase;
+import com.sistemajuridico.backend.core.usecases.BuscarClientePorIdUseCase;
 import com.sistemajuridico.backend.core.usecases.CadastrarClienteUseCase;
+import com.sistemajuridico.backend.core.usecases.GerarContratoHonorariosUseCase;
 import com.sistemajuridico.backend.core.usecases.GerarProcuracaoClienteUseCase;
 import com.sistemajuridico.backend.core.usecases.ListarClientesUseCase;
 import com.sistemajuridico.backend.presentation.dtos.ClienteDTO;
@@ -28,15 +30,21 @@ public class ClienteController {
     private final AtualizarClienteUseCase atualizarClienteUseCase;
     private final ListarClientesUseCase listarClientesUseCase;
     private final GerarProcuracaoClienteUseCase gerarProcuracaoClienteUseCase;
+    private final BuscarClientePorIdUseCase buscarClientePorIdUseCase;
+    private final GerarContratoHonorariosUseCase gerarContratoHonorariosUseCase;
 
     public ClienteController(CadastrarClienteUseCase cadastrarClienteUseCase,
                              AtualizarClienteUseCase atualizarClienteUseCase,
                              ListarClientesUseCase listarClientesUseCase,
-                             GerarProcuracaoClienteUseCase gerarProcuracaoClienteUseCase) {
+                             GerarProcuracaoClienteUseCase gerarProcuracaoClienteUseCase,
+                             BuscarClientePorIdUseCase buscarClientePorIdUseCase,
+                             GerarContratoHonorariosUseCase gerarContratoHonorariosUseCase) {
         this.cadastrarClienteUseCase = cadastrarClienteUseCase;
         this.atualizarClienteUseCase = atualizarClienteUseCase;
         this.listarClientesUseCase = listarClientesUseCase;
         this.gerarProcuracaoClienteUseCase = gerarProcuracaoClienteUseCase;
+        this.buscarClientePorIdUseCase = buscarClientePorIdUseCase;
+        this.gerarContratoHonorariosUseCase = gerarContratoHonorariosUseCase;
     }
 
     @PostMapping
@@ -63,12 +71,28 @@ public class ClienteController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<ClienteDTO> buscarPorId(@PathVariable UUID id) {
+        Cliente cliente = this.buscarClientePorIdUseCase.executar(id);
+        ClienteDTO dto = ClienteDTO.fromEntity(cliente);
+        return ResponseEntity.ok(dto);
+    }
+
     @GetMapping("/{id}/procuracao")
     public ResponseEntity<byte[]> gerarProcuracao(@PathVariable UUID id) {
         byte[] arquivoBytes = this.gerarProcuracaoClienteUseCase.executar(id);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"procuracao.txt\"")
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(arquivoBytes);
+    }
+
+    @GetMapping("/{id}/contrato-honorarios")
+    public ResponseEntity<byte[]> gerarContratoHonorarios(@PathVariable UUID id) {
+        byte[] arquivoBytes = this.gerarContratoHonorariosUseCase.executar(id);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"contrato-honorarios.txt\"")
+                .contentType(MediaType.TEXT_PLAIN)
                 .body(arquivoBytes);
     }
 }

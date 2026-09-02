@@ -54,4 +54,38 @@ public class MockDocumentGeneratorService implements DocumentGeneratorService {
 
         return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
+
+    @Override
+    public byte[] gerarContratoHonorarios(Cliente cliente) {
+        String nome = "NOME COMPLETO";
+        if (cliente != null && cliente.getNome() != null) {
+            nome = cliente.getNome().toUpperCase();
+        }
+
+        String cpfCnpj = "___________";
+        if (cliente != null && cliente.getCpfCnpj() != null) {
+            cpfCnpj = cliente.getCpfCnpj();
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("=====================================================\n");
+        sb.append("   CONTRATO DE PRESTAÇÃO DE SERVIÇOS E HONORÁRIOS    \n");
+        sb.append("=====================================================\n\n");
+        sb.append("CONTRATANTE:\n");
+        sb.append("Nome: ").append(nome).append("\n");
+        sb.append("CPF/CNPJ: ").append(cpfCnpj).append("\n\n");
+        sb.append("CONTRATADO:\n");
+        sb.append("CRISTHIAN MENEZES DE JEZUS, Advogado OAB/RS 121.837\n\n");
+        sb.append("CLÁUSULA PRIMEIRA - DO OBJETO:\n");
+        sb.append("O CONTRATADO prestará serviços advocatícios na defesa dos interesses jurídicos do CONTRATANTE.\n\n");
+        sb.append("CLÁUSULA SEGUNDA - DOS HONORÁRIOS:\n");
+        sb.append("Pelos serviços prestados, o CONTRATANTE pagará ao CONTRATADO os honorários acordados.\n\n");
+        sb.append("Data: ").append(LocalDate.now()).append("\n\n\n");
+        sb.append("_____________________________________________________\n");
+        sb.append(nome).append("\n\n");
+        sb.append("_____________________________________________________\n");
+        sb.append("CRISTHIAN MENEZES DE JEZUS\n");
+
+        return sb.toString().getBytes(StandardCharsets.UTF_8);
+    }
 }
