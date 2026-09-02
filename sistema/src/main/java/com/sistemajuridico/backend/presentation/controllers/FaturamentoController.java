@@ -4,8 +4,10 @@ import com.sistemajuridico.backend.core.domain.Faturamento;
 import com.sistemajuridico.backend.core.usecases.CadastrarFaturamentoUseCase;
 import com.sistemajuridico.backend.core.usecases.LiquidarFaturamentoUseCase;
 import com.sistemajuridico.backend.core.usecases.ListarFaturamentosUseCase;
+import com.sistemajuridico.backend.core.usecases.ObterResumoFinanceiroUseCase;
 import com.sistemajuridico.backend.presentation.dtos.FaturamentoDTO;
 import com.sistemajuridico.backend.presentation.dtos.LiquidarFaturamentoDTO;
+import com.sistemajuridico.backend.presentation.dtos.ResumoFinanceiroDTO;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,13 +24,22 @@ public class FaturamentoController {
     private final CadastrarFaturamentoUseCase cadastrarFaturamentoUseCase;
     private final LiquidarFaturamentoUseCase liquidarFaturamentoUseCase;
     private final ListarFaturamentosUseCase listarFaturamentosUseCase;
+    private final ObterResumoFinanceiroUseCase obterResumoFinanceiroUseCase;
 
     public FaturamentoController(CadastrarFaturamentoUseCase cadastrarFaturamentoUseCase,
                                  LiquidarFaturamentoUseCase liquidarFaturamentoUseCase,
-                                 ListarFaturamentosUseCase listarFaturamentosUseCase) {
+                                 ListarFaturamentosUseCase listarFaturamentosUseCase,
+                                 ObterResumoFinanceiroUseCase obterResumoFinanceiroUseCase) {
         this.cadastrarFaturamentoUseCase = cadastrarFaturamentoUseCase;
         this.liquidarFaturamentoUseCase = liquidarFaturamentoUseCase;
         this.listarFaturamentosUseCase = listarFaturamentosUseCase;
+        this.obterResumoFinanceiroUseCase = obterResumoFinanceiroUseCase;
+    }
+
+    @GetMapping("/resumo")
+    public ResponseEntity<ResumoFinanceiroDTO> obterResumo() {
+        ResumoFinanceiroDTO resumo = this.obterResumoFinanceiroUseCase.executar();
+        return ResponseEntity.ok(resumo);
     }
 
     @PostMapping
