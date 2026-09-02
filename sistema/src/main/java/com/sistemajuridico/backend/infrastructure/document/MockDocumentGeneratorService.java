@@ -12,7 +12,7 @@ import java.util.Locale;
 public class MockDocumentGeneratorService implements DocumentGeneratorService {
 
     @Override
-    public byte[] gerarProcuracao(Cliente cliente) {
+    public byte[] gerarProcuracao(Cliente cliente, String acao, String varaCivel, String comarca) {
         StringBuilder sb = new StringBuilder();
 
         String nome = cliente.getNome() != null ? cliente.getNome().toUpperCase() : "NOME COMPLETO";
@@ -38,8 +38,25 @@ public class MockDocumentGeneratorService implements DocumentGeneratorService {
         sb.append("na OAB/RS sob o nº 121.837, com escritório profissional na Rua Tiradentes, nº 676, ");
         sb.append("Centro, na cidade de Ijuí/RS, onde recebem avisos e intimações;\n\n");
 
-        sb.append("PODERES: Confere os poderes especiais para, em nome do Outorgante, AJUIZAR XX, na __ vara cível da comarca de ");
-        sb.append(cidade).append("/").append(uf).append(" e representá-la, quando se fizer necessário para defender os interesses do outorgante, ");
+        String acaoTexto = "XX";
+        if (acao != null && !acao.trim().isEmpty()) {
+            acaoTexto = acao.trim();
+        }
+
+        String varaCivelTexto = "__ vara cível";
+        if (varaCivel != null && !varaCivel.trim().isEmpty()) {
+            varaCivelTexto = varaCivel.trim();
+        }
+
+        String textoJurisdicao;
+        if (comarca != null && !comarca.trim().isEmpty()) {
+            textoJurisdicao = "AJUIZAR " + acaoTexto + ", na " + varaCivelTexto + " da comarca de " + comarca.trim() + " e representá-la";
+        } else {
+            textoJurisdicao = "AJUIZAR " + acaoTexto + ", na " + varaCivelTexto + " e representá-la";
+        }
+
+        sb.append("PODERES: Confere os poderes especiais para, em nome do Outorgante, ");
+        sb.append(textoJurisdicao).append(", quando se fizer necessário para defender os interesses do outorgante, ");
         sb.append("utilizando-se para tanto de todos os poderes necessários para o foro em geral, com cláusula ");
         sb.append("\"AD JUDITIA\" e \"ET EXTRA\", para propor quaisquer ações na defesa dos interesses do constituinte, ");
         sb.append("e ainda os PODERES ESPECIAIS para transigir, acordar, receber valores, dar quitação, desistir, ");

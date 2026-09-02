@@ -21,8 +21,8 @@ public class GerarProcuracaoClienteUseCase {
         this.documentGeneratorService = documentGeneratorService;
     }
 
-    public byte[] executar(UUID clienteId) {
+    public byte[] executar(UUID clienteId, String acao, String varaCivel, String comarca) {
         Cliente cliente = this.buscarClientePorIdUseCase.executar(clienteId);
-        return this.documentGeneratorService.gerarProcuracao(cliente);
+        return this.documentGeneratorService.gerarProcuracao(cliente, acao, varaCivel, comarca);
     }
 }

@@ -79,11 +79,15 @@ public class ClienteController {
     }
 
     @GetMapping("/{id}/procuracao")
-    public ResponseEntity<byte[]> gerarProcuracao(@PathVariable UUID id) {
-        byte[] arquivoBytes = this.gerarProcuracaoClienteUseCase.executar(id);
+    public ResponseEntity<byte[]> gerarProcuracao(
+            @PathVariable UUID id,
+            @RequestParam(required = false) String acao,
+            @RequestParam(required = false) String varaCivel,
+            @RequestParam(required = false) String comarca) {
+        byte[] arquivoBytes = this.gerarProcuracaoClienteUseCase.executar(id, acao, varaCivel, comarca);
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"procuracao.txt\"")
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"procuracao.pdf\"")
+                .contentType(MediaType.APPLICATION_PDF)
                 .body(arquivoBytes);
     }
 
