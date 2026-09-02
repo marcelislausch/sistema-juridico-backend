@@ -3,6 +3,7 @@ package com.sistemajuridico.backend.core.usecases;
 import com.sistemajuridico.backend.core.domain.Cliente;
 import com.sistemajuridico.backend.core.domain.Processo;
 import com.sistemajuridico.backend.core.domain.Usuario;
+import com.sistemajuridico.backend.core.domain.enums.FaseProcessualEnum;
 import com.sistemajuridico.backend.core.domain.enums.PerfilAcessoEnum;
 import com.sistemajuridico.backend.core.domain.exceptions.RecursoNaoEncontradoException;
 import com.sistemajuridico.backend.core.domain.exceptions.RegraNegocioException;
@@ -48,6 +49,10 @@ public class CadastrarProcessoUseCase {
                 throw new RegraNegocioException("O usuário selecionado não possui perfil de Advogado.");
             }
             processo.setAdvogado(advogado);
+        }
+
+        if (processo.getFaseAtual() == null) {
+            processo.setFaseAtual(FaseProcessualEnum.PROTOCOLADO);
         }
 
         return processoRepository.save(processo);

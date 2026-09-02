@@ -1,5 +1,6 @@
 package com.sistemajuridico.backend.core.domain;
 
+import com.sistemajuridico.backend.core.domain.enums.FaseProcessualEnum;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -24,8 +25,9 @@ public class Processo extends AuditableEntity {
 
     private String assunto;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "fase_atual")
-    private String faseAtual;
+    private FaseProcessualEnum faseAtual;
 
     @Column(name = "data_criacao")
     private LocalDate dataCriacao = LocalDate.now();

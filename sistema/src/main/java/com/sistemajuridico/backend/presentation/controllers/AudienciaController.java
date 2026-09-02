@@ -2,11 +2,7 @@ package com.sistemajuridico.backend.presentation.controllers;
 
 import com.sistemajuridico.backend.core.domain.Audiencia;
 import com.sistemajuridico.backend.core.domain.enums.StatusAudienciaEnum;
-import com.sistemajuridico.backend.core.usecases.AlterarStatusAudienciaUseCase;
-import com.sistemajuridico.backend.core.usecases.CadastrarAudienciaUseCase;
-import com.sistemajuridico.backend.core.usecases.GerarEAnexarResumoAudienciaUseCase;
-import com.sistemajuridico.backend.core.usecases.ListarAgendaGlobalUseCase;
-import com.sistemajuridico.backend.core.usecases.ListarAudienciasPorProcessoUseCase;
+import com.sistemajuridico.backend.core.usecases.*;
 import com.sistemajuridico.backend.presentation.dtos.AudienciaDTO;
 import com.sistemajuridico.backend.presentation.dtos.GerarResumoAudienciaDTO;
 import jakarta.validation.Valid;
@@ -29,17 +25,26 @@ public class AudienciaController {
     private final AlterarStatusAudienciaUseCase alterarStatusAudienciaUseCase;
     private final ListarAgendaGlobalUseCase listarAgendaGlobalUseCase;
     private final GerarEAnexarResumoAudienciaUseCase gerarEAnexarResumoAudienciaUseCase;
+    private final BuscarAudienciaPorIdUseCase buscarAudienciaPorIdUseCase;
+    private final AtualizarAudienciaUseCase atualizarAudienciaUseCase;
+    private final ExcluirAudienciaUseCase excluirAudienciaUseCase;
 
     public AudienciaController(CadastrarAudienciaUseCase cadastrarAudienciaUseCase,
                                ListarAudienciasPorProcessoUseCase listarAudienciasPorProcessoUseCase,
                                AlterarStatusAudienciaUseCase alterarStatusAudienciaUseCase,
                                ListarAgendaGlobalUseCase listarAgendaGlobalUseCase,
-                               GerarEAnexarResumoAudienciaUseCase gerarEAnexarResumoAudienciaUseCase) {
+                               GerarEAnexarResumoAudienciaUseCase gerarEAnexarResumoAudienciaUseCase,
+                               BuscarAudienciaPorIdUseCase buscarAudienciaPorIdUseCase,
+                               AtualizarAudienciaUseCase atualizarAudienciaUseCase,
+                               ExcluirAudienciaUseCase excluirAudienciaUseCase) {
         this.cadastrarAudienciaUseCase = cadastrarAudienciaUseCase;
         this.listarAudienciasPorProcessoUseCase = listarAudienciasPorProcessoUseCase;
         this.alterarStatusAudienciaUseCase = alterarStatusAudienciaUseCase;
         this.listarAgendaGlobalUseCase = listarAgendaGlobalUseCase;
         this.gerarEAnexarResumoAudienciaUseCase = gerarEAnexarResumoAudienciaUseCase;
+        this.buscarAudienciaPorIdUseCase = buscarAudienciaPorIdUseCase;
+        this.atualizarAudienciaUseCase = atualizarAudienciaUseCase;
+        this.excluirAudienciaUseCase = excluirAudienciaUseCase;
     }
 
     @PostMapping
@@ -70,6 +75,25 @@ public class AudienciaController {
         }
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<AudienciaDTO> buscarPorId(@PathVariable UUID id) {
+        Audiencia audiencia = this.buscarAudienciaPorIdUseCase.executar(id);
+        return ResponseEntity.ok(AudienciaDTO.fromEntity(audiencia));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<AudienciaDTO> atualizar(@PathVariable UUID id, @RequestBody @Valid AudienciaDTO dto) {
+        Audiencia audiencia = dto.toEntity();
+        Audiencia audienciaAtualizada = this.atualizarAudienciaUseCase.executar(id, audiencia);
+        return ResponseEntity.ok(AudienciaDTO.fromEntity(audienciaAtualizada));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> excluir(@PathVariable UUID id) {
+        this.excluirAudienciaUseCase.executar(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/status")

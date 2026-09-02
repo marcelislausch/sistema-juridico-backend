@@ -4,8 +4,10 @@ import com.sistemajuridico.backend.core.domain.Tarefa;
 import com.sistemajuridico.backend.core.domain.Usuario;
 import com.sistemajuridico.backend.core.domain.exceptions.RecursoNaoEncontradoException;
 import com.sistemajuridico.backend.core.domain.exceptions.RegraNegocioException;
+import com.sistemajuridico.backend.core.usecases.AtualizarTarefaUseCase;
 import com.sistemajuridico.backend.core.usecases.ConcluirTarefaUseCase;
 import com.sistemajuridico.backend.core.usecases.CriarTarefaUseCase;
+import com.sistemajuridico.backend.core.usecases.ExcluirTarefaUseCase;
 import com.sistemajuridico.backend.core.usecases.ListarTarefasDashboardUseCase;
 import com.sistemajuridico.backend.core.usecases.ListarTarefasPorPeriodoUseCase;
 import com.sistemajuridico.backend.infrastructure.persistence.UsuarioRepository;
@@ -29,17 +31,23 @@ public class TarefaController {
 
     private final CriarTarefaUseCase criarTarefaUseCase;
     private final ConcluirTarefaUseCase concluirTarefaUseCase;
+    private final AtualizarTarefaUseCase atualizarTarefaUseCase;
+    private final ExcluirTarefaUseCase excluirTarefaUseCase;
     private final ListarTarefasDashboardUseCase listarTarefasDashboardUseCase;
     private final ListarTarefasPorPeriodoUseCase listarTarefasPorPeriodoUseCase;
     private final UsuarioRepository usuarioRepository;
 
     public TarefaController(CriarTarefaUseCase criarTarefaUseCase,
                             ConcluirTarefaUseCase concluirTarefaUseCase,
+                            AtualizarTarefaUseCase atualizarTarefaUseCase,
+                            ExcluirTarefaUseCase excluirTarefaUseCase,
                             ListarTarefasDashboardUseCase listarTarefasDashboardUseCase,
                             ListarTarefasPorPeriodoUseCase listarTarefasPorPeriodoUseCase,
                             UsuarioRepository usuarioRepository) {
         this.criarTarefaUseCase = criarTarefaUseCase;
         this.concluirTarefaUseCase = concluirTarefaUseCase;
+        this.atualizarTarefaUseCase = atualizarTarefaUseCase;
+        this.excluirTarefaUseCase = excluirTarefaUseCase;
         this.listarTarefasDashboardUseCase = listarTarefasDashboardUseCase;
         this.listarTarefasPorPeriodoUseCase = listarTarefasPorPeriodoUseCase;
         this.usuarioRepository = usuarioRepository;
@@ -50,6 +58,19 @@ public class TarefaController {
         Tarefa tarefa = dto.toEntity();
         Tarefa tarefaSalva = this.criarTarefaUseCase.executar(tarefa, dto.usuarioId(), dto.processoId());
         return ResponseEntity.status(HttpStatus.CREATED).body(TarefaDTO.fromEntity(tarefaSalva));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<TarefaDTO> atualizar(@PathVariable UUID id, @RequestBody @Valid TarefaDTO dto) {
+        Tarefa tarefa = dto.toEntity();
+        Tarefa tarefaAtualizada = this.atualizarTarefaUseCase.executar(id, tarefa);
+        return ResponseEntity.ok(TarefaDTO.fromEntity(tarefaAtualizada));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> excluir(@PathVariable UUID id) {
+        this.excluirTarefaUseCase.executar(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/concluir")

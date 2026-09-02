@@ -24,17 +24,23 @@ public class ProcessoController {
     private final BuscarProcessoPorIdUseCase buscarProcessoPorIdUseCase;
     private final ListarProcessosPorClienteUseCase listarProcessosPorClienteUseCase;
     private final ArquivarProcessoUseCase arquivarProcessoUseCase;
+    private final AtualizarProcessoUseCase atualizarProcessoUseCase;
+    private final DesarquivarProcessoUseCase desarquivarProcessoUseCase;
 
     public ProcessoController(CadastrarProcessoUseCase cadastrarProcessoUseCase,
                               ListarProcessosUseCase listarProcessosUseCase,
                               BuscarProcessoPorIdUseCase buscarProcessoPorIdUseCase,
                               ListarProcessosPorClienteUseCase listarProcessosPorClienteUseCase,
-                              ArquivarProcessoUseCase arquivarProcessoUseCase) {
+                              ArquivarProcessoUseCase arquivarProcessoUseCase,
+                              AtualizarProcessoUseCase atualizarProcessoUseCase,
+                              DesarquivarProcessoUseCase desarquivarProcessoUseCase) {
         this.cadastrarProcessoUseCase = cadastrarProcessoUseCase;
         this.listarProcessosUseCase = listarProcessosUseCase;
         this.buscarProcessoPorIdUseCase = buscarProcessoPorIdUseCase;
         this.listarProcessosPorClienteUseCase = listarProcessosPorClienteUseCase;
         this.arquivarProcessoUseCase = arquivarProcessoUseCase;
+        this.atualizarProcessoUseCase = atualizarProcessoUseCase;
+        this.desarquivarProcessoUseCase = desarquivarProcessoUseCase;
     }
 
     @PostMapping
@@ -72,9 +78,22 @@ public class ProcessoController {
         return ResponseEntity.ok(response);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ProcessoDTO> atualizar(@PathVariable UUID id, @RequestBody @Valid ProcessoDTO dto) {
+        Processo processo = dto.toEntity();
+        Processo processoAtualizado = this.atualizarProcessoUseCase.executar(id, processo);
+        return ResponseEntity.ok(ProcessoDTO.fromEntity(processoAtualizado));
+    }
+
     @PatchMapping("/{id}/arquivar")
     public ResponseEntity<ProcessoDTO> arquivar(@PathVariable UUID id) {
         Processo processoArquivado = arquivarProcessoUseCase.executar(id);
         return ResponseEntity.ok(ProcessoDTO.fromEntity(processoArquivado));
+    }
+
+    @PatchMapping("/{id}/desarquivar")
+    public ResponseEntity<ProcessoDTO> desarquivar(@PathVariable UUID id) {
+        Processo processoDesarquivado = this.desarquivarProcessoUseCase.executar(id);
+        return ResponseEntity.ok(ProcessoDTO.fromEntity(processoDesarquivado));
     }
 }

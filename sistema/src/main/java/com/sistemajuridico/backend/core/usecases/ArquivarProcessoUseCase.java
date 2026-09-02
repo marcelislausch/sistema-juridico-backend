@@ -3,6 +3,7 @@ package com.sistemajuridico.backend.core.usecases;
 import com.sistemajuridico.backend.core.domain.Faturamento;
 import com.sistemajuridico.backend.core.domain.Processo;
 import com.sistemajuridico.backend.core.domain.Usuario;
+import com.sistemajuridico.backend.core.domain.enums.FaseProcessualEnum;
 import com.sistemajuridico.backend.core.domain.enums.PerfilAcessoEnum;
 import com.sistemajuridico.backend.core.domain.enums.StatusFaturamentoEnum;
 import com.sistemajuridico.backend.core.domain.exceptions.RecursoNaoEncontradoException;
@@ -61,7 +62,7 @@ public class ArquivarProcessoUseCase {
             throw new RegraNegocioException("Operação bloqueada: Este processo possui faturamentos pendentes de pagamento.");
         }
 
-        processo.setFaseAtual("ARQUIVADO");
+        processo.setFaseAtual(FaseProcessualEnum.ARQUIVADO);
 
         return processoRepository.save(processo);
     }

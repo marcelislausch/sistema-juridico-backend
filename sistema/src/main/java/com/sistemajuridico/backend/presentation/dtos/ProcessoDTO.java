@@ -1,6 +1,7 @@
 package com.sistemajuridico.backend.presentation.dtos;
 
 import com.sistemajuridico.backend.core.domain.Processo;
+import com.sistemajuridico.backend.core.domain.enums.FaseProcessualEnum;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -15,7 +16,7 @@ public record ProcessoDTO(
 
         String assunto,
 
-        String faseAtual,
+        FaseProcessualEnum faseAtual,
 
         LocalDate dataCriacao,
 

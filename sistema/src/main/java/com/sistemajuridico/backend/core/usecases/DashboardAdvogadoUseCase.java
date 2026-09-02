@@ -3,6 +3,7 @@ package com.sistemajuridico.backend.core.usecases;
 import com.sistemajuridico.backend.core.domain.Audiencia;
 import com.sistemajuridico.backend.core.domain.Faturamento;
 import com.sistemajuridico.backend.core.domain.Tarefa;
+import com.sistemajuridico.backend.core.domain.enums.FaseProcessualEnum;
 import com.sistemajuridico.backend.core.domain.enums.NaturezaFaturamentoEnum;
 import com.sistemajuridico.backend.core.domain.enums.StatusFaturamentoEnum;
 import com.sistemajuridico.backend.infrastructure.persistence.AudienciaRepository;
@@ -47,7 +48,7 @@ public class DashboardAdvogadoUseCase {
 
     public ResumoDashboardDTO executar(UUID usuarioId) {
         int totalClientesAtivos = this.clienteRepository.findAll().size();
-        int totalProcessosAndamento = this.processoRepository.findAll().size();
+        int totalProcessosAndamento = this.processoRepository.countByAdvogadoIdAndFaseAtualNot(usuarioId, FaseProcessualEnum.ARQUIVADO);
 
         List<Tarefa> pendentes = this.tarefaRepository.findByUsuarioIdAndConcluidaFalseOrderByDataVencimentoAsc(usuarioId);
 
