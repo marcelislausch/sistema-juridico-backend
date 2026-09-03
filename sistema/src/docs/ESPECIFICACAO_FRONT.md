@@ -139,11 +139,11 @@ Os endpoints abaixo geram o arquivo binário processado no servidor com fontes T
 
 ### 2.4. Agenda e Calendário Expansivo (Audiências e Tarefas)
 
-A interface deve renderizar um calendário unificado, diferenciando claramente os blocos de audiências e tarefas com alternância de filtros.
+A interface renderiza um calendário unificado, harmonizado com parâmetros idênticos em formato `LocalDate` para datas.
 
 #### Endpoints de Consulta de Calendário
-*   **Listar Audiências por Período:** `GET /api/audiencias/agenda?inicio={dataHora}&fim={dataHora}`
-    *   *Formato obrigatório:* ISO Date-Time (`YYYY-MM-DDTHH:mm:ss`, ex: `2026-09-01T00:00:00`).
+*   **Listar Audiências por Período:** `GET /api/audiencias/agenda?inicio={data}&fim={data}`
+    *   *Formato obrigatório:* ISO Date (`YYYY-MM-DD`, ex: `2026-09-01`). O backend realiza a conversão automática para o início (`00:00:00`) e encerramento do dia (`23:59:59`).
 *   **Listar Tarefas por Período:** `GET /api/tarefas/agenda?inicio={data}&fim={data}`
     *   *Formato obrigatório:* ISO Date (`YYYY-MM-DD`, ex: `2026-09-01`).
     *   *Regra de Sessão:* Retorna automaticamente as tarefas do usuário autenticado no token.

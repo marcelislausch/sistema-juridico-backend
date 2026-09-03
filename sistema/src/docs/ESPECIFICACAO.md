@@ -1,4 +1,4 @@
-# Documento de Especificação de Software (PRD) - v2.7
+# Documento de Especificação de Software (PRD) - v2.8
 
 **Projeto:** Sistema de Gestão Jurídica Inteligente  
 **Perfil:** Backend Corporativo / Portfólio  
@@ -27,8 +27,8 @@ O sistema é estruturado em 5 grandes módulos lógicos de alta coesão e baixo 
 *   **Financeiro, Agenda & Produtividade:**
     *   **Faturamento & Fluxo de Caixa:** Controle de receitas e despesas (`A_RECEBER`, `A_PAGAR`), tipos (`HONORARIOS`, `CUSTAS`, `DESPESAS_ESCRITORIO`), liquidação com registro de data efetiva obrigatória (`PATCH /api/faturamentos/{id}/pagar`) e status (`PENDENTE`, `PAGO`, `CANCELADO`).
     *   **Métricas Financeiras Consolidadas:** Rota dedicada de resumo financeiro (`GET /api/faturamentos/resumo`) com totalizadores de a receber, a pagar, saldo previsto e valores vencidos.
-    *   **Gestão de Tarefas (To-Do List):** Tarefas vinculadas a usuários e processos (`DILIGENCIA`, `PRAZO`, `CONTATO`) com CRUD completo, marcação de conclusão e consulta de prazos por período para o calendário.
-    *   **Agenda de Audiências:** Agendamento com validação contra datas retroativas, pauta global por período (`/api/audiencias/agenda`), edição cadastral, exclusão e alteração de status (`AGENDADA`, `REALIZADA`, `CANCELADA`).
+    *   **Gestão de Tarefas (To-Do List):** Tarefas vinculadas a usuários e processos (`DILIGENCIA`, `PRAZO`, `CONTATO`) com CRUD completo, marcação de conclusão e consulta de prazos por período para o calendário (`GET /api/tarefas/agenda`).
+    *   **Agenda de Audiências:** Agendamento com validação contra datas retroativas, pauta global harmonizada por período em `LocalDate` (`/api/audiencias/agenda?inicio=&fim=`), edição cadastral, exclusão e alteração de status (`AGENDADA`, `REALIZADA`, `CANCELADA`).
     *   **Dashboard Executiva:** Agregação de métricas em tempo real para o advogado (`GET /api/dashboard/{usuarioId}`) contemplando contadores de clientes, processos, tarefas, audiências do dia e fluxo financeiro imediato.
 *   **GED (Gestão Eletrônica de Documentos) & Motor de Emissão:**
     *   Armazenamento físico de arquivos via `LocalStorageService` (`uploads/documentos`) vinculado a clientes e processos.
@@ -107,7 +107,7 @@ Padronizado no `GlobalExceptionHandler` (`@RestControllerAdvice`):
     │       ├── CadastrarClienteUseCase.java / AtualizarClienteUseCase.java
     │       ├── GerarProcuracaoClienteUseCase.java / GerarContratoHonorariosUseCase.java
     │       ├── CadastrarProcessoUseCase.java / ArquivarProcessoUseCase.java / DesarquivarProcessoUseCase.java
-    │       ├── CadastrarAudienciaUseCase.java / AlterarStatusAudienciaUseCase.java
+    │       ├── CadastrarAudienciaUseCase.java / AlterarStatusAudienciaUseCase.java / ListarAgendaGlobalUseCase.java
     │       ├── CriarTarefaUseCase.java / ConcluirTarefaUseCase.java / ListarTarefasPorPeriodoUseCase.java
     │       ├── CadastrarFaturamentoUseCase.java / LiquidarFaturamentoUseCase.java / ObterResumoFinanceiroUseCase.java
     │       ├── DashboardAdvogadoUseCase.java
@@ -132,6 +132,5 @@ Padronizado no `GlobalExceptionHandler` (`@RestControllerAdvice`):
 
 ## 5. Próximos Passos Backend (Backlog Técnico Prioritário)
 
-1. **Harmonização de Parâmetros de Data na Agenda:** Padronizar as requisições de período de calendário entre `AudienciaController` e `TarefaController` para que ambos aceitem `LocalDate` (`yyyy-MM-dd`), realizando a conversão de início e fim de dia internamente no backend.
-2. **Filtros e Paginação no Financeiro e Processos:** Adicionar suporte a `Pageable` e filtros por status/período em `GET /api/faturamentos`, bem como filtros por status (ativo/arquivado) e busca textual em `GET /api/processos` e `GET /api/clientes`.
-3. **Implementação do Endpoint `GET /api/auth/me`:** Disponibilizar rota dedicada que retorna o DTO completo do usuário autenticado no token atual.
+1. **Filtros e Paginação no Financeiro e Processos:** Adicionar suporte a `Pageable` e filtros por status/período em `GET /api/faturamentos`, bem como filtros por status (ativo/arquivado) e busca textual em `GET /api/processos` e `GET /api/clientes`.
+2. **Implementação do Endpoint `GET /api/auth/me`:** Disponibilizar rota dedicada que retorna o DTO completo do usuário autenticado no token atual.
