@@ -83,8 +83,9 @@ public class ClienteController {
             @PathVariable UUID id,
             @RequestParam(required = false) String acao,
             @RequestParam(required = false) String varaCivel,
-            @RequestParam(required = false) String comarca) {
-        byte[] arquivoBytes = this.gerarProcuracaoClienteUseCase.executar(id, acao, varaCivel, comarca);
+            @RequestParam(required = false) String comarca,
+            @RequestParam(defaultValue = "true") boolean imprimirDeclaracao) {
+        byte[] arquivoBytes = this.gerarProcuracaoClienteUseCase.executar(id, acao, varaCivel, comarca, imprimirDeclaracao);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"procuracao.pdf\"")
                 .contentType(MediaType.APPLICATION_PDF)
@@ -92,11 +93,17 @@ public class ClienteController {
     }
 
     @GetMapping("/{id}/contrato-honorarios")
-    public ResponseEntity<byte[]> gerarContratoHonorarios(@PathVariable UUID id) {
-        byte[] arquivoBytes = this.gerarContratoHonorariosUseCase.executar(id);
+    public ResponseEntity<byte[]> gerarContratoHonorarios(
+            @PathVariable UUID id,
+            @RequestParam(required = false) String acao,
+            @RequestParam(required = false) String vara,
+            @RequestParam(required = false) String comarca,
+            @RequestParam(required = false) String valorServicos,
+            @RequestParam(required = false) String objetivoDemanda) {
+        byte[] arquivoBytes = this.gerarContratoHonorariosUseCase.executar(id, acao, vara, comarca, valorServicos, objetivoDemanda);
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"contrato-honorarios.txt\"")
-                .contentType(MediaType.TEXT_PLAIN)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"contrato-honorarios.pdf\"")
+                .contentType(MediaType.APPLICATION_PDF)
                 .body(arquivoBytes);
     }
 }

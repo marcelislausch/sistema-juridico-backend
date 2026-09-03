@@ -12,7 +12,7 @@ import java.util.Locale;
 public class MockDocumentGeneratorService implements DocumentGeneratorService {
 
     @Override
-    public byte[] gerarProcuracao(Cliente cliente, String acao, String varaCivel, String comarca) {
+    public byte[] gerarProcuracao(Cliente cliente, String acao, String varaCivel, String comarca, boolean imprimirDeclaracao) {
         StringBuilder sb = new StringBuilder();
 
         String nome = cliente.getNome() != null ? cliente.getNome().toUpperCase() : "NOME COMPLETO";
@@ -73,7 +73,7 @@ public class MockDocumentGeneratorService implements DocumentGeneratorService {
     }
 
     @Override
-    public byte[] gerarContratoHonorarios(Cliente cliente) {
+    public byte[] gerarContratoHonorarios(Cliente cliente, String acao, String vara, String comarca, String valorServicos, String objetivoDemanda) {
         String nome = "NOME COMPLETO";
         if (cliente != null && cliente.getNome() != null) {
             nome = cliente.getNome().toUpperCase();
@@ -82,6 +82,16 @@ public class MockDocumentGeneratorService implements DocumentGeneratorService {
         String cpfCnpj = "___________";
         if (cliente != null && cliente.getCpfCnpj() != null) {
             cpfCnpj = cliente.getCpfCnpj();
+        }
+
+        String acaoTexto = "ação judicial";
+        if (acao != null && !acao.trim().isEmpty()) {
+            acaoTexto = acao.trim();
+        }
+
+        String valorTexto = "conforme estipulado";
+        if (valorServicos != null && !valorServicos.trim().isEmpty()) {
+            valorTexto = valorServicos.trim();
         }
 
         StringBuilder sb = new StringBuilder();
@@ -94,9 +104,9 @@ public class MockDocumentGeneratorService implements DocumentGeneratorService {
         sb.append("CONTRATADO:\n");
         sb.append("CRISTHIAN MENEZES DE JEZUS, Advogado OAB/RS 121.837\n\n");
         sb.append("CLÁUSULA PRIMEIRA - DO OBJETO:\n");
-        sb.append("O CONTRATADO prestará serviços advocatícios na defesa dos interesses jurídicos do CONTRATANTE.\n\n");
+        sb.append("O CONTRATADO prestará serviços advocatícios na defesa dos interesses jurídicos do CONTRATANTE na ação: ").append(acaoTexto).append(".\n\n");
         sb.append("CLÁUSULA SEGUNDA - DOS HONORÁRIOS:\n");
-        sb.append("Pelos serviços prestados, o CONTRATANTE pagará ao CONTRATADO os honorários acordados.\n\n");
+        sb.append("Pelos serviços prestados, o CONTRATANTE pagará ao CONTRATADO os honorários de: ").append(valorTexto).append(".\n\n");
         sb.append("Data: ").append(LocalDate.now()).append("\n\n\n");
         sb.append("_____________________________________________________\n");
         sb.append(nome).append("\n\n");

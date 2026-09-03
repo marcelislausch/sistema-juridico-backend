@@ -18,8 +18,8 @@ public class GerarContratoHonorariosUseCase {
         this.documentGeneratorService = documentGeneratorService;
     }
 
-    public byte[] executar(UUID clienteId) {
+    public byte[] executar(UUID clienteId, String acao, String vara, String comarca, String valorServicos, String objetivoDemanda) {
         Cliente cliente = this.buscarClientePorIdUseCase.executar(clienteId);
-        return this.documentGeneratorService.gerarContratoHonorarios(cliente);
+        return this.documentGeneratorService.gerarContratoHonorarios(cliente, acao, vara, comarca, valorServicos, objetivoDemanda);
     }
 }
