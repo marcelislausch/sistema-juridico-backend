@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,9 +57,11 @@ public class AudienciaController {
 
     @GetMapping("/agenda")
     public ResponseEntity<List<AudienciaDTO>> listarAgenda(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fim) {
-        List<Audiencia> audiencias = listarAgendaGlobalUseCase.executar(inicio, fim);
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim) {
+        LocalDateTime inicioDia = inicio.atStartOfDay();
+        LocalDateTime fimDia = fim.atTime(23, 59, 59);
+        List<Audiencia> audiencias = listarAgendaGlobalUseCase.executar(inicioDia, fimDia);
         List<AudienciaDTO> response = new ArrayList<>();
         for (Audiencia audiencia : audiencias) {
             response.add(AudienciaDTO.fromEntity(audiencia));
