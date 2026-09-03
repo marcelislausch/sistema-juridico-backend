@@ -67,16 +67,16 @@ Painel inicial com métricas consolidadas e atalhos estratégicos:
 
 ---
 
-### 2.2. Gestão de Clientes e Emissão Documental
-Listagem com filtros, formulários de cadastro/edição em modal ou drawer, e área nobre de emissão de PDFs.
+### 2.2. Gestão de Clientes, Emissão Documental e GED
+Listagem com filtros, formulários de cadastro/edição em modal ou drawer, área nobre de emissão de PDFs oficiais e aba de documentos anexados.
 
-#### Operações de Cadastro
+#### Operações Cadastrais
 *   **Listar Clientes (Paginado):** `GET /api/clientes?page=0&size=10`
 *   **Buscar Cliente por ID:** `GET /api/clientes/{id}`
 *   **Cadastrar Cliente:** `POST /api/clientes`
 *   **Atualizar Cliente:** `PUT /api/clientes/{id}`
 
-#### Emissão Automatizada de Documentos (PDF Oficial)
+#### Emissão Automatizada de Documentos Oficiais (PDF com Fontes Embutidas)
 Os endpoints abaixo geram o arquivo binário processado no servidor com fontes TrueType embutidas (`BaseFont.EMBEDDED`). A resposta deve ser tratada como `blob` no cliente (`responseType: 'blob'`) para download ou visualização imediata:
 
 1.  **Gerar Procuração Ad Juditia & Declaração de Hipossuficiência:**
@@ -97,13 +97,19 @@ Os endpoints abaixo geram o arquivo binário processado no servidor com fontes T
         *   `objetivoDemanda` (string): Descrição sucinta da pretensão (ex: *"Restabelecimento de benefício por incapacidade temporária"*).
     *   *Nota:* O documento realiza concordância e flexões de gênero automáticas no preâmbulo e cláusulas com base no sexo do cliente cadastrado.
 
-3.  **Upload de Documentos Diversos (GED):**
-    *   **Rota:** `POST /api/documentos/upload` (`multipart/form-data`)
-    *   **Form-Data:** `arquivo` (File), `titulo` (String), `clienteId` (UUID, opcional), `processoId` (UUID, opcional).
+#### Gestão de Documentos Anexos do Cliente (GED)
+*   **Listar Anexos do Cliente:** `GET /api/documentos/cliente/{clienteId}`
+    *   *Retorno:* `List<DocumentoDTO>` com os documentos arquivados do cliente.
+*   **Fazer Upload de Anexo:** `POST /api/documentos/upload` (`multipart/form-data`)
+    *   *Form-Data:* `arquivo` (File), `titulo` (String), `clienteId` (UUID).
+*   **Baixar / Visualizar Documento:** `GET /api/documentos/{id}/download`
+    *   *Resposta:* Stream de bytes com headers `Content-Disposition: attachment; filename="..."` e `Content-Type` detectado automaticamente.
+*   **Excluir Documento:** `DELETE /api/documentos/{id}`
+    *   *Resposta:* HTTP 204 No Content (remove o registro no banco e o arquivo físico no disco).
 
 ---
 
-### 2.3. Gestão de Processos e Histórico de Andamentos
+### 2.3. Gestão de Processos, Histórico de Andamentos e Autos
 
 #### Operações de Processo
 *   **Listar Todos (Paginado):** `GET /api/processos?page=0&size=10`
@@ -117,6 +123,14 @@ Os endpoints abaixo geram o arquivo binário processado no servidor com fontes T
 #### Andamentos Processuais
 *   **Listar Linha do Tempo:** `GET /api/processos/{processoId}/andamentos`
 *   **Lançar Andamento Manual:** `POST /api/processos/{processoId}/andamentos`
+
+#### Peças e Autos Anexados ao Processo (GED)
+*   **Listar Documentos do Processo:** `GET /api/documentos/processo/{processoId}`
+    *   *Retorno:* `List<DocumentoDTO>` contendo as petições, certidões e comprovantes do processo.
+*   **Vincular Anexo ao Processo:** `POST /api/documentos/upload` (`multipart/form-data`)
+    *   *Form-Data:* `arquivo` (File), `titulo` (String), `processoId` (UUID).
+*   **Download de Peça:** `GET /api/documentos/{id}/download`
+*   **Exclusão de Peça:** `DELETE /api/documentos/{id}`
 
 #### Apoio a Seletores
 *   **Listar Advogados Ativos:** `GET /api/usuarios/advogados` *(Alimenta o `<select>` de advogado responsável no cadastro/edição de processos).*
@@ -197,8 +211,8 @@ O módulo financeiro possui dois níveis de informação: cards totalizadores de
 
 1.  **Modais de Contexto Rápido:**
     *   A emissão de Procuração e Contrato deve ocorrer em modal/drawer que já traga os campos pré-preenchidos (caso existentes), solicitando apenas os parâmetros variáveis (`acao`, `comarca`, `valorServicos`, checkbox de AJG) antes do disparo do download.
-2.  **Tratamento de Arquivos Binários (PDFs):**
-    *   Utilizar `URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }))` para abrir o documento gerado em nova aba ou disparar download limpo com o nome do arquivo configurado no header `Content-Disposition`.
+2.  **Tratamento de Arquivos Binários (PDFs e Anexos):**
+    *   Utilizar `URL.createObjectURL(new Blob([response.data], { type: response.headers['content-type'] }))` para abrir o documento gerado em nova aba ou disparar download limpo com o nome do arquivo configurado no header `Content-Disposition`.
 3.  **Feedback Visual de Estados:**
     *   **Financeiro:** Destacar visualmente faturas `PENDENTE` em aberto, `PAGO` em tom neutro/verde e vencidas em alerta.
     *   **Tarefas e Audiências:** Utilizar códigos de cores distintos na agenda para diferenciar prazos/diligências de audiências formais.

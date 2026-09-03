@@ -1,4 +1,4 @@
-# Documento de Especificação de Software (PRD) - v2.6
+# Documento de Especificação de Software (PRD) - v2.7
 
 **Projeto:** Sistema de Gestão Jurídica Inteligente  
 **Perfil:** Backend Corporativo / Portfólio  
@@ -32,6 +32,7 @@ O sistema é estruturado em 5 grandes módulos lógicos de alta coesão e baixo 
     *   **Dashboard Executiva:** Agregação de métricas em tempo real para o advogado (`GET /api/dashboard/{usuarioId}`) contemplando contadores de clientes, processos, tarefas, audiências do dia e fluxo financeiro imediato.
 *   **GED (Gestão Eletrônica de Documentos) & Motor de Emissão:**
     *   Armazenamento físico de arquivos via `LocalStorageService` (`uploads/documentos`) vinculado a clientes e processos.
+    *   **Ciclo Completo de Anexos:** Upload multipart (`POST /api/documentos/upload`), listagem de anexos por cliente (`GET /api/documentos/cliente/{clienteId}`), listagem de peças por processo (`GET /api/documentos/processo/{processoId}`), download com detecção dinâmica de MediaType (`GET /api/documentos/{id}/download`) e exclusão física/lógica sincronizada (`DELETE /api/documentos/{id}`).
     *   **Motor Oficial de Geração de Documentos (`PdfDocumentGeneratorService`):** Emissão de PDFs com biblioteca iText, embutimento obrigatório de fontes TrueType (`Bookman Old Style` via `BaseFont.EMBEDDED`) para garantir compatibilidade móvel e desktop, cabeçalho e rodapé fixos automatizados via eventos de página:
         *   **Procuração Ad Judicia & Declaração de Hipossuficiência (AJG):** Emissão via `GET /api/clientes/{id}/procuracao` com parametrização dinâmica de ação, vara, comarca e toggle booleano para impressão condicional da página de declaração.
         *   **Contrato de Prestação de Serviços e Honorários Advocatícios:** Emissão via `GET /api/clientes/{id}/contrato-honorarios` com injeção de cláusulas de objeto, ação, vara, comarca, valor acordado e objetivo da demanda, com concordância e flexão gramatical por sexo do contratante.
@@ -55,7 +56,7 @@ Todas as entidades de persistência herdam de `AuditableEntity`, possuindo rastr
 | **Tarefa** | `id`, `descricao`, `dataVencimento`, `concluida`, `tipo` (`DILIGENCIA`, `PRAZO`, `CONTATO`) | N:1 Usuario, N:1 Processo (Opc) | Alimenta To-Do list, Agenda e Dashboard. Endpoints: `POST /api/tarefas`, `PUT /api/tarefas/{id}`, `DELETE /api/tarefas/{id}`, `PATCH /api/tarefas/{id}/concluir`, `GET /api/tarefas/dashboard/{usuarioId}`, `GET /api/tarefas/agenda`. |
 | **Faturamento**| `id`, `descricao`, `valor`, `tipo`, `status`, `natureza`, `dataVencimento`, `dataPagamento` | N:1 Processo (Opc) | Controle financeiro. Endpoints: `GET /api/faturamentos/resumo`, `GET /api/faturamentos`, `GET /api/faturamentos/processo/{processoId}`, `POST /api/faturamentos`, `PATCH /api/faturamentos/{id}/pagar`. |
 | **Audiencia** | `id`, `dataHora`, `local`, `observacoes`, `status`, `resumoPreparatorioIa` | N:1 Processo | Validação de data futura no agendamento. Endpoints: `POST /api/audiencias`, `GET /api/audiencias/{id}`, `PUT /api/audiencias/{id}`, `DELETE /api/audiencias/{id}`, `PATCH /api/audiencias/{id}/status`, `GET /api/audiencias/agenda`, `POST /{id}/gerar-resumo-ia`. |
-| **Documento** | `id`, `nomeArquivo`, `titulo`, `caminhoStorage`, `indexadoIA` | N:1 Processo (Opc), N:1 Cliente (Opc) | Upload Multipart em `/api/documentos/upload`. Armazenamento em disco via `LocalStorageService`. |
+| **Documento** | `id`, `nomeArquivo`, `titulo`, `caminhoStorage`, `indexadoIA` | N:1 Processo (Opc), N:1 Cliente (Opc) | Upload (`POST /api/documentos/upload`), listagem por cliente (`GET /api/documentos/cliente/{clienteId}`), listagem por processo (`GET /api/documentos/processo/{processoId}`), download (`GET /api/documentos/{id}/download`) e exclusão física/lógica (`DELETE /api/documentos/{id}`). |
 
 ---
 
@@ -111,7 +112,9 @@ Padronizado no `GlobalExceptionHandler` (`@RestControllerAdvice`):
     │       ├── CadastrarFaturamentoUseCase.java / LiquidarFaturamentoUseCase.java / ObterResumoFinanceiroUseCase.java
     │       ├── DashboardAdvogadoUseCase.java
     │       ├── GerarEAnexarResumoAudienciaUseCase.java
-    │       └── UploadDocumentoUseCase.java
+    │       ├── UploadDocumentoUseCase.java
+    │       ├── ListarDocumentosPorClienteUseCase.java / ListarDocumentosPorProcessoUseCase.java
+    │       └── BuscarDocumentoPorIdUseCase.java / DownloadDocumentoUseCase.java / ExcluirDocumentoUseCase.java
     │
     ├── infrastructure/
     │   ├── ai/                             # ResumoAIService, SpringAIResumoService
@@ -129,11 +132,6 @@ Padronizado no `GlobalExceptionHandler` (`@RestControllerAdvice`):
 
 ## 5. Próximos Passos Backend (Backlog Técnico Prioritário)
 
-1. **Ciclo Completo de GED (Documentos Anexos):**
-   *   Implementar `GET /api/documentos/cliente/{clienteId}` para listagem dos anexos do cliente.
-   *   Implementar `GET /api/documentos/processo/{processoId}` para listagem dos autos anexos do processo.
-   *   Implementar `GET /api/documentos/{id}/download` para transmissão dos bytes com headers de visualização (`inline`/`attachment`).
-   *   Implementar `DELETE /api/documentos/{id}` para exclusão física e lógica do anexo.
-2. **Harmonização de Parâmetros de Data na Agenda:** Padronizar as requisições de período de calendário entre `AudienciaController` e `TarefaController` para que ambos aceitem `LocalDate` (`yyyy-MM-dd`), realizando a conversão de início e fim de dia internamente.
-3. **Filtros e Paginação no Financeiro e Processos:** Adicionar suporte a `Pageable` e filtros por status/período em `GET /api/faturamentos`, e filtros por status e busca textual em `GET /api/processos` e `GET /api/clientes`.
-4. **Implementação do Endpoint `GET /api/auth/me`:** Disponibilizar rota que retorna o DTO completo do usuário autenticado no token atual.
+1. **Harmonização de Parâmetros de Data na Agenda:** Padronizar as requisições de período de calendário entre `AudienciaController` e `TarefaController` para que ambos aceitem `LocalDate` (`yyyy-MM-dd`), realizando a conversão de início e fim de dia internamente no backend.
+2. **Filtros e Paginação no Financeiro e Processos:** Adicionar suporte a `Pageable` e filtros por status/período em `GET /api/faturamentos`, bem como filtros por status (ativo/arquivado) e busca textual em `GET /api/processos` e `GET /api/clientes`.
+3. **Implementação do Endpoint `GET /api/auth/me`:** Disponibilizar rota dedicada que retorna o DTO completo do usuário autenticado no token atual.
