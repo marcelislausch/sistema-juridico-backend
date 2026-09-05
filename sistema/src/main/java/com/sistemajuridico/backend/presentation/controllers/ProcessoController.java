@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -51,14 +52,17 @@ public class ProcessoController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<ProcessoDTO>> listar(Pageable pageable) {
-        Page<Processo> paginaProcessos = this.listarProcessosUseCase.executar(pageable);
-        List<ProcessoDTO> dtoList = new ArrayList<>();
+    public ResponseEntity<Page<ProcessoDTO>> listar(
+            @RequestParam(required = false) String termoBusca,
+            @RequestParam(required = false) Boolean arquivado,
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<Processo> paginaProcessos = this.listarProcessosUseCase.executar(termoBusca, arquivado, pageable);
+        List<ProcessoDTO> dtos = new ArrayList<>();
         for (Processo processo : paginaProcessos.getContent()) {
-            dtoList.add(ProcessoDTO.fromEntity(processo));
+            dtos.add(ProcessoDTO.fromEntity(processo));
         }
-        Page<ProcessoDTO> response = new PageImpl<>(dtoList, pageable, paginaProcessos.getTotalElements());
-        return ResponseEntity.ok(response);
+        Page<ProcessoDTO> pageDtos = new PageImpl<>(dtos, paginaProcessos.getPageable(), paginaProcessos.getTotalElements());
+        return ResponseEntity.ok(pageDtos);
     }
 
     @GetMapping("/{id}")

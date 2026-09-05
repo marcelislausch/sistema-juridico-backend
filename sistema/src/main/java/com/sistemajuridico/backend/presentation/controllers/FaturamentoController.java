@@ -8,7 +8,13 @@ import com.sistemajuridico.backend.core.usecases.ObterResumoFinanceiroUseCase;
 import com.sistemajuridico.backend.presentation.dtos.FaturamentoDTO;
 import com.sistemajuridico.backend.presentation.dtos.LiquidarFaturamentoDTO;
 import com.sistemajuridico.backend.presentation.dtos.ResumoFinanceiroDTO;
+import com.sistemajuridico.backend.core.domain.enums.NaturezaFaturamentoEnum;
+import com.sistemajuridico.backend.core.domain.enums.StatusFaturamentoEnum;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -66,12 +72,16 @@ public class FaturamentoController {
     }
 
     @GetMapping
-    public ResponseEntity<List<FaturamentoDTO>> listarTodos() {
-        List<Faturamento> faturamentos = listarFaturamentosUseCase.buscarTodos();
-        List<FaturamentoDTO> response = new ArrayList<>();
-        for (Faturamento faturamento : faturamentos) {
-            response.add(FaturamentoDTO.fromEntity(faturamento));
+    public ResponseEntity<Page<FaturamentoDTO>> listarTodos(
+            @RequestParam(required = false) StatusFaturamentoEnum status,
+            @RequestParam(required = false) NaturezaFaturamentoEnum natureza,
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<Faturamento> paginaFaturamentos = this.listarFaturamentosUseCase.buscarTodos(status, natureza, pageable);
+        List<FaturamentoDTO> dtos = new ArrayList<>();
+        for (Faturamento faturamento : paginaFaturamentos.getContent()) {
+            dtos.add(FaturamentoDTO.fromEntity(faturamento));
         }
-        return ResponseEntity.ok(response);
+        Page<FaturamentoDTO> pageDtos = new PageImpl<>(dtos, paginaFaturamentos.getPageable(), paginaFaturamentos.getTotalElements());
+        return ResponseEntity.ok(pageDtos);
     }
 }

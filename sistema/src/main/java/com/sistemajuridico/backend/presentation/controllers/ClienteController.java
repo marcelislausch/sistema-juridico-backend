@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -61,14 +62,16 @@ public class ClienteController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<ClienteDTO>> listar(Pageable pageable) {
-        Page<Cliente> paginaClientes = listarClientesUseCase.executar(pageable);
-        List<ClienteDTO> dtoList = new ArrayList<>();
+    public ResponseEntity<Page<ClienteDTO>> listar(
+            @RequestParam(required = false) String termoBusca,
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<Cliente> paginaClientes = this.listarClientesUseCase.executar(termoBusca, pageable);
+        List<ClienteDTO> dtos = new ArrayList<>();
         for (Cliente cliente : paginaClientes.getContent()) {
-            dtoList.add(ClienteDTO.fromEntity(cliente));
+            dtos.add(ClienteDTO.fromEntity(cliente));
         }
-        Page<ClienteDTO> response = new PageImpl<>(dtoList, pageable, paginaClientes.getTotalElements());
-        return ResponseEntity.ok(response);
+        Page<ClienteDTO> pageDtos = new PageImpl<>(dtos, paginaClientes.getPageable(), paginaClientes.getTotalElements());
+        return ResponseEntity.ok(pageDtos);
     }
 
     @GetMapping("/{id}")

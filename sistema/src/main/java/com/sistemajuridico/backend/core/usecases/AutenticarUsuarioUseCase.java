@@ -4,6 +4,7 @@ import com.sistemajuridico.backend.core.domain.Usuario;
 import com.sistemajuridico.backend.core.domain.exceptions.RegraNegocioException;
 import com.sistemajuridico.backend.infrastructure.persistence.UsuarioRepository;
 import com.sistemajuridico.backend.infrastructure.security.TokenService;
+import com.sistemajuridico.backend.presentation.dtos.LoginDTO;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -24,7 +25,11 @@ public class AutenticarUsuarioUseCase {
         this.tokenService = tokenService;
     }
 
-    public String executar(String email, String senha) {
+    public String executar(LoginDTO dto) {
+        return executar(dto.email(), dto.senha(), dto.manterConectado());
+    }
+
+    public String executar(String email, String senha, Boolean manterConectado) {
         Optional<Usuario> optUsuario = usuarioRepository.findByEmail(email);
         if (optUsuario.isEmpty()) {
             throw new RegraNegocioException("Credenciais inválidas");
@@ -36,6 +41,10 @@ public class AutenticarUsuarioUseCase {
             throw new RegraNegocioException("Credenciais inválidas");
         }
 
-        return tokenService.gerarToken(usuario);
+        return tokenService.gerarToken(usuario, manterConectado);
+    }
+
+    public String executar(String email, String senha) {
+        return executar(email, senha, false);
     }
 }

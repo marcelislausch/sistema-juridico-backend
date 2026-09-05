@@ -15,7 +15,16 @@ public class ListarClientesUseCase {
         this.repository = repository;
     }
 
+    public Page<Cliente> executar(String termoBusca, Pageable pageable) {
+        if (termoBusca != null && !termoBusca.trim().isEmpty()) {
+            String termo = termoBusca.trim();
+            return this.repository.buscarPorTermo(termo, pageable);
+        } else {
+            return this.repository.findAll(pageable);
+        }
+    }
+
     public Page<Cliente> executar(Pageable pageable) {
-        return repository.findAll(pageable);
+        return executar(null, pageable);
     }
 }

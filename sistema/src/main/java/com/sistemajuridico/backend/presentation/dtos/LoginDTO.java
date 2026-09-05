@@ -9,6 +9,11 @@ public record LoginDTO(
         String email,
 
         @NotBlank(message = "A senha é obrigatória")
-        String senha
+        String senha,
+
+        Boolean manterConectado
 ) {
+    public LoginDTO(String email, String senha) {
+        this(email, senha, false);
+    }
 }

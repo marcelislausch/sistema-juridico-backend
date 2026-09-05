@@ -18,19 +18,32 @@
               "manterConectado": true
             }
             ```
-            *(Nota: O campo `manterConectado` orienta a persistência da sessão no `localStorage` vs. `sessionStorage`).*
+            *(Nota: O campo `manterConectado` é um booleano opcional. Se enviado como `true`, estende a validade do token JWT gerado pelo backend de 2 horas para 7 dias, orientando também a persistência de sessão no front-end em `localStorage` vs. `sessionStorage` quando `false` ou omitido).*
         *   **Resposta (HTTP 200):**
             ```json
             {
               "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
             }
             ```
-    *   **Captura dos Dados do Usuário Logado:**
-        *   *Abordagem Atual:* Decodificar o payload do token JWT para extrair a claim `"id"` (UUID) e, em seguida, disparar `GET /api/usuarios/{id}` para resgatar `nome`, `email`, `perfil` (`ADMIN`, `ADVOGADO`, `SECRETARIA`) e `oab`.
-        *   *Rota Recomendada (Alinhamento em desenvolvimento):* `GET /api/auth/me` (retornará diretamente o `UsuarioDTO` da sessão ativa).
+    *   **Resgate dos Dados do Usuário Logado (Perfil):**
+        *   **Endpoint Oficial:** `GET /api/auth/me`
+        *   **Descrição:** Retorna diretamente o `UsuarioDTO` da sessão ativa correspondente ao token JWT informado no header `Authorization`.
+        *   **Resposta (HTTP 200 - `UsuarioDTO`):**
+            ```json
+            {
+              "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+              "nome": "Dr. Carlos Eduardo",
+              "email": "advogado@escritorio.com",
+              "senha": null,
+              "perfil": "ADVOGADO",
+              "oab": "RS123456",
+              "ativo": true
+            }
+            ```
+            *(Nota de Segurança: O campo `senha` é retornado sempre como `null` para preservar o hash da credencial).*
     *   **Interceptor de Requisições:** Injetar automaticamente o header `Authorization: Bearer <token>` em todas as requisições autenticadas.
 *   **Envelopamento de Paginação:**
-    *   As rotas paginadas (`/api/clientes`, `/api/processos`) retornam o envelope padrão do Spring Data:
+    *   As rotas paginadas (`/api/clientes`, `/api/processos`, `/api/faturamentos`) retornam o envelope padrão do Spring Data:
         ```json
         {
           "content": [ ... ],
@@ -71,7 +84,12 @@ Painel inicial com métricas consolidadas e atalhos estratégicos:
 Listagem com filtros, formulários de cadastro/edição em modal ou drawer, área nobre de emissão de PDFs oficiais e aba de documentos anexados.
 
 #### Operações Cadastrais
-*   **Listar Clientes (Paginado):** `GET /api/clientes?page=0&size=10`
+*   **Listar Clientes (Paginado com Filtros):** `GET /api/clientes?page=0&size=10`
+    *   **Query Parameters (Opcionais):**
+        *   `page` (int, default = 0): Número da página.
+        *   `size` (int, default = 10): Quantidade de itens por página.
+        *   `termoBusca` (string): Termo para busca textual dinâmica que filtra por nome, CPF/CNPJ ou e-mail (ex: `?termoBusca=Silva`).
+    *   **Retorno:** Envelope `Page<ClienteDTO>`.
 *   **Buscar Cliente por ID:** `GET /api/clientes/{id}`
 *   **Cadastrar Cliente:** `POST /api/clientes`
 *   **Atualizar Cliente:** `PUT /api/clientes/{id}`
@@ -112,7 +130,13 @@ Os endpoints abaixo geram o arquivo binário processado no servidor com fontes T
 ### 2.3. Gestão de Processos, Histórico de Andamentos e Autos
 
 #### Operações de Processo
-*   **Listar Todos (Paginado):** `GET /api/processos?page=0&size=10`
+*   **Listar Processos (Paginado com Filtros):** `GET /api/processos?page=0&size=10`
+    *   **Query Parameters (Opcionais):**
+        *   `page` (int, default = 0): Número da página.
+        *   `size` (int, default = 10): Quantidade de itens por página.
+        *   `termoBusca` (string): Busca textual por número CNJ, assunto ou nome do cliente vinculado (ex: `?termoBusca=0001234`).
+        *   `arquivado` (boolean): Filtro de arquivamento (`true` para processos arquivados, `false` para ativos/em andamento, ou omitido para listar todos).
+    *   **Retorno:** Envelope `Page<ProcessoDTO>`.
 *   **Listar por Cliente (Paginado):** `GET /api/processos/cliente/{clienteId}?page=0&size=10`
 *   **Buscar Detalhes por ID:** `GET /api/processos/{id}`
 *   **Criar Processo:** `POST /api/processos`
@@ -193,7 +217,13 @@ O módulo financeiro possui dois níveis de informação: cards totalizadores de
     ```
 
 #### Operações Transacionais
-*   **Listar Todas as Faturas:** `GET /api/faturamentos`
+*   **Listar Faturas (Paginado com Filtros):** `GET /api/faturamentos?page=0&size=10`
+    *   **Query Parameters (Opcionais):**
+        *   `page` (int, default = 0): Número da página.
+        *   `size` (int, default = 10): Quantidade de itens por página.
+        *   `status` (string, enum `StatusFaturamentoEnum`): Filtro pelo status da fatura (`PENDENTE`, `PAGO`, `CANCELADO`). Ex: `?status=PENDENTE`.
+        *   `natureza` (string, enum `NaturezaFaturamentoEnum`): Filtro pelo fluxo financeiro (`A_RECEBER`, `A_PAGAR`). Ex: `?natureza=A_RECEBER`.
+    *   **Retorno:** Envelope `Page<FaturamentoDTO>`.
 *   **Listar por Processo:** `GET /api/faturamentos/processo/{processoId}`
 *   **Cadastrar Fatura / Honorário:** `POST /api/faturamentos`
 *   **Registrar Pagamento / Baixa:** `PATCH /api/faturamentos/{id}/pagar`

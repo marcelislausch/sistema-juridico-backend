@@ -3,6 +3,8 @@ package com.sistemajuridico.backend.infrastructure.persistence;
 import com.sistemajuridico.backend.core.domain.Faturamento;
 import com.sistemajuridico.backend.core.domain.enums.NaturezaFaturamentoEnum;
 import com.sistemajuridico.backend.core.domain.enums.StatusFaturamentoEnum;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,6 +21,10 @@ public interface FaturamentoRepository extends JpaRepository<Faturamento, UUID> 
     List<Faturamento> findByProcessoIdAndStatus(UUID processoId, StatusFaturamentoEnum status);
     List<Faturamento> findByStatusAndDataVencimentoAndNatureza(StatusFaturamentoEnum status, LocalDate dataVencimento, NaturezaFaturamentoEnum natureza);
     List<Faturamento> findByStatusAndNaturezaOrderByDataVencimentoAsc(StatusFaturamentoEnum status, NaturezaFaturamentoEnum natureza);
+
+    Page<Faturamento> findByStatusAndNatureza(StatusFaturamentoEnum status, NaturezaFaturamentoEnum natureza, Pageable pageable);
+    Page<Faturamento> findByStatus(StatusFaturamentoEnum status, Pageable pageable);
+    Page<Faturamento> findByNatureza(NaturezaFaturamentoEnum natureza, Pageable pageable);
 
     @Query("SELECT SUM(f.valor) FROM Faturamento f WHERE f.natureza = :natureza AND f.status = :status")
     BigDecimal somarPorNaturezaEStatus(@Param("natureza") NaturezaFaturamentoEnum natureza, @Param("status") StatusFaturamentoEnum status);
