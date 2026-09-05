@@ -39,4 +39,35 @@ public class LocalStorageService implements StorageService {
             throw new RuntimeException("Erro ao salvar o arquivo no armazenamento local.", e);
         }
     }
+
+    @Override
+    public byte[] downloadArquivo(String caminho) {
+        if (caminho == null || caminho.trim().isEmpty()) {
+            throw new RuntimeException("O caminho do arquivo local não pode ser nulo ou vazio.");
+        }
+        Path caminhoArquivo = Paths.get(caminho);
+        if (!Files.exists(caminhoArquivo)) {
+            throw new RuntimeException("Arquivo físico não encontrado no armazenamento local: " + caminho);
+        }
+        try {
+            return Files.readAllBytes(caminhoArquivo);
+        } catch (IOException e) {
+            throw new RuntimeException("Erro ao ler o arquivo no armazenamento local: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void excluirArquivo(String caminho) {
+        if (caminho == null || caminho.trim().isEmpty()) {
+            return;
+        }
+        Path caminhoArquivo = Paths.get(caminho);
+        try {
+            if (Files.exists(caminhoArquivo)) {
+                Files.delete(caminhoArquivo);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Erro ao excluir o arquivo no armazenamento local: " + e.getMessage(), e);
+        }
+    }
 }

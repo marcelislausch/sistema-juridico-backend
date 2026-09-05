@@ -4,6 +4,7 @@ import com.sistemajuridico.backend.core.domain.Documento;
 import com.sistemajuridico.backend.core.domain.exceptions.RecursoNaoEncontradoException;
 import com.sistemajuridico.backend.core.domain.exceptions.RegraNegocioException;
 import com.sistemajuridico.backend.infrastructure.persistence.DocumentoRepository;
+import com.sistemajuridico.backend.infrastructure.storage.StorageService;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -17,9 +18,11 @@ import java.util.UUID;
 public class DownloadDocumentoUseCase {
 
     private final DocumentoRepository documentoRepository;
+    private final StorageService storageService;
 
-    public DownloadDocumentoUseCase(DocumentoRepository documentoRepository) {
+    public DownloadDocumentoUseCase(DocumentoRepository documentoRepository, StorageService storageService) {
         this.documentoRepository = documentoRepository;
+        this.storageService = storageService;
     }
 
     public byte[] executar(UUID id) {
@@ -37,15 +40,21 @@ public class DownloadDocumentoUseCase {
             throw new RegraNegocioException("Caminho do arquivo não informado no registro do documento.");
         }
 
-        Path caminhoArquivo = Paths.get(documento.getCaminhoStorage());
-        if (!Files.exists(caminhoArquivo)) {
-            throw new RecursoNaoEncontradoException("Arquivo físico não encontrado no armazenamento.");
+        String caminhoOuId = documento.getCaminhoStorage().trim();
+
+        Path caminhoArquivo = Paths.get(caminhoOuId);
+        if (Files.exists(caminhoArquivo)) {
+            try {
+                return Files.readAllBytes(caminhoArquivo);
+            } catch (IOException e) {
+                throw new RegraNegocioException("Falha ao ler os bytes do arquivo físico no disco: " + e.getMessage());
+            }
         }
 
         try {
-            return Files.readAllBytes(caminhoArquivo);
-        } catch (IOException e) {
-            throw new RegraNegocioException("Falha ao ler os bytes do arquivo físico no disco: " + e.getMessage());
+            return this.storageService.downloadArquivo(caminhoOuId);
+        } catch (Exception e) {
+            throw new RegraNegocioException("Falha ao obter arquivo do armazenamento: " + e.getMessage());
         }
     }
 }

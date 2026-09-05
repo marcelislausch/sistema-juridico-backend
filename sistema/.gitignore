@@ -35,3 +35,6 @@ build/
 # Arquivos sensíveis do projeto
 src/main/resources/application.properties
 sistema/src/main/resources/application.properties
+
+# Chaves e credenciais
+src/main/resources/google-credentials.json
