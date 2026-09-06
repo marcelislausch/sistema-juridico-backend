@@ -92,9 +92,39 @@ public class GoogleDriveStorageService implements StorageService {
             throw new RuntimeException("O conteúdo do arquivo para upload não pode ser nulo ou vazio.");
         }
 
-        String nomeArquivo = "arquivo";
-        if (nomeOriginal != null && !nomeOriginal.trim().isEmpty()) {
-            nomeArquivo = nomeOriginal;
+        if (nomeOriginal == null || nomeOriginal.trim().isEmpty()) {
+            throw new IllegalArgumentException("Formato de arquivo não permitido. Apenas PDF, DOCX e imagens são aceitos.");
+        }
+
+        String nomeArquivo = nomeOriginal.trim();
+        int pontoIndex = nomeArquivo.lastIndexOf('.');
+        if (pontoIndex == -1 || pontoIndex == nomeArquivo.length() - 1) {
+            throw new IllegalArgumentException("Formato de arquivo não permitido. Apenas PDF, DOCX e imagens são aceitos.");
+        }
+
+        String extensao = nomeArquivo.substring(pontoIndex).toLowerCase();
+        boolean extensaoPermitida = false;
+        String mimeType = "application/octet-stream";
+
+        if (extensao.equals(".pdf")) {
+            extensaoPermitida = true;
+            mimeType = "application/pdf";
+        } else if (extensao.equals(".docx")) {
+            extensaoPermitida = true;
+            mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        } else if (extensao.equals(".doc")) {
+            extensaoPermitida = true;
+            mimeType = "application/msword";
+        } else if (extensao.equals(".jpg") || extensao.equals(".jpeg")) {
+            extensaoPermitida = true;
+            mimeType = "image/jpeg";
+        } else if (extensao.equals(".png")) {
+            extensaoPermitida = true;
+            mimeType = "image/png";
+        }
+
+        if (!extensaoPermitida) {
+            throw new IllegalArgumentException("Formato de arquivo não permitido. Apenas PDF, DOCX e imagens são aceitos.");
         }
 
         try {
@@ -108,7 +138,7 @@ public class GoogleDriveStorageService implements StorageService {
             }
 
             ByteArrayInputStream inputStream = new ByteArrayInputStream(dados);
-            InputStreamContent mediaContent = new InputStreamContent(null, inputStream);
+            InputStreamContent mediaContent = new InputStreamContent(mimeType, inputStream);
 
             Drive.Files.Create createRequest = this.driveService.files().create(metadata, mediaContent);
             createRequest.setFields("id");
