@@ -2,20 +2,28 @@ package com.sistemajuridico.backend.presentation.controllers;
 
 import com.sistemajuridico.backend.core.domain.Usuario;
 import com.sistemajuridico.backend.core.domain.exceptions.RecursoNaoEncontradoException;
+import com.sistemajuridico.backend.core.service.AuthService;
 import com.sistemajuridico.backend.core.usecases.AutenticarUsuarioUseCase;
 import com.sistemajuridico.backend.infrastructure.persistence.UsuarioRepository;
+import com.sistemajuridico.backend.presentation.dtos.AlterarSenhaRequest;
 import com.sistemajuridico.backend.presentation.dtos.LoginDTO;
+import com.sistemajuridico.backend.presentation.dtos.RecuperarSenhaRequest;
+import com.sistemajuridico.backend.presentation.dtos.RedefinirSenhaRequest;
 import com.sistemajuridico.backend.presentation.dtos.TokenDTO;
 import com.sistemajuridico.backend.presentation.dtos.UsuarioDTO;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -24,11 +32,14 @@ public class AuthController {
 
     private final AutenticarUsuarioUseCase autenticarUsuarioUseCase;
     private final UsuarioRepository usuarioRepository;
+    private final AuthService authService;
 
     public AuthController(AutenticarUsuarioUseCase autenticarUsuarioUseCase,
-                          UsuarioRepository usuarioRepository) {
+                          UsuarioRepository usuarioRepository,
+                          AuthService authService) {
         this.autenticarUsuarioUseCase = autenticarUsuarioUseCase;
         this.usuarioRepository = usuarioRepository;
+        this.authService = authService;
     }
 
     @PostMapping("/login")
@@ -40,7 +51,10 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<UsuarioDTO> me() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String email = principal != null ? principal.toString() : null;
+        String email = null;
+        if (principal != null) {
+            email = principal.toString();
+        }
 
         Optional<Usuario> optUsuario = usuarioRepository.findByEmail(email);
         if (optUsuario.isEmpty()) {
@@ -49,5 +63,33 @@ public class AuthController {
 
         Usuario usuario = optUsuario.get();
         return ResponseEntity.ok(UsuarioDTO.fromEntity(usuario));
+    }
+
+    @PostMapping("/recuperar-senha")
+    public ResponseEntity<Map<String, String>> recuperarSenha(@RequestBody @Valid RecuperarSenhaRequest request) {
+        this.authService.solicitarRecuperacaoSenha(request.email());
+        Map<String, String> resposta = new HashMap<>();
+        resposta.put("mensagem", "Se a conta existir, as instruções serão enviadas.");
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(resposta);
+    }
+
+    @PostMapping("/redefinir-senha")
+    public ResponseEntity<Map<String, String>> redefinirSenha(@RequestBody @Valid RedefinirSenhaRequest request) {
+        this.authService.redefinirSenha(request.token(), request.novaSenha());
+        Map<String, String> resposta = new HashMap<>();
+        resposta.put("mensagem", "Senha redefinida com sucesso.");
+        return ResponseEntity.ok(resposta);
+    }
+
+    @PatchMapping("/me/senha")
+    public ResponseEntity<Void> alterarSenha(@RequestBody @Valid AlterarSenhaRequest request) {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String email = null;
+        if (principal != null) {
+            email = principal.toString();
+        }
+
+        this.authService.alterarSenhaAutenticada(email, request.senhaAtual(), request.novaSenha());
+        return ResponseEntity.noContent().build();
     }
 }

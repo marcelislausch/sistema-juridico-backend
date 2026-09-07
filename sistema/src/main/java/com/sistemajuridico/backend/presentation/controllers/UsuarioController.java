@@ -31,7 +31,7 @@ public class UsuarioController {
         this.buscarUsuarioPorIdUseCase = buscarUsuarioPorIdUseCase;
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADVOGADO')")
     @PostMapping
     public ResponseEntity<UsuarioDTO> criar(@RequestBody @Valid UsuarioDTO dto) {
         Usuario usuario = dto.toEntity();

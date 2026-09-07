@@ -8,7 +8,7 @@
 
 ## 1. Diretrizes Técnicas, Arquitetura e Segurança
 
-*   **Autenticação e Sessão:**
+*   **Autenticação, Sessão e Gestão de Senhas:**
     *   **Login:** `POST /api/auth/login`
         *   **Payload de Envio:**
             ```json
@@ -36,11 +36,59 @@
               "email": "advogado@escritorio.com",
               "senha": null,
               "perfil": "ADVOGADO",
-              "oab": "RS123456",
+              "oab": "RS121837",
               "ativo": true
             }
             ```
             *(Nota de Segurança: O campo `senha` é retornado sempre como `null` para preservar o hash da credencial).*
+    *   **Recuperação de Senha (Público - `ForgotPasswordModal.tsx`):**
+        *   **Rota:** `POST /api/auth/recuperar-senha`
+        *   **Descrição:** Dispara o fluxo integrado de recuperação de senha via SMTP do Google com envio de e-mail formatado. Gera um token atômico com validade de 15 minutos persistido na tabela `tb_password_reset_token`. Aplica regra anti-enumeração de contas (retorna sucesso silencioso mesmo que o e-mail não exista na base).
+        *   **Payload de Envio:**
+            ```json
+            {
+              "email": "usuario@escritorio.com.br"
+            }
+            ```
+        *   **Resposta (HTTP 202 Accepted):**
+            ```json
+            {
+              "mensagem": "Se a conta existir, as instruções serão enviadas."
+            }
+            ```
+        *   *(Ação no Front-end: Eliminar completamente o `setTimeout` simulado do modal de esqueci minha senha e conectar diretamente a este endpoint).*
+    *   **Redefinição de Senha com Token (Público):**
+        *   **Rota:** `POST /api/auth/redefinir-senha`
+        *   **Descrição:** Valida o token gerado por e-mail (existência, validade temporal de 15 minutos e se ainda não foi consumido), criptografa a nova senha com BCrypt e invalida o token.
+        *   **Payload de Envio:**
+            ```json
+            {
+              "token": "550e8400-e29b-41d4-a716-446655440000",
+              "novaSenha": "novaSenhaForte@2026"
+            }
+            ```
+        *   **Resposta (HTTP 200 OK):**
+            ```json
+            {
+              "mensagem": "Senha redefinida com sucesso."
+            }
+            ```
+    *   **Alteração de Senha Autenticada (`SecurityTab.tsx`):**
+        *   **Rota:** `PATCH /api/auth/me/senha`
+        *   **Headers:** `Authorization: Bearer <token>`
+        *   **Descrição:** Altera a senha do usuário atualmente autenticado após validar com BCrypt se a `senhaAtual` confere com o hash gravado.
+        *   **Payload de Envio:**
+            ```json
+            {
+              "senhaAtual": "senhaAntiga123",
+              "novaSenha": "novaSenhaSegura@2026"
+            }
+            ```
+        *   **Resposta (HTTP 204 No Content):** Sucesso sem corpo de retorno.
+        *   **Erros Esperados:**
+            *   `HTTP 422 Unprocessable Entity`: Senha atual informada está incorreta.
+            *   `HTTP 400 Bad Request`: Campos obrigatórios não preenchidos ou falha de validação.
+        *   *(Ação no Front-end: Eliminar o mock com `setTimeout` da aba Segurança/Redefinir Senha e efetivar a chamada real).*
     *   **Interceptor de Requisições:** Injetar automaticamente o header `Authorization: Bearer <token>` em todas as requisições autenticadas.
 *   **Envelopamento de Paginação:**
     *   As rotas paginadas (`/api/clientes`, `/api/processos`, `/api/faturamentos`) retornam o envelope padrão do Spring Data:
@@ -237,14 +285,72 @@ O módulo financeiro possui dois níveis de informação: cards totalizadores de
 
 ---
 
+### 2.7. Configurações Institucionais do Escritório (`OfficeTab.tsx`)
+
+Módulo que elimina os dados fictícios locais da aba de configurações "Escritório", sincronizando e persistindo as informações reais da sociedade advocatícia em banco de dados PostgreSQL.
+
+#### Obter Dados Institucionais
+*   **Rota:** `GET /api/configuracoes/escritorio`
+*   **Headers:** `Authorization: Bearer <token>`
+*   **Resposta (HTTP 200 - `EscritorioDTO`):**
+    ```json
+    {
+      "razaoSocial": "Cristhian Menezes Sociedade de Advogados",
+      "nomeFantasia": "Cristhian Menezes Advocacia",
+      "cnpj": "34567890000112",
+      "registroOabSociedade": "OAB/RS 121.837",
+      "telefone": "5533321000",
+      "whatsapp": "55999887766",
+      "email": "contato@menezesadvocacia.com.br",
+      "cep": "98700000",
+      "logradouro": "Rua Tiradentes",
+      "numero": "676",
+      "complemento": "Sala 01",
+      "bairro": "Centro",
+      "cidade": "Ijuí",
+      "uf": "RS"
+    }
+    ```
+
+#### Atualizar Dados Institucionais
+*   **Rota:** `PUT /api/configuracoes/escritorio`
+*   **Headers:** `Authorization: Bearer <token>` | `Content-Type: application/json`
+*   **Payload de Envio (`EscritorioDTO`):**
+    ```json
+    {
+      "razaoSocial": "Cristhian Menezes Sociedade de Advogados",
+      "nomeFantasia": "Cristhian Menezes Advocacia",
+      "cnpj": "34.567.890/0001-12",
+      "registroOabSociedade": "OAB/RS 121.837",
+      "telefone": "(55) 3332-1000",
+      "whatsapp": "(55) 99988-7766",
+      "email": "contato@menezesadvocacia.com.br",
+      "cep": "98700-000",
+      "logradouro": "Rua Tiradentes",
+      "numero": "676",
+      "complemento": "Sala 01",
+      "bairro": "Centro",
+      "cidade": "Ijuí",
+      "uf": "RS"
+    }
+    ```
+    *(Nota do Backend: O servidor realiza higienização imperativa automática com regex `replaceAll("[^0-9]", "")` nos campos `cnpj`, `telefone`, `whatsapp` e `cep`, garantindo armazenamento numérico sem depender de formatação do cliente).*
+*   **Resposta (HTTP 200 - `EscritorioDTO`):** Retorna o registro atualizado e persistido no PostgreSQL.
+
+---
+
 ## 3. Requisitos de Usabilidade & Padrões de UX (Key User)
 
-1.  **Modais de Contexto Rápido:**
+1.  **Eliminação de Mocks e Respostas Reais:**
+    *   **Recuperação de Senha (`ForgotPasswordModal.tsx`):** Substituir o temporizador `setTimeout` por chamada ao `POST /api/auth/recuperar-senha`. Exibir alerta de sucesso orientando a verificar a caixa de entrada do e-mail.
+    *   **Alteração de Senha (`SecurityTab.tsx`):** Conectar o formulário com campos `senhaAtual` e `novaSenha` ao endpoint `PATCH /api/auth/me/senha`. Tratar status `422` exibindo erro no campo de senha atual caso a credencial não confira.
+    *   **Aba Escritório (`OfficeTab.tsx`):** Carregar dados via `GET /api/configuracoes/escritorio` ao montar o componente e salvar com `PUT /api/configuracoes/escritorio`.
+2.  **Modais de Contexto Rápido:**
     *   A emissão de Procuração e Contrato deve ocorrer em modal/drawer que já traga os campos pré-preenchidos (caso existentes), solicitando apenas os parâmetros variáveis (`acao`, `comarca`, `valorServicos`, checkbox de AJG) antes do disparo do download.
-2.  **Tratamento de Arquivos Binários (PDFs e Anexos):**
+3.  **Tratamento de Arquivos Binários (PDFs e Anexos):**
     *   Utilizar `URL.createObjectURL(new Blob([response.data], { type: response.headers['content-type'] }))` para abrir o documento gerado em nova aba ou disparar download limpo com o nome do arquivo configurado no header `Content-Disposition`.
-3.  **Feedback Visual de Estados:**
+4.  **Feedback Visual de Estados:**
     *   **Financeiro:** Destacar visualmente faturas `PENDENTE` em aberto, `PAGO` em tom neutro/verde e vencidas em alerta.
     *   **Tarefas e Audiências:** Utilizar códigos de cores distintos na agenda para diferenciar prazos/diligências de audiências formais.
-4.  **Resumo de IA:**
+5.  **Resumo de IA:**
     *   Exibir estado de carregamento com *skeleton* ou *spinner* estilizado durante a chamada do `POST /api/audiencias/{id}/gerar-resumo-ia`, já que chamadas de LLM possuem latência natural (1 a 3 segundos).

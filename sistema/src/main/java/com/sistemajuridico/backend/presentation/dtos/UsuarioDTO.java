@@ -35,7 +35,11 @@ public record UsuarioDTO(
         usuario.setEmail(this.email());
         usuario.setSenhaHash(this.senha());
         usuario.setPerfil(this.perfil());
-        usuario.setOab(this.oab());
+        if (this.oab() == null || this.oab().trim().isEmpty()) {
+            usuario.setOab(null);
+        } else {
+            usuario.setOab(this.oab().trim());
+        }
         usuario.setAtivo(this.ativo());
         return usuario;
     }

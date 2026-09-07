@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -24,23 +24,49 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+        if (path == null || path.isEmpty()) {
+            path = request.getRequestURI();
+        }
+
+        if (path != null) {
+            if (path.startsWith("/api/auth/recuperar-senha")
+                    || path.startsWith("/api/auth/redefinir-senha")
+                    || path.startsWith("/api/auth/login")
+                    || path.startsWith("/v3/api-docs")
+                    || path.startsWith("/swagger-ui")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
-        String token = extrairToken(request);
+        try {
+            String token = extrairToken(request);
 
-        if (token != null) {
-            String email = tokenService.validarToken(token);
-            if (email != null && !email.isEmpty()) {
-                String perfil = tokenService.extrairPerfil(token);
-                List<SimpleGrantedAuthority> authorities = perfil != null
-                        ? List.of(new SimpleGrantedAuthority("ROLE_" + perfil), new SimpleGrantedAuthority(perfil))
-                        : Collections.emptyList();
+            if (token != null) {
+                String email = tokenService.validarToken(token);
+                if (email != null && !email.isEmpty()) {
+                    String perfil = tokenService.extrairPerfil(token);
+                    List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+                    if (perfil != null && !perfil.isEmpty()) {
+                        authorities.add(new SimpleGrantedAuthority("ROLE_" + perfil));
+                        authorities.add(new SimpleGrantedAuthority(perfil));
+                    }
 
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(email, null, authorities);
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(email, null, authorities);
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
             }
+        } catch (Exception ex) {
+            // Em caso de qualquer falha na leitura ou validação de token, limpa o contexto e prossegue
+            SecurityContextHolder.clearContext();
         }
 
         filterChain.doFilter(request, response);
