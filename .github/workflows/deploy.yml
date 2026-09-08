@@ -1,0 +1,42 @@
+name: Deploy Backend Juridico
+
+on:
+  push:
+    branches:
+      - main 
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Build com Maven
+        run: mvn clean package -DskipTests
+
+      - name: Copiar .jar para a VPS
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "target/*.jar"
+          target: "/opt/sistema-juridico/"
+          strip_components: 1
+
+      - name: Renomear arquivo e reiniciar serviço
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            mv /opt/sistema-juridico/*.jar /opt/sistema-juridico/app.jar
+            sudo systemctl restart sistema-juridico.service
