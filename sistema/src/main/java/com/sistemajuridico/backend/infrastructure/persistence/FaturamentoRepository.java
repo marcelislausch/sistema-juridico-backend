@@ -20,6 +20,7 @@ public interface FaturamentoRepository extends JpaRepository<Faturamento, UUID> 
     List<Faturamento> findByProcessoId(UUID processoId);
     List<Faturamento> findByProcessoIdAndStatus(UUID processoId, StatusFaturamentoEnum status);
     List<Faturamento> findByStatusAndDataVencimentoAndNatureza(StatusFaturamentoEnum status, LocalDate dataVencimento, NaturezaFaturamentoEnum natureza);
+    List<Faturamento> findByStatusAndDataVencimento(StatusFaturamentoEnum status, LocalDate dataVencimento);
     List<Faturamento> findByStatusAndNaturezaOrderByDataVencimentoAsc(StatusFaturamentoEnum status, NaturezaFaturamentoEnum natureza);
 
     Page<Faturamento> findByStatusAndNatureza(StatusFaturamentoEnum status, NaturezaFaturamentoEnum natureza, Pageable pageable);

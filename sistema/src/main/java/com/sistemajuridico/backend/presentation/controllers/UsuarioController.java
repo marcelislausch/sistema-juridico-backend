@@ -4,9 +4,16 @@ import com.sistemajuridico.backend.core.domain.Usuario;
 import com.sistemajuridico.backend.core.usecases.BuscarUsuarioPorIdUseCase;
 import com.sistemajuridico.backend.core.usecases.CadastrarUsuarioUseCase;
 import com.sistemajuridico.backend.core.usecases.ListarAdvogadosUseCase;
+import com.sistemajuridico.backend.core.usecases.ListarUsuariosUseCase;
 import com.sistemajuridico.backend.presentation.dtos.CriarUsuarioRequest;
 import com.sistemajuridico.backend.presentation.dtos.UsuarioResponseDTO;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,18 +25,38 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/usuarios")
+@Tag(name = "Usuários", description = "Gestão de equipe, perfis de acesso e credenciais")
 public class UsuarioController {
 
     private final CadastrarUsuarioUseCase cadastrarUsuarioUseCase;
     private final ListarAdvogadosUseCase listarAdvogadosUseCase;
     private final BuscarUsuarioPorIdUseCase buscarUsuarioPorIdUseCase;
+    private final ListarUsuariosUseCase listarUsuariosUseCase;
 
     public UsuarioController(CadastrarUsuarioUseCase cadastrarUsuarioUseCase,
                              ListarAdvogadosUseCase listarAdvogadosUseCase,
-                             BuscarUsuarioPorIdUseCase buscarUsuarioPorIdUseCase) {
+                             BuscarUsuarioPorIdUseCase buscarUsuarioPorIdUseCase,
+                             ListarUsuariosUseCase listarUsuariosUseCase) {
         this.cadastrarUsuarioUseCase = cadastrarUsuarioUseCase;
         this.listarAdvogadosUseCase = listarAdvogadosUseCase;
         this.buscarUsuarioPorIdUseCase = buscarUsuarioPorIdUseCase;
+        this.listarUsuariosUseCase = listarUsuariosUseCase;
+    }
+
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADVOGADO')")
+    @Operation(summary = "Listagem paginada dos membros da equipe com suporte a filtros")
+    public ResponseEntity<Page<UsuarioResponseDTO>> listar(
+            @RequestParam(required = false) Boolean ativo,
+            @RequestParam(name = "q", required = false) String q,
+            @PageableDefault(size = 20, sort = "nome") Pageable pageable) {
+        Page<Usuario> pagina = this.listarUsuariosUseCase.executar(ativo, q, pageable);
+        List<UsuarioResponseDTO> dtos = new ArrayList<>();
+        for (Usuario u : pagina.getContent()) {
+            dtos.add(UsuarioResponseDTO.fromEntity(u));
+        }
+        Page<UsuarioResponseDTO> response = new PageImpl<>(dtos, pageable, pagina.getTotalElements());
+        return ResponseEntity.ok(response);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'ADVOGADO')")
