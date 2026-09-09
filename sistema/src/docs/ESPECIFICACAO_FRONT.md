@@ -3,354 +3,368 @@
 **Projeto:** Sistema de Gestão Jurídica Inteligente  
 **Perfil:** Guia de Integração e Contratos de API para a Equipe de Front-end  
 **Alinhamento:** Backend Spring Boot v3.3.3 / Java 21 LTS  
+**Versão:** 3.0 (Conformidade com Auditoria de Contratos e Swagger OpenAPI 3)
 
 ---
 
 ## 1. Diretrizes Técnicas, Arquitetura e Segurança
 
-*   **Autenticação, Sessão e Gestão de Senhas:**
-    *   **Login:** `POST /api/auth/login`
-        *   **Payload de Envio:**
-            ```json
-            {
-              "email": "advogado@escritorio.com",
-              "senha": "senhaSegura123",
-              "manterConectado": true
-            }
-            ```
-            *(Nota: O campo `manterConectado` é um booleano opcional. Se enviado como `true`, estende a validade do token JWT gerado pelo backend de 2 horas para 7 dias, orientando também a persistência de sessão no front-end em `localStorage` vs. `sessionStorage` quando `false` ou omitido).*
-        *   **Resposta (HTTP 200):**
-            ```json
-            {
-              "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-            }
-            ```
-    *   **Resgate dos Dados do Usuário Logado (Perfil):**
-        *   **Endpoint Oficial:** `GET /api/auth/me`
-        *   **Descrição:** Retorna diretamente o `UsuarioDTO` da sessão ativa correspondente ao token JWT informado no header `Authorization`.
-        *   **Resposta (HTTP 200 - `UsuarioDTO`):**
-            ```json
-            {
-              "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-              "nome": "Dr. Carlos Eduardo",
-              "email": "advogado@escritorio.com",
-              "senha": null,
-              "perfil": "ADVOGADO",
-              "oab": "RS121837",
-              "ativo": true
-            }
-            ```
-            *(Nota de Segurança: O campo `senha` é retornado sempre como `null` para preservar o hash da credencial).*
-    *   **Recuperação de Senha (Público - `ForgotPasswordModal.tsx`):**
-        *   **Rota:** `POST /api/auth/recuperar-senha`
-        *   **Descrição:** Dispara o fluxo integrado de recuperação de senha via SMTP do Google com envio de e-mail formatado. Gera um token atômico com validade de 15 minutos persistido na tabela `tb_password_reset_token`. Aplica regra anti-enumeração de contas (retorna sucesso silencioso mesmo que o e-mail não exista na base).
-        *   **Payload de Envio:**
-            ```json
-            {
-              "email": "usuario@escritorio.com.br"
-            }
-            ```
-        *   **Resposta (HTTP 202 Accepted):**
-            ```json
-            {
-              "mensagem": "Se a conta existir, as instruções serão enviadas."
-            }
-            ```
-        *   *(Ação no Front-end: Eliminar completamente o `setTimeout` simulado do modal de esqueci minha senha e conectar diretamente a este endpoint).*
-    *   **Redefinição de Senha com Token (Público):**
-        *   **Rota:** `POST /api/auth/redefinir-senha`
-        *   **Descrição:** Valida o token gerado por e-mail (existência, validade temporal de 15 minutos e se ainda não foi consumido), criptografa a nova senha com BCrypt e invalida o token.
-        *   **Payload de Envio:**
-            ```json
-            {
-              "token": "550e8400-e29b-41d4-a716-446655440000",
-              "novaSenha": "novaSenhaForte@2026"
-            }
-            ```
-        *   **Resposta (HTTP 200 OK):**
-            ```json
-            {
-              "mensagem": "Senha redefinida com sucesso."
-            }
-            ```
-    *   **Alteração de Senha Autenticada (`SecurityTab.tsx`):**
-        *   **Rota:** `PATCH /api/auth/me/senha`
-        *   **Headers:** `Authorization: Bearer <token>`
-        *   **Descrição:** Altera a senha do usuário atualmente autenticado após validar com BCrypt se a `senhaAtual` confere com o hash gravado.
-        *   **Payload de Envio:**
-            ```json
-            {
-              "senhaAtual": "senhaAntiga123",
-              "novaSenha": "novaSenhaSegura@2026"
-            }
-            ```
-        *   **Resposta (HTTP 204 No Content):** Sucesso sem corpo de retorno.
-        *   **Erros Esperados:**
-            *   `HTTP 422 Unprocessable Entity`: Senha atual informada está incorreta.
-            *   `HTTP 400 Bad Request`: Campos obrigatórios não preenchidos ou falha de validação.
-        *   *(Ação no Front-end: Eliminar o mock com `setTimeout` da aba Segurança/Redefinir Senha e efetivar a chamada real).*
-    *   **Interceptor de Requisições:** Injetar automaticamente o header `Authorization: Bearer <token>` em todas as requisições autenticadas.
-*   **Envelopamento de Paginação:**
-    *   As rotas paginadas (`/api/clientes`, `/api/processos`, `/api/faturamentos`) retornam o envelope padrão do Spring Data:
+### 1.1. Autenticação, Sessão e Gestão de Credenciais
+*   **Login:** `POST /api/auth/login`
+    *   **Payload de Envio (`LoginDTO`):**
         ```json
         {
-          "content": [ ... ],
-          "totalElements": 42,
-          "totalPages": 5,
-          "size": 10,
-          "number": 0,
-          "first": true,
-          "last": false
+          "email": "advogado@escritorio.com",
+          "senha": "senhaSegura123",
+          "manterConectado": true
         }
         ```
-    *   Parâmetros de paginação padrão a serem enviados pelo front: `?page=0&size=10&sort=id,desc`.
+        *(Nota: O campo `manterConectado` é opcional. Se `true`, estende o token JWT de 2 horas para 7 dias, orientando também a persistência em `localStorage` vs. `sessionStorage` quando `false` ou omitido).*
+    *   **Resposta (HTTP 200 - `TokenDTO`):**
+        ```json
+        {
+          "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        }
+        ```
+*   **Resgate dos Dados do Usuário Logado (Perfil Seguro):**
+    *   **Endpoint Oficial:** `GET /api/auth/me`
+    *   **Headers:** `Authorization: Bearer <token>`
+    *   **Descrição:** Retorna as informações do usuário associado ao token da sessão ativa.
+    *   **Resposta (HTTP 200 - `UsuarioResponseDTO`):**
+        ```json
+        {
+          "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+          "nome": "Dr. Carlos Eduardo",
+          "email": "advogado@escritorio.com",
+          "perfil": "ADVOGADO",
+          "oab": "RS121837",
+          "ativo": true
+        }
+        ```
+        > [!IMPORTANT]
+        > **Blindagem de Segurança:** O contrato `UsuarioResponseDTO` **NÃO POSSUI** o campo `senha` (nem mesmo como `null`). As credenciais foram completamente expurgadas de todos os modelos de resposta da API.
+*   **Recuperação de Senha (Público - `ForgotPasswordModal.tsx`):**
+    *   **Rota:** `POST /api/auth/recuperar-senha`
+    *   **Payload:** `{ "email": "usuario@escritorio.com.br" }`
+    *   **Resposta (HTTP 202 Accepted):**
+        ```json
+        {
+          "mensagem": "Se a conta existir, as instruções serão enviadas."
+        }
+        ```
+    *   *(Ação no Front-end: Eliminar o mock com `setTimeout` e efetivar chamada com notificação amigável).*
+*   **Redefinição de Senha com Token (Público):**
+    *   **Rota:** `POST /api/auth/redefinir-senha`
+    *   **Payload:** `{ "token": "uuid-do-token", "novaSenha": "novaSenhaSegura@2026" }`
+    *   **Resposta (HTTP 200 OK):** `{ "mensagem": "Senha redefinida com sucesso." }`
+*   **Alteração de Senha Autenticada (`SecurityTab.tsx`):**
+    *   **Rota:** `PATCH /api/auth/me/senha`
+    *   **Payload:** `{ "senhaAtual": "senhaAntiga123", "novaSenha": "novaSenhaSegura@2026" }`
+    *   **Resposta (HTTP 204 No Content):** Sucesso sem corpo. Erros `400` para senha incorreta ou `422` para política não atendida.
+
+### 1.2. Padronização de Paginação (Spring Boot 3.3+ `VIA_DTO`)
+Todas as rotas paginadas da API adotam o modelo padronizado via Spring Data Web (`PageSerializationMode.VIA_DTO`):
+```json
+{
+  "content": [ ... ],
+  "page": {
+    "size": 10,
+    "number": 0,
+    "totalElements": 42,
+    "totalPages": 5
+  }
+}
+```
+*   **Parâmetros de Requisição Suportados (Planos no Swagger via `@ParameterObject`):**
+    *   `page`: Índice da página baseado em zero (ex: `0`, `1`, `2`).
+    *   `size`: Quantidade de itens por página (ex: `10`, `20`, `50`).
+    *   `sort`: Critério e direção de ordenação (ex: `sort=nome,asc`, `sort=dataVencimento,desc`).
+
+### 1.3. Padronização Canônica de Respostas de Erro
+Todas as respostas de erro da API seguem schemas canônicos e consistentes:
+*   **Erro Padrão (`ErroPadraoDTO`) — Códigos 401, 403, 404, 409, 422:**
+    ```json
+    {
+      "timestamp": "2026-09-08T22:30:00",
+      "status": 404,
+      "error": "Not Found",
+      "message": "Cliente não encontrado"
+    }
+    ```
+*   **Erro de Validação de Campos (`ErroValidacaoDTO`) — Código 400 Bad Request:**
+    ```json
+    {
+      "timestamp": "2026-09-08T22:30:00",
+      "status": 400,
+      "error": "Validation Error",
+      "message": "Erro de validação nos campos informados.",
+      "fieldErrors": [
+        {
+          "campo": "email",
+          "mensagem": "E-mail inválido ou malformatado"
+        },
+        {
+          "campo": "cpfCnpj",
+          "mensagem": "CPF ou CNPJ deve possuir formato numérico válido"
+        }
+      ]
+    }
+    ```
+    *(Ação no Front-end: Utilizar a lista `fieldErrors` para mapear erros diretamente abaixo dos respectivos inputs nos formulários).*
 
 ---
 
 ## 2. Módulos do Sistema e Mapeamento Completo de Endpoints
 
 ### 2.1. Dashboard Executiva
-Painel inicial com métricas consolidadas e atalhos estratégicos:
-*   **Obter Dados Consolidados:** `GET /api/dashboard/{usuarioId}`
-    *   **Retorno (`ResumoDashboardDTO`):**
-        ```json
-        {
-          "totalClientesAtivos": 120,
-          "totalProcessosAndamento": 45,
-          "tarefasPendentesHoje": 3,
-          "proximasTarefas": [ ... ],
-          "totalReceberHoje": 3500.00,
-          "proximasFaturasReceber": [ ... ],
-          "audienciasHoje": 1,
-          "proximasAudiencias": [ ... ]
-        }
-        ```
+*   **Obter Dados Consolidados do Usuário Logado (Recomendado):** `GET /api/dashboard`
+    *   *Nota:* O usuário é inferido automaticamente do token JWT, dispensando passagem de ID na rota.
+*   **Obter Dados por ID (Compatibilidade):** `GET /api/dashboard/{usuarioId}`
+*   **Retorno Blindado (`ResumoDashboardDTO`):**
+    ```json
+    {
+      "totalClientesAtivos": 120,
+      "totalProcessosAndamento": 45,
+      "tarefasPendentesHoje": 3,
+      "proximasTarefas": [ ... ],
+      "totalReceberHoje": 3500.00,
+      "proximasFaturasReceber": [ ... ],
+      "audienciasHoje": 1,
+      "proximasAudiencias": [ ... ]
+    }
+    ```
+    > [!TIP]
+    > **Garantia de Não-Nulidade:** Todos os contadores e valores monetários retornam `0` ou `0.00` (nunca `null`), e todas as listas retornam arrays `[]` vazios quando não houver registros. O front-end pode consumir as propriedades sem receio de exceções `TypeError: Cannot read properties of undefined`.
 
 ---
 
-### 2.2. Gestão de Clientes, Emissão Documental e GED
-Listagem com filtros, formulários de cadastro/edição em modal ou drawer, área nobre de emissão de PDFs oficiais e aba de documentos anexados.
+### 2.2. Gestão de Clientes e CRM
 
 #### Operações Cadastrais
-*   **Listar Clientes (Paginado com Filtros):** `GET /api/clientes?page=0&size=10`
-    *   **Query Parameters (Opcionais):**
-        *   `page` (int, default = 0): Número da página.
-        *   `size` (int, default = 10): Quantidade de itens por página.
-        *   `termoBusca` (string): Termo para busca textual dinâmica que filtra por nome, CPF/CNPJ ou e-mail (ex: `?termoBusca=Silva`).
-    *   **Retorno:** Envelope `Page<ClienteDTO>`.
+*   **Listar Clientes (Paginado com Filtros no Servidor):** `GET /api/clientes`
+    *   **Query Parameters:**
+        *   `q` ou `termoBusca` (string): Busca textual universal por nome, CPF/CNPJ ou e-mail (ex: `?q=Silva`).
+        *   `tipo` (Enum `TipoClienteEnum`): Filtra por pessoa física ou jurídica (`FISICA`, `JURIDICA`). Ex: `?tipo=FISICA`.
+        *   `page` (int, default = 0), `size` (int, default = 10), `sort` (ex: `sort=nome,asc`).
+    *   **Retorno:** Envelope paginado com `content: List<ClienteDTO>`.
 *   **Buscar Cliente por ID:** `GET /api/clientes/{id}`
 *   **Cadastrar Cliente:** `POST /api/clientes`
 *   **Atualizar Cliente:** `PUT /api/clientes/{id}`
 
-#### Emissão Automatizada de Documentos Oficiais (PDF com Fontes Embutidas)
-Os endpoints abaixo geram o arquivo binário processado no servidor com fontes TrueType embutidas (`BaseFont.EMBEDDED`). A resposta deve ser tratada como `blob` no cliente (`responseType: 'blob'`) para download ou visualização imediata:
-
-1.  **Gerar Procuração Ad Juditia & Declaração de Hipossuficiência:**
-    *   **Rota:** `GET /api/clientes/{id}/procuracao`
-    *   **Query Parameters (Opcionais):**
-        *   `acao` (string): Nome da ação jurídica a ajuizar (ex: *"Ação Revisional de Benefício"*). Padrão se vazio: `"AÇÃO JUDICIAL"`.
-        *   `varaCivel` (string): Identificação da vara (ex: *"1ª Vara Cível"*). Padrão se vazio: `"____ vara cível"`.
-        *   `comarca` (string): Comarca correspondente (ex: *"Ijuí"*).
-        *   `imprimirDeclaracao` (boolean, **default = true**): Se `false`, o PDF gerado conterá **apenas** a página 1 (Procuração), suprimindo a página 2 (Declaração de Hipossuficiência/AJG). Ideal para clientes que não terão assistência judiciária gratuita.
-
-2.  **Gerar Contrato de Prestação de Serviços e Honorários:**
-    *   **Rota:** `GET /api/clientes/{id}/contrato-honorarios`
-    *   **Query Parameters (Opcionais):**
-        *   `acao` (string): Ação que fundamenta a contratação.
-        *   `vara` (string): Vara correspondente.
-        *   `comarca` (string): Comarca de tramitação.
-        *   `valorServicos` (string): Valor acordado ou percentual (ex: *"30% do proveito econômico obtido"* ou *"R$ 5.000,00"*).
-        *   `objetivoDemanda` (string): Descrição sucinta da pretensão (ex: *"Restabelecimento de benefício por incapacidade temporária"*).
-    *   *Nota:* O documento realiza concordância e flexões de gênero automáticas no preâmbulo e cláusulas com base no sexo do cliente cadastrado.
-
-#### Gestão de Documentos Anexos do Cliente (GED)
-*   **Listar Anexos do Cliente:** `GET /api/documentos/cliente/{clienteId}`
-    *   *Retorno:* `List<DocumentoDTO>` com os documentos arquivados do cliente.
-*   **Fazer Upload de Anexo:** `POST /api/documentos/upload` (`multipart/form-data`)
-    *   *Form-Data:* `arquivo` (File), `titulo` (String), `clienteId` (UUID).
-*   **Baixar / Visualizar Documento:** `GET /api/documentos/{id}/download`
-    *   *Resposta:* Stream de bytes com headers `Content-Disposition: attachment; filename="..."` e `Content-Type` detectado automaticamente.
-*   **Excluir Documento:** `DELETE /api/documentos/{id}`
-    *   *Resposta:* HTTP 204 No Content (remove o registro no banco e o arquivo físico no disco).
+#### Emissão Automatizada de Documentos (PDF)
+*   **Gerar Procuração e AJG:** `GET /api/clientes/{id}/procuracao?acao=&varaCivel=&comarca=&imprimirDeclaracao=true`
+*   **Gerar Contrato de Honorários:** `GET /api/clientes/{id}/contrato-honorarios?acao=&vara=&comarca=&valorServicos=&objetivoDemanda=`
+    *   *Nota:* Tratar a resposta no cliente como `responseType: 'blob'`.
 
 ---
 
-### 2.3. Gestão de Processos, Histórico de Andamentos e Autos
+### 2.3. Gestão de Processos Judiciais
 
 #### Operações de Processo
-*   **Listar Processos (Paginado com Filtros):** `GET /api/processos?page=0&size=10`
-    *   **Query Parameters (Opcionais):**
-        *   `page` (int, default = 0): Número da página.
-        *   `size` (int, default = 10): Quantidade de itens por página.
-        *   `termoBusca` (string): Busca textual por número CNJ, assunto ou nome do cliente vinculado (ex: `?termoBusca=0001234`).
-        *   `arquivado` (boolean): Filtro de arquivamento (`true` para processos arquivados, `false` para ativos/em andamento, ou omitido para listar todos).
-    *   **Retorno:** Envelope `Page<ProcessoDTO>`.
-*   **Listar por Cliente (Paginado):** `GET /api/processos/cliente/{clienteId}?page=0&size=10`
+*   **Listar Processos (Paginado com Filtros Avançados no Servidor):** `GET /api/processos`
+    *   **Query Parameters:**
+        *   `q` ou `termoBusca` (string): Busca por número CNJ, assunto ou nome do cliente.
+        *   `fase` (Enum `FaseProcessualEnum`): Filtro de fase processual (`INICIAL`, `INSTRUCAO`, `RECURSAL`, `EXECUCAO`, `SUSPENSO`, `ARQUIVADO`).
+        *   `arquivado` (boolean): Filtro de arquivamento (`true`, `false` ou omitido para todos).
+        *   `clienteId` (UUID): Processos de um cliente específico.
+        *   `advogadoId` (UUID): Processos sob responsabilidade de um advogado específico.
+        *   `page` (int, default = 0), `size` (int, default = 10), `sort`.
+    *   **Retorno:** Envelope paginado com `content: List<ProcessoDTO>`.
+*   **Listar por Cliente:** `GET /api/processos/cliente/{clienteId}`
 *   **Buscar Detalhes por ID:** `GET /api/processos/{id}`
 *   **Criar Processo:** `POST /api/processos`
 *   **Editar Processo:** `PUT /api/processos/{id}`
 *   **Arquivar Processo:** `PATCH /api/processos/{id}/arquivar`
 *   **Desarquivar Processo:** `PATCH /api/processos/{id}/desarquivar`
-
-#### Andamentos Processuais
-*   **Listar Linha do Tempo:** `GET /api/processos/{processoId}/andamentos`
-*   **Lançar Andamento Manual:** `POST /api/processos/{processoId}/andamentos`
-
-#### Peças e Autos Anexados ao Processo (GED)
-*   **Listar Documentos do Processo:** `GET /api/documentos/processo/{processoId}`
-    *   *Retorno:* `List<DocumentoDTO>` contendo as petições, certidões e comprovantes do processo.
-*   **Vincular Anexo ao Processo:** `POST /api/documentos/upload` (`multipart/form-data`)
-    *   *Form-Data:* `arquivo` (File), `titulo` (String), `processoId` (UUID).
-*   **Download de Peça:** `GET /api/documentos/{id}/download`
-*   **Exclusão de Peça:** `DELETE /api/documentos/{id}`
-
-#### Apoio a Seletores
-*   **Listar Advogados Ativos:** `GET /api/usuarios/advogados` *(Alimenta o `<select>` de advogado responsável no cadastro/edição de processos).*
+*   **Andamentos do Processo:** `GET /api/processos/{processoId}/andamentos` e `POST /api/processos/{processoId}/andamentos`
 
 ---
 
-### 2.4. Agenda e Calendário Expansivo (Audiências e Tarefas)
+### 2.4. Gestão Financeira e Fluxo de Caixa
 
-A interface renderiza um calendário unificado, harmonizado com parâmetros idênticos em formato `LocalDate` para datas.
+#### Resumo Financeiro Consolidado
+*   **Obter Totais:** `GET /api/faturamentos/resumo`
+    *   Retorna `ResumoFinanceiroDTO` com `totalReceber`, `totalPagar`, `saldoPrevisto` e `totalVencido`.
 
-#### Endpoints de Consulta de Calendário
-*   **Listar Audiências por Período:** `GET /api/audiencias/agenda?inicio={data}&fim={data}`
-    *   *Formato obrigatório:* ISO Date (`YYYY-MM-DD`, ex: `2026-09-01`). O backend realiza a conversão automática para o início (`00:00:00`) e encerramento do dia (`23:59:59`).
-*   **Listar Tarefas por Período:** `GET /api/tarefas/agenda?inicio={data}&fim={data}`
-    *   *Formato obrigatório:* ISO Date (`YYYY-MM-DD`, ex: `2026-09-01`).
-    *   *Regra de Sessão:* Retorna automaticamente as tarefas do usuário autenticado no token.
-
-#### Gestão de Audiências
-*   **Cadastrar Audiência:** `POST /api/audiencias` *(Data futura obrigatória).*
-*   **Buscar Audiência por ID:** `GET /api/audiencias/{id}`
-*   **Atualizar Audiência:** `PUT /api/audiencias/{id}`
-*   **Excluir Audiência:** `DELETE /api/audiencias/{id}`
-*   **Listar Audiências do Processo:** `GET /api/audiencias/processo/{processoId}`
-*   **Alterar Status:** `PATCH /api/audiencias/{id}/status?status={STATUS}`
-    *   *Atenção:* O status é enviado via **Query Parameter** (`status`: `AGENDADA`, `REALIZADA` ou `CANCELADA`).
-
-#### Inteligência Artificial na Audiência (Resumo Estratégico)
-*   **Gerar e Salvar no Registro da Audiência:** `POST /api/audiencias/{id}/gerar-resumo-ia`
-    *   **Body:** `{ "conteudoPeca": "Texto completo copiado da petição/inicial..." }`
-    *   *Retorno:* A entidade `AudienciaDTO` atualizada, já contendo o resumo gerado no campo `resumoPreparatorioIa`.
-*   **Consulta Avulsa de Resumo IA:** `POST /api/ia/resumos/audiencia`
-    *   **Body:** `{ "conteudoPeca": "..." }`
-    *   *Retorno:* String textual com a síntese dos pontos controvertidos e provas.
+#### Listagem e Lançamentos
+*   **Listar Faturamentos (Paginado com Múltiplos Filtros no Servidor):** `GET /api/faturamentos`
+    *   **Query Parameters:**
+        *   `q` ou `termoBusca` (string): Busca textual na descrição da fatura.
+        *   `status` (Enum `StatusFaturamentoEnum`): `PENDENTE`, `PAGO`, `CANCELADO`.
+        *   `natureza` (Enum `NaturezaFaturamentoEnum`): `A_RECEBER`, `A_PAGAR`.
+        *   `tipo` (Enum `TipoFaturamentoEnum`): `HONORARIOS`, `CUSTAS`, `DESPESAS_ESCRITORIO`.
+        *   `vencimentoDe` (date: `YYYY-MM-DD`): Data inicial do intervalo de vencimento.
+        *   `vencimentoAte` (date: `YYYY-MM-DD`): Data final do intervalo de vencimento.
+        *   `processoId` (UUID): Filtro por processo judicial.
+        *   `page` (int, default = 0), `size` (int, default = 10), `sort`.
+*   **Listar por Processo:** `GET /api/faturamentos/processo/{processoId}`
+*   **Cadastrar Fatura:** `POST /api/faturamentos`
+*   **Liquidar Fatura:** `PATCH /api/faturamentos/{id}/pagar`
+    *   **Body Obrigatório:** `{ "dataPagamento": "2026-09-08" }`
 
 ---
 
-### 2.5. Gestão de Tarefas (To-Do List)
-*   **Listar Tarefas do Painel do Usuário:** `GET /api/tarefas/dashboard/{usuarioId}`
-*   **Criar Tarefa:** `POST /api/tarefas`
-*   **Editar Tarefa:** `PUT /api/tarefas/{id}`
-*   **Excluir Tarefa:** `DELETE /api/tarefas/{id}`
-*   **Concluir Tarefa:** `PATCH /api/tarefas/{id}/concluir`
+### 2.5. Agenda Unificada (Audiências e Tarefas)
+
+#### Audiências
+*   **Listar Agenda Global:** `GET /api/audiencias/agenda`
+    *   **Query Parameters:**
+        *   `inicio` e `fim` (date: `YYYY-MM-DD`).
+        *   `status` (Enum `StatusAudienciaEnum`): `AGENDADA`, `REALIZADA`, `CANCELADA`.
+        *   `processoId` (UUID).
+        *   `responsavelId` (UUID): Filtro por advogado responsável pela audiência.
+*   **Retorno do DTO (`AudienciaDTO`):** Inclui o campo `responsavelId` mapeado para o responsável atribuído.
+*   **Operações:** `POST /api/audiencias`, `GET /api/audiencias/{id}`, `PUT /api/audiencias/{id}`, `DELETE /api/audiencias/{id}`, `PATCH /api/audiencias/{id}/status?status=REALIZADA`.
+*   **Resumo IA da Audiência:** `POST /api/audiencias/{id}/gerar-resumo-ia` com body `{ "conteudoPeca": "..." }`.
+
+#### Tarefas
+*   **Listar Agenda de Tarefas:** `GET /api/tarefas/agenda`
+    *   **Query Parameters:**
+        *   `inicio` e `fim` (date: `YYYY-MM-DD`).
+        *   `concluida` (boolean): `true` para concluídas, `false` para pendentes.
+        *   `status` (string, alias: `"CONCLUIDA"` ou `"PENDENTE"`).
+        *   `tipo` (Enum `TipoTarefaEnum`): `DILIGENCIA`, `PRAZO`, `CONTATO`.
+        *   `processoId` (UUID).
+        *   `responsavelId` (UUID).
+*   **Operações:** `POST /api/tarefas`, `PUT /api/tarefas/{id}`, `DELETE /api/tarefas/{id}`, `PATCH /api/tarefas/{id}/concluir`.
 
 ---
 
-### 2.6. Financeiro e Faturamento
-
-O módulo financeiro possui dois níveis de informação: cards totalizadores de topo e tabela transacional detalhada.
-
-#### Cards Totalizadores (Resumo em Tempo Real)
-*   **Rota:** `GET /api/faturamentos/resumo`
-*   **Retorno (`ResumoFinanceiroDTO`):**
+### 2.6. Central de Notificações do Dia (P1)
+Substitui a agregação de múltiplas rotas no browser por um único endpoint do servidor:
+*   **Rota:** `GET /api/notificacoes/resumo?data=YYYY-MM-DD`
+*   **Headers:** `Authorization: Bearer <token>`
+*   **Retorno (`NotificacaoResumoDTO`):**
     ```json
     {
-      "totalReceber": 12500.00,
-      "totalPagar": 3200.00,
-      "saldoPrevisto": 9300.00,
-      "totalVencido": 800.00
+      "notificacoes": [
+        {
+          "id": "c1f7a4b2-...",
+          "tipo": "AUDIENCIA",
+          "titulo": "Audiência de Instrução e Julgamento",
+          "descricao": "Processo nº 5001234-88.2026.8.21.0016 - 1ª Vara Cível",
+          "horario": "14:30",
+          "destino": "audiencias",
+          "recursoTipo": "AUDIENCIA",
+          "recursoId": "8f3b49c1-..."
+        }
+      ],
+      "quantidadeAgenda": 1,
+      "quantidadeFinanceiro": 0
     }
     ```
+*   **Tipagem Forte dos Campos:**
+    *   `tipo`: Enum `TipoNotificacaoEnum` (`AUDIENCIA`, `TAREFA`, `FINANCEIRO`).
+    *   `destino`: Enum `DestinoNotificacaoEnum` (`audiencias`, `agenda`, `financeiro`).
+    *   `recursoTipo`: Enum `TipoRecursoNotificacaoEnum` (`AUDIENCIA`, `TAREFA`, `FATURAMENTO`).
 
-#### Operações Transacionais
-*   **Listar Faturas (Paginado com Filtros):** `GET /api/faturamentos?page=0&size=10`
-    *   **Query Parameters (Opcionais):**
-        *   `page` (int, default = 0): Número da página.
-        *   `size` (int, default = 10): Quantidade de itens por página.
-        *   `status` (string, enum `StatusFaturamentoEnum`): Filtro pelo status da fatura (`PENDENTE`, `PAGO`, `CANCELADO`). Ex: `?status=PENDENTE`.
-        *   `natureza` (string, enum `NaturezaFaturamentoEnum`): Filtro pelo fluxo financeiro (`A_RECEBER`, `A_PAGAR`). Ex: `?natureza=A_RECEBER`.
-    *   **Retorno:** Envelope `Page<FaturamentoDTO>`.
-*   **Listar por Processo:** `GET /api/faturamentos/processo/{processoId}`
-*   **Cadastrar Fatura / Honorário:** `POST /api/faturamentos`
-*   **Registrar Pagamento / Baixa:** `PATCH /api/faturamentos/{id}/pagar`
-    *   **ATENÇÃO — Payload Obrigatório:**
+---
+
+### 2.7. Busca Global Unificada (P1)
+Atende ao campo de busca textual no Topbar da aplicação:
+*   **Rota:** `GET /api/busca?q={texto}&tipos={tipos}&limit={limit}`
+*   **Exemplo:** `GET /api/busca?q=Menezes&tipos=PROCESSO,CLIENTE&limit=10`
+*   **Retorno (`List<ItemBuscaDTO>`):**
+    ```json
+    [
+      {
+        "id": "4a7b9c1d-...",
+        "tipo": "PROCESSO",
+        "titulo": "5001234-88.2026.8.21.0016",
+        "subtitulo": "Ação de Cobrança de Honorários",
+        "rota": "/processos/4a7b9c1d-..."
+      },
+      {
+        "id": "7b8c9d0e-...",
+        "tipo": "CLIENTE",
+        "titulo": "Cristhian Menezes",
+        "subtitulo": "CPF: 123.456.789-00",
+        "rota": "/clientes/7b8c9d0e-..."
+      }
+    ]
+    ```
+*   **Tipagem Forte:** O parâmetro `tipos` e o campo de retorno `tipo` utilizam o enum `TipoItemBuscaEnum` (`PROCESSO`, `CLIENTE`, `USUARIO`).
+
+---
+
+### 2.8. Status de Integração com Tribunais (P1)
+Alimenta o badge/indicador "Tribunais Sincronizados" no Topbar:
+*   **Rota:** `GET /api/integracoes/tribunais/status`
+*   **Retorno (`TribunalStatusDTO`):**
+    ```json
+    {
+      "status": "OPERACIONAL",
+      "atualizadoEm": "2026-09-08T22:45:00",
+      "mensagem": "Todos os serviços judiciais operando com sincronização regular.",
+      "tribunaisSincronizados": [
+        "TJRS - Tribunal de Justiça do Rio Grande do Sul",
+        "TRF4 - Tribunal Regional Federal da 4ª Região",
+        "TRT4 - Tribunal Regional do Trabalho da 4ª Região",
+        "STJ - Superior Tribunal de Justiça"
+      ]
+    }
+    ```
+*   **Tipagem Forte:** O campo `status` é estritamente tipado com o enum `StatusTribunalEnum` (`OPERACIONAL`, `DEGRADADO`, `INDISPONIVEL`).
+
+---
+
+### 2.9. Gestão de Equipe e Usuários (`TeamTab.tsx`)
+Atende à tela completa de "Equipe & Usuários" que engloba Admins, Advogados e Secretárias:
+*   **Listagem Completa de Equipe (Paginada):** `GET /api/usuarios`
+    *   **Headers:** `Authorization: Bearer <token>` (Permitido para `ADMIN` e `ADVOGADO`).
+    *   **Query Parameters:**
+        *   `q` ou `termoBusca` (string): Busca textual por nome, e-mail ou OAB.
+        *   `ativo` (boolean): Filtra membros ativos (`true`) ou inativos (`false`).
+        *   `page` (int, default = 0), `size` (int, default = 20), `sort` (default = `nome,asc`).
+    *   **Retorno:** Envelope `Page<UsuarioResponseDTO>` contendo:
         ```json
         {
-          "dataPagamento": "2026-09-02"
+          "content": [
+            {
+              "id": "1a2b3c4d-...",
+              "nome": "Mariana Santos",
+              "email": "mariana.secretaria@escritorio.com",
+              "perfil": "SECRETARIA",
+              "oab": null,
+              "ativo": true
+            }
+          ]
         }
         ```
-        *(Requisições PATCH sem este corpo JSON retornarão HTTP 400 Bad Request).*
+*   **Cadastrar Novo Usuário:** `POST /api/usuarios`
+    *   **Payload (`CriarUsuarioRequest`):**
+        ```json
+        {
+          "nome": "Dra. Juliana Ribeiro",
+          "email": "juliana@escritorio.com",
+          "senha": "senhaForte@2026",
+          "perfil": "ADVOGADO",
+          "oab": "RS123456"
+        }
+        ```
+    *   **Retorno (HTTP 201):** `UsuarioResponseDTO` (sem a senha).
+*   **Seletor de Advogados Responsáveis:** Manter `GET /api/usuarios/advogados` exclusivo para alimentar os campos `<select>` de responsável em audiências e processos.
 
 ---
 
-### 2.7. Configurações Institucionais do Escritório (`OfficeTab.tsx`)
-
-Módulo que elimina os dados fictícios locais da aba de configurações "Escritório", sincronizando e persistindo as informações reais da sociedade advocatícia em banco de dados PostgreSQL.
-
-#### Obter Dados Institucionais
-*   **Rota:** `GET /api/configuracoes/escritorio`
-*   **Headers:** `Authorization: Bearer <token>`
-*   **Resposta (HTTP 200 - `EscritorioDTO`):**
-    ```json
-    {
-      "razaoSocial": "Cristhian Menezes Sociedade de Advogados",
-      "nomeFantasia": "Cristhian Menezes Advocacia",
-      "cnpj": "34567890000112",
-      "registroOabSociedade": "OAB/RS 121.837",
-      "telefone": "5533321000",
-      "whatsapp": "55999887766",
-      "email": "contato@menezesadvocacia.com.br",
-      "cep": "98700000",
-      "logradouro": "Rua Tiradentes",
-      "numero": "676",
-      "complemento": "Sala 01",
-      "bairro": "Centro",
-      "cidade": "Ijuí",
-      "uf": "RS"
-    }
-    ```
-
-#### Atualizar Dados Institucionais
-*   **Rota:** `PUT /api/configuracoes/escritorio`
-*   **Headers:** `Authorization: Bearer <token>` | `Content-Type: application/json`
-*   **Payload de Envio (`EscritorioDTO`):**
-    ```json
-    {
-      "razaoSocial": "Cristhian Menezes Sociedade de Advogados",
-      "nomeFantasia": "Cristhian Menezes Advocacia",
-      "cnpj": "34.567.890/0001-12",
-      "registroOabSociedade": "OAB/RS 121.837",
-      "telefone": "(55) 3332-1000",
-      "whatsapp": "(55) 99988-7766",
-      "email": "contato@menezesadvocacia.com.br",
-      "cep": "98700-000",
-      "logradouro": "Rua Tiradentes",
-      "numero": "676",
-      "complemento": "Sala 01",
-      "bairro": "Centro",
-      "cidade": "Ijuí",
-      "uf": "RS"
-    }
-    ```
-    *(Nota do Backend: O servidor realiza higienização imperativa automática com regex `replaceAll("[^0-9]", "")` nos campos `cnpj`, `telefone`, `whatsapp` e `cep`, garantindo armazenamento numérico sem depender de formatação do cliente).*
-*   **Resposta (HTTP 200 - `EscritorioDTO`):** Retorna o registro atualizado e persistido no PostgreSQL.
+### 2.10. Configurações do Escritório (`OfficeTab.tsx`)
+*   **Obter Dados:** `GET /api/configuracoes/escritorio`
+*   **Salvar Dados:** `PUT /api/configuracoes/escritorio` com `EscritorioDTO` completo (CNPJ, Razão Social, WhatsApp, Endereço, etc.). O backend higieniza pontuações automaticamente.
 
 ---
 
-## 3. Requisitos de Usabilidade & Padrões de UX (Key User)
+## 3. Checklist de Integração e Eliminação de Mocks
 
-1.  **Eliminação de Mocks e Respostas Reais:**
-    *   **Recuperação de Senha (`ForgotPasswordModal.tsx`):** Substituir o temporizador `setTimeout` por chamada ao `POST /api/auth/recuperar-senha`. Exibir alerta de sucesso orientando a verificar a caixa de entrada do e-mail.
-    *   **Alteração de Senha (`SecurityTab.tsx`):** Conectar o formulário com campos `senhaAtual` e `novaSenha` ao endpoint `PATCH /api/auth/me/senha`. Tratar status `422` exibindo erro no campo de senha atual caso a credencial não confira.
-    *   **Aba Escritório (`OfficeTab.tsx`):** Carregar dados via `GET /api/configuracoes/escritorio` ao montar o componente e salvar com `PUT /api/configuracoes/escritorio`.
-2.  **Modais de Contexto Rápido:**
-    *   A emissão de Procuração e Contrato deve ocorrer em modal/drawer que já traga os campos pré-preenchidos (caso existentes), solicitando apenas os parâmetros variáveis (`acao`, `comarca`, `valorServicos`, checkbox de AJG) antes do disparo do download.
-3.  **Tratamento de Arquivos Binários (PDFs e Anexos):**
-    *   Utilizar `URL.createObjectURL(new Blob([response.data], { type: response.headers['content-type'] }))` para abrir o documento gerado em nova aba ou disparar download limpo com o nome do arquivo configurado no header `Content-Disposition`.
-4.  **Feedback Visual de Estados:**
-    *   **Financeiro:** Destacar visualmente faturas `PENDENTE` em aberto, `PAGO` em tom neutro/verde e vencidas em alerta.
-    *   **Tarefas e Audiências:** Utilizar códigos de cores distintos na agenda para diferenciar prazos/diligências de audiências formais.
-5.  **Resumo de IA:**
-    *   Exibir estado de carregamento com *skeleton* ou *spinner* estilizado durante a chamada do `POST /api/audiencias/{id}/gerar-resumo-ia`, já que chamadas de LLM possuem latência natural (1 a 3 segundos).
+| Componente Front-end | Situação Anterior | Integração Efetiva com a API |
+| :--- | :--- | :--- |
+| `ForgotPasswordModal.tsx` | `setTimeout` simulando envio | `POST /api/auth/recuperar-senha` |
+| `SecurityTab.tsx` | `setTimeout` simulando troca de senha | `PATCH /api/auth/me/senha` |
+| `OfficeTab.tsx` | State local com dados fictícios | `GET` e `PUT /api/configuracoes/escritorio` |
+| `Topbar.tsx` (Notificações) | 4 requisições manuais e filtros no front | `GET /api/notificacoes/resumo` |
+| `Topbar.tsx` (Busca) | Campo sem ação vinculada | `GET /api/busca?q=&tipos=&limit=` |
+| `Topbar.tsx` (Tribunais) | Texto estático "Tribunais Sincronizados" | `GET /api/integracoes/tribunais/status` |
+| `TeamTab.tsx` | Chamava `/usuarios/advogados` e mockava perfil | `GET /api/usuarios?page=0&size=20&ativo=true` |
+| `ClientsPage.tsx` | `collectAllPages` e filtro em memória | `GET /api/clientes?q=&tipo=&page=&size=` |
+| `ProcessesPage.tsx` | Download de 500 itens e filtro local | `GET /api/processos?q=&fase=&page=&size=` |
+| `FinanceiroPage.tsx` | Paginação e somatórios no navegador | `GET /api/faturamentos?q=&status=&natureza=` |
+| `Dashboard.tsx` | Erro ao ler campos opcionais nulos | `GET /api/dashboard` (DTO com valores padrão garantidos) |
