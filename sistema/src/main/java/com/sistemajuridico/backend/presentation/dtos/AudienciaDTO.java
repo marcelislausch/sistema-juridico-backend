@@ -24,8 +24,22 @@ public record AudienciaDTO(
         String resumoPreparatorioIa,
 
         @NotNull(message = "O ID do processo é obrigatório")
-        UUID processoId
+        UUID processoId,
+
+        UUID responsavelId
 ) {
+
+    public AudienciaDTO(
+            UUID id,
+            LocalDateTime dataHora,
+            String local,
+            String observacoes,
+            StatusAudienciaEnum status,
+            String resumoPreparatorioIa,
+            UUID processoId
+    ) {
+        this(id, dataHora, local, observacoes, status, resumoPreparatorioIa, processoId, null);
+    }
 
     public Audiencia toEntity() {
         Audiencia audiencia = new Audiencia();
@@ -39,18 +53,34 @@ public record AudienciaDTO(
     }
 
     public static AudienciaDTO fromEntity(Audiencia audiencia) {
+        if (audiencia == null) {
+            return null;
+        }
+
         UUID processoId = null;
+        UUID responsavelId = null;
+
         if (audiencia.getProcesso() != null) {
             processoId = audiencia.getProcesso().getId();
+            if (audiencia.getProcesso().getAdvogado() != null) {
+                responsavelId = audiencia.getProcesso().getAdvogado().getId();
+            }
         }
+
+        StatusAudienciaEnum status = audiencia.getStatus();
+        if (status == null) {
+            status = StatusAudienciaEnum.AGENDADA;
+        }
+
         return new AudienciaDTO(
                 audiencia.getId(),
                 audiencia.getDataHora(),
                 audiencia.getLocal(),
                 audiencia.getObservacoes(),
-                audiencia.getStatus(),
+                status,
                 audiencia.getResumoPreparatorioIa(),
-                processoId
+                processoId,
+                responsavelId
         );
     }
 }

@@ -10,7 +10,7 @@ import com.sistemajuridico.backend.presentation.dtos.LoginDTO;
 import com.sistemajuridico.backend.presentation.dtos.RecuperarSenhaRequest;
 import com.sistemajuridico.backend.presentation.dtos.RedefinirSenhaRequest;
 import com.sistemajuridico.backend.presentation.dtos.TokenDTO;
-import com.sistemajuridico.backend.presentation.dtos.UsuarioDTO;
+import com.sistemajuridico.backend.presentation.dtos.UsuarioResponseDTO;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -49,7 +49,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<UsuarioDTO> me() {
+    public ResponseEntity<UsuarioResponseDTO> me() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String email = null;
         if (principal != null) {
@@ -62,7 +62,7 @@ public class AuthController {
         }
 
         Usuario usuario = optUsuario.get();
-        return ResponseEntity.ok(UsuarioDTO.fromEntity(usuario));
+        return ResponseEntity.ok(UsuarioResponseDTO.fromEntity(usuario));
     }
 
     @PostMapping("/recuperar-senha")

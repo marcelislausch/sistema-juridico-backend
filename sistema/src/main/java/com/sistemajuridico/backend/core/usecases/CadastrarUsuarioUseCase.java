@@ -47,4 +47,9 @@ public class CadastrarUsuarioUseCase {
         }
         return executar(usuario);
     }
+
+    public Usuario executar(com.sistemajuridico.backend.presentation.dtos.CriarUsuarioRequest request) {
+        Usuario usuario = request.toEntity();
+        return executar(usuario);
+    }
 }

@@ -5,16 +5,9 @@ import com.sistemajuridico.backend.core.domain.enums.PerfilAcessoEnum;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
-import java.util.UUID;
-
-/**
- * @deprecated Utilizar {@link CriarUsuarioRequest} para cadastro e {@link UsuarioResponseDTO} para respostas.
- */
-@Deprecated
-public record UsuarioDTO(
-        UUID id,
-
+public record CriarUsuarioRequest(
         @NotBlank(message = "O nome é obrigatório")
         String nome,
 
@@ -22,37 +15,28 @@ public record UsuarioDTO(
         @Email(message = "Formato de e-mail inválido")
         String email,
 
+        @NotBlank(message = "A senha é obrigatória")
+        @Size(min = 6, message = "A senha deve conter no mínimo 6 caracteres")
+        String senha,
+
         @NotNull(message = "O perfil de acesso é obrigatório")
         PerfilAcessoEnum perfil,
 
-        String oab,
-
-        boolean ativo
+        String oab
 ) {
 
     public Usuario toEntity() {
         Usuario usuario = new Usuario();
-        usuario.setId(this.id());
         usuario.setNome(this.nome());
         usuario.setEmail(this.email());
+        usuario.setSenhaHash(this.senha());
         usuario.setPerfil(this.perfil());
         if (this.oab() == null || this.oab().trim().isEmpty()) {
             usuario.setOab(null);
         } else {
             usuario.setOab(this.oab().trim());
         }
-        usuario.setAtivo(this.ativo());
+        usuario.setAtivo(true);
         return usuario;
-    }
-
-    public static UsuarioDTO fromEntity(Usuario usuario) {
-        return new UsuarioDTO(
-                usuario.getId(),
-                usuario.getNome(),
-                usuario.getEmail(),
-                usuario.getPerfil(),
-                usuario.getOab(),
-                usuario.isAtivo()
-        );
     }
 }

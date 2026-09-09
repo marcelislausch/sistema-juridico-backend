@@ -6,15 +6,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-import java.util.UUID;
-
-/**
- * @deprecated Utilizar {@link CriarUsuarioRequest} para cadastro e {@link UsuarioResponseDTO} para respostas.
- */
-@Deprecated
-public record UsuarioDTO(
-        UUID id,
-
+public record AtualizarUsuarioRequest(
         @NotBlank(message = "O nome é obrigatório")
         String nome,
 
@@ -27,12 +19,10 @@ public record UsuarioDTO(
 
         String oab,
 
-        boolean ativo
+        Boolean ativo
 ) {
 
-    public Usuario toEntity() {
-        Usuario usuario = new Usuario();
-        usuario.setId(this.id());
+    public void aplicarEm(Usuario usuario) {
         usuario.setNome(this.nome());
         usuario.setEmail(this.email());
         usuario.setPerfil(this.perfil());
@@ -41,18 +31,8 @@ public record UsuarioDTO(
         } else {
             usuario.setOab(this.oab().trim());
         }
-        usuario.setAtivo(this.ativo());
-        return usuario;
-    }
-
-    public static UsuarioDTO fromEntity(Usuario usuario) {
-        return new UsuarioDTO(
-                usuario.getId(),
-                usuario.getNome(),
-                usuario.getEmail(),
-                usuario.getPerfil(),
-                usuario.getOab(),
-                usuario.isAtivo()
-        );
+        if (this.ativo() != null) {
+            usuario.setAtivo(this.ativo());
+        }
     }
 }

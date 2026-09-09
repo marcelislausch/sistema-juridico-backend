@@ -4,7 +4,8 @@ import com.sistemajuridico.backend.core.domain.Usuario;
 import com.sistemajuridico.backend.core.usecases.BuscarUsuarioPorIdUseCase;
 import com.sistemajuridico.backend.core.usecases.CadastrarUsuarioUseCase;
 import com.sistemajuridico.backend.core.usecases.ListarAdvogadosUseCase;
-import com.sistemajuridico.backend.presentation.dtos.UsuarioDTO;
+import com.sistemajuridico.backend.presentation.dtos.CriarUsuarioRequest;
+import com.sistemajuridico.backend.presentation.dtos.UsuarioResponseDTO;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,24 +34,24 @@ public class UsuarioController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'ADVOGADO')")
     @PostMapping
-    public ResponseEntity<UsuarioDTO> criar(@RequestBody @Valid UsuarioDTO dto) {
-        Usuario usuario = dto.toEntity();
+    public ResponseEntity<UsuarioResponseDTO> criar(@RequestBody @Valid CriarUsuarioRequest request) {
+        Usuario usuario = request.toEntity();
         Usuario usuarioSalvo = cadastrarUsuarioUseCase.executar(usuario);
-        return ResponseEntity.status(HttpStatus.CREATED).body(UsuarioDTO.fromEntity(usuarioSalvo));
+        return ResponseEntity.status(HttpStatus.CREATED).body(UsuarioResponseDTO.fromEntity(usuarioSalvo));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UsuarioDTO> buscarPorId(@PathVariable UUID id) {
+    public ResponseEntity<UsuarioResponseDTO> buscarPorId(@PathVariable UUID id) {
         Usuario usuario = this.buscarUsuarioPorIdUseCase.executar(id);
-        return ResponseEntity.ok(UsuarioDTO.fromEntity(usuario));
+        return ResponseEntity.ok(UsuarioResponseDTO.fromEntity(usuario));
     }
 
     @GetMapping("/advogados")
-    public ResponseEntity<List<UsuarioDTO>> listarAdvogados() {
+    public ResponseEntity<List<UsuarioResponseDTO>> listarAdvogados() {
         List<Usuario> advogados = listarAdvogadosUseCase.executar();
-        List<UsuarioDTO> response = new ArrayList<>();
+        List<UsuarioResponseDTO> response = new ArrayList<>();
         for (Usuario advogado : advogados) {
-            response.add(UsuarioDTO.fromEntity(advogado));
+            response.add(UsuarioResponseDTO.fromEntity(advogado));
         }
         return ResponseEntity.ok(response);
     }
