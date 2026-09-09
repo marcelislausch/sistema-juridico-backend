@@ -10,6 +10,7 @@ import com.sistemajuridico.backend.core.usecases.CriarTarefaUseCase;
 import com.sistemajuridico.backend.core.usecases.ExcluirTarefaUseCase;
 import com.sistemajuridico.backend.core.usecases.ListarTarefasDashboardUseCase;
 import com.sistemajuridico.backend.core.usecases.ListarTarefasPorPeriodoUseCase;
+import com.sistemajuridico.backend.core.domain.enums.TipoTarefaEnum;
 import com.sistemajuridico.backend.infrastructure.persistence.UsuarioRepository;
 import com.sistemajuridico.backend.presentation.dtos.TarefaDTO;
 import jakarta.validation.Valid;
@@ -91,8 +92,13 @@ public class TarefaController {
 
     @GetMapping("/agenda")
     public ResponseEntity<List<TarefaDTO>> listarAgenda(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim,
+            @RequestParam(name = "inicio", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
+            @RequestParam(name = "fim", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim,
+            @RequestParam(name = "concluida", required = false) Boolean concluida,
+            @RequestParam(name = "status", required = false) String status,
+            @RequestParam(name = "tipo", required = false) TipoTarefaEnum tipo,
+            @RequestParam(name = "processoId", required = false) UUID processoId,
+            @RequestParam(name = "responsavelId", required = false) UUID responsavelId,
             Principal principal) {
         if (principal == null || principal.getName() == null) {
             throw new RegraNegocioException("Usuário não autenticado no sistema!");
@@ -104,8 +110,19 @@ public class TarefaController {
             throw new RecursoNaoEncontradoException("Usuário autenticado não encontrado no sistema!");
         }
 
-        UUID usuarioId = optUsuario.get().getId();
-        List<TarefaDTO> response = this.listarTarefasPorPeriodoUseCase.executar(usuarioId, inicio, fim);
+        Boolean filtroConcluida = concluida;
+        if (filtroConcluida == null && status != null) {
+            if ("CONCLUIDA".equalsIgnoreCase(status) || "CONCLUIDO".equalsIgnoreCase(status)) {
+                filtroConcluida = Boolean.TRUE;
+            } else if ("PENDENTE".equalsIgnoreCase(status)) {
+                filtroConcluida = Boolean.FALSE;
+            }
+        }
+
+        Usuario usuarioLogado = optUsuario.get();
+        List<TarefaDTO> response = this.listarTarefasPorPeriodoUseCase.executar(
+                usuarioLogado, inicio, fim, filtroConcluida, tipo, processoId, responsavelId
+        );
         return ResponseEntity.ok(response);
     }
 }

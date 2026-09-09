@@ -57,11 +57,20 @@ public class AudienciaController {
 
     @GetMapping("/agenda")
     public ResponseEntity<List<AudienciaDTO>> listarAgenda(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim) {
-        LocalDateTime inicioDia = inicio.atStartOfDay();
-        LocalDateTime fimDia = fim.atTime(23, 59, 59);
-        List<Audiencia> audiencias = listarAgendaGlobalUseCase.executar(inicioDia, fimDia);
+            @RequestParam(name = "inicio", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
+            @RequestParam(name = "fim", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim,
+            @RequestParam(name = "status", required = false) StatusAudienciaEnum status,
+            @RequestParam(name = "processoId", required = false) UUID processoId,
+            @RequestParam(name = "responsavelId", required = false) UUID responsavelId) {
+        LocalDateTime inicioDia = null;
+        if (inicio != null) {
+            inicioDia = inicio.atStartOfDay();
+        }
+        LocalDateTime fimDia = null;
+        if (fim != null) {
+            fimDia = fim.atTime(23, 59, 59);
+        }
+        List<Audiencia> audiencias = listarAgendaGlobalUseCase.executar(inicioDia, fimDia, status, processoId, responsavelId);
         List<AudienciaDTO> response = new ArrayList<>();
         for (Audiencia audiencia : audiencias) {
             response.add(AudienciaDTO.fromEntity(audiencia));

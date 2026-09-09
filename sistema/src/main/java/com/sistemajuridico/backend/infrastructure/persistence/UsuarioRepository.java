@@ -14,9 +14,22 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface UsuarioRepository extends JpaRepository<Usuario, UUID>, UsuarioRepositoryCustom {
+public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
     Optional<Usuario> findByEmail(String email);
     List<Usuario> findByPerfil(PerfilAcessoEnum perfil);
     List<Usuario> findByPerfilAndAtivoTrue(PerfilAcessoEnum perfil);
     List<Usuario> findByPerfilInAndAtivoTrue(List<PerfilAcessoEnum> perfis);
+
+    @Query(value = "SELECT u.* FROM tb_usuario u WHERE " +
+                   "(CAST(:ativo AS boolean) IS NULL OR u.ativo = CAST(:ativo AS boolean)) AND " +
+                   "(CAST(:termo AS text) IS NULL OR (" +
+                   "lower(u.nome) LIKE lower(concat('%', CAST(:termo AS text), '%')) OR " +
+                   "lower(u.email) LIKE lower(concat('%', CAST(:termo AS text), '%'))))",
+           countQuery = "SELECT count(u.id) FROM tb_usuario u WHERE " +
+                        "(CAST(:ativo AS boolean) IS NULL OR u.ativo = CAST(:ativo AS boolean)) AND " +
+                        "(CAST(:termo AS text) IS NULL OR (" +
+                        "lower(u.nome) LIKE lower(concat('%', CAST(:termo AS text), '%')) OR " +
+                        "lower(u.email) LIKE lower(concat('%', CAST(:termo AS text), '%'))))",
+           nativeQuery = true)
+    Page<Usuario> buscarComFiltros(@Param("ativo") Boolean ativo, @Param("termo") String termo, Pageable pageable);
 }

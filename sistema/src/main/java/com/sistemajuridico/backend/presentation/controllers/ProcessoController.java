@@ -1,6 +1,7 @@
 package com.sistemajuridico.backend.presentation.controllers;
 
 import com.sistemajuridico.backend.core.domain.Processo;
+import com.sistemajuridico.backend.core.domain.enums.FaseProcessualEnum;
 import com.sistemajuridico.backend.core.usecases.*;
 import com.sistemajuridico.backend.presentation.dtos.ProcessoDTO;
 import jakarta.validation.Valid;
@@ -53,10 +54,24 @@ public class ProcessoController {
 
     @GetMapping
     public ResponseEntity<Page<ProcessoDTO>> listar(
-            @RequestParam(required = false) String termoBusca,
-            @RequestParam(required = false) Boolean arquivado,
+            @RequestParam(name = "q", required = false) String q,
+            @RequestParam(name = "termoBusca", required = false) String termoBusca,
+            @RequestParam(name = "termo", required = false) String termoParam,
+            @RequestParam(name = "fase", required = false) FaseProcessualEnum fase,
+            @RequestParam(name = "arquivado", required = false) Boolean arquivado,
+            @RequestParam(name = "clienteId", required = false) UUID clienteId,
+            @RequestParam(name = "advogadoId", required = false) UUID advogadoId,
             @PageableDefault(size = 10) Pageable pageable) {
-        Page<Processo> paginaProcessos = this.listarProcessosUseCase.executar(termoBusca, arquivado, pageable);
+        String termo = null;
+        if (q != null && !q.trim().isEmpty()) {
+            termo = q.trim();
+        } else if (termoBusca != null && !termoBusca.trim().isEmpty()) {
+            termo = termoBusca.trim();
+        } else if (termoParam != null && !termoParam.trim().isEmpty()) {
+            termo = termoParam.trim();
+        }
+
+        Page<Processo> paginaProcessos = this.listarProcessosUseCase.executar(termo, fase, arquivado, clienteId, advogadoId, pageable);
         List<ProcessoDTO> dtos = new ArrayList<>();
         for (Processo processo : paginaProcessos.getContent()) {
             dtos.add(ProcessoDTO.fromEntity(processo));

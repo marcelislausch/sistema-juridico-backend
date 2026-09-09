@@ -7,6 +7,7 @@ import com.sistemajuridico.backend.core.usecases.CadastrarClienteUseCase;
 import com.sistemajuridico.backend.core.usecases.GerarContratoHonorariosUseCase;
 import com.sistemajuridico.backend.core.usecases.GerarProcuracaoClienteUseCase;
 import com.sistemajuridico.backend.core.usecases.ListarClientesUseCase;
+import com.sistemajuridico.backend.core.domain.enums.TipoClienteEnum;
 import com.sistemajuridico.backend.presentation.dtos.ClienteDTO;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -63,9 +64,21 @@ public class ClienteController {
 
     @GetMapping
     public ResponseEntity<Page<ClienteDTO>> listar(
-            @RequestParam(required = false) String termoBusca,
+            @RequestParam(name = "q", required = false) String q,
+            @RequestParam(name = "termoBusca", required = false) String termoBusca,
+            @RequestParam(name = "termo", required = false) String termoParam,
+            @RequestParam(name = "tipo", required = false) TipoClienteEnum tipo,
             @PageableDefault(size = 10) Pageable pageable) {
-        Page<Cliente> paginaClientes = this.listarClientesUseCase.executar(termoBusca, pageable);
+        String termo = null;
+        if (q != null && !q.trim().isEmpty()) {
+            termo = q.trim();
+        } else if (termoBusca != null && !termoBusca.trim().isEmpty()) {
+            termo = termoBusca.trim();
+        } else if (termoParam != null && !termoParam.trim().isEmpty()) {
+            termo = termoParam.trim();
+        }
+
+        Page<Cliente> paginaClientes = this.listarClientesUseCase.executar(tipo, termo, pageable);
         List<ClienteDTO> dtos = new ArrayList<>();
         for (Cliente cliente : paginaClientes.getContent()) {
             dtos.add(ClienteDTO.fromEntity(cliente));

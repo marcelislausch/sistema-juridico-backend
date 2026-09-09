@@ -36,4 +36,38 @@ public interface ProcessoRepository extends JpaRepository<Processo, UUID> {
            "LOWER(p.assunto) LIKE LOWER(CONCAT('%', :termo, '%')) OR " +
            "LOWER(p.cliente.nome) LIKE LOWER(CONCAT('%', :termo, '%')))")
     Page<Processo> buscarPorFaseDiferenteETermo(@Param("faseAtual") FaseProcessualEnum faseAtual, @Param("termo") String termo, Pageable pageable);
+
+    @Query(value = "SELECT p.* FROM tb_processo p " +
+                   "JOIN tb_cliente c ON c.id = p.cliente_id WHERE " +
+                   "((CAST(:fase AS text) IS NOT NULL AND p.fase_atual = CAST(:fase AS text)) OR " +
+                   " (CAST(:fase AS text) IS NULL AND (" +
+                   "   CAST(:arquivado AS boolean) IS NULL OR " +
+                   "   (CAST(:arquivado AS boolean) IS TRUE AND p.fase_atual = 'ARQUIVADO') OR " +
+                   "   (CAST(:arquivado AS boolean) IS FALSE AND p.fase_atual != 'ARQUIVADO')))) AND " +
+                   "(CAST(:clienteId AS uuid) IS NULL OR p.cliente_id = CAST(:clienteId AS uuid)) AND " +
+                   "(CAST(:advogadoId AS uuid) IS NULL OR p.usuario_id = CAST(:advogadoId AS uuid)) AND " +
+                   "(CAST(:termo AS text) IS NULL OR (" +
+                   "  lower(p.numero_cnj) LIKE lower(concat('%', CAST(:termo AS text), '%')) OR " +
+                   "  lower(p.assunto) LIKE lower(concat('%', CAST(:termo AS text), '%')) OR " +
+                   "  lower(c.nome) LIKE lower(concat('%', CAST(:termo AS text), '%'))))",
+           countQuery = "SELECT count(p.id) FROM tb_processo p " +
+                        "JOIN tb_cliente c ON c.id = p.cliente_id WHERE " +
+                        "((CAST(:fase AS text) IS NOT NULL AND p.fase_atual = CAST(:fase AS text)) OR " +
+                        " (CAST(:fase AS text) IS NULL AND (" +
+                        "   CAST(:arquivado AS boolean) IS NULL OR " +
+                        "   (CAST(:arquivado AS boolean) IS TRUE AND p.fase_atual = 'ARQUIVADO') OR " +
+                        "   (CAST(:arquivado AS boolean) IS FALSE AND p.fase_atual != 'ARQUIVADO')))) AND " +
+                        "(CAST(:clienteId AS uuid) IS NULL OR p.cliente_id = CAST(:clienteId AS uuid)) AND " +
+                        "(CAST(:advogadoId AS uuid) IS NULL OR p.usuario_id = CAST(:advogadoId AS uuid)) AND " +
+                        "(CAST(:termo AS text) IS NULL OR (" +
+                        "  lower(p.numero_cnj) LIKE lower(concat('%', CAST(:termo AS text), '%')) OR " +
+                        "  lower(p.assunto) LIKE lower(concat('%', CAST(:termo AS text), '%')) OR " +
+                        "  lower(c.nome) LIKE lower(concat('%', CAST(:termo AS text), '%'))))",
+           nativeQuery = true)
+    Page<Processo> buscarComFiltros(@Param("termo") String termo,
+                                    @Param("fase") String fase,
+                                    @Param("arquivado") Boolean arquivado,
+                                    @Param("clienteId") UUID clienteId,
+                                    @Param("advogadoId") UUID advogadoId,
+                                    Pageable pageable);
 }

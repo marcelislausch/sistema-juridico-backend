@@ -10,15 +10,18 @@ import com.sistemajuridico.backend.presentation.dtos.LiquidarFaturamentoDTO;
 import com.sistemajuridico.backend.presentation.dtos.ResumoFinanceiroDTO;
 import com.sistemajuridico.backend.core.domain.enums.NaturezaFaturamentoEnum;
 import com.sistemajuridico.backend.core.domain.enums.StatusFaturamentoEnum;
+import com.sistemajuridico.backend.core.domain.enums.TipoFaturamentoEnum;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -73,10 +76,28 @@ public class FaturamentoController {
 
     @GetMapping
     public ResponseEntity<Page<FaturamentoDTO>> listarTodos(
-            @RequestParam(required = false) StatusFaturamentoEnum status,
-            @RequestParam(required = false) NaturezaFaturamentoEnum natureza,
+            @RequestParam(name = "q", required = false) String q,
+            @RequestParam(name = "termoBusca", required = false) String termoBusca,
+            @RequestParam(name = "termo", required = false) String termoParam,
+            @RequestParam(name = "status", required = false) StatusFaturamentoEnum status,
+            @RequestParam(name = "natureza", required = false) NaturezaFaturamentoEnum natureza,
+            @RequestParam(name = "tipo", required = false) TipoFaturamentoEnum tipo,
+            @RequestParam(name = "vencimentoDe", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate vencimentoDe,
+            @RequestParam(name = "vencimentoAte", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate vencimentoAte,
+            @RequestParam(name = "processoId", required = false) UUID processoId,
             @PageableDefault(size = 10) Pageable pageable) {
-        Page<Faturamento> paginaFaturamentos = this.listarFaturamentosUseCase.buscarTodos(status, natureza, pageable);
+        String termo = null;
+        if (q != null && !q.trim().isEmpty()) {
+            termo = q.trim();
+        } else if (termoBusca != null && !termoBusca.trim().isEmpty()) {
+            termo = termoBusca.trim();
+        } else if (termoParam != null && !termoParam.trim().isEmpty()) {
+            termo = termoParam.trim();
+        }
+
+        Page<Faturamento> paginaFaturamentos = this.listarFaturamentosUseCase.buscarComFiltros(
+                termo, status, natureza, tipo, vencimentoDe, vencimentoAte, processoId, pageable
+        );
         List<FaturamentoDTO> dtos = new ArrayList<>();
         for (Faturamento faturamento : paginaFaturamentos.getContent()) {
             dtos.add(FaturamentoDTO.fromEntity(faturamento));

@@ -47,10 +47,21 @@ public class UsuarioController {
     @PreAuthorize("hasAnyRole('ADMIN', 'ADVOGADO')")
     @Operation(summary = "Listagem paginada dos membros da equipe com suporte a filtros")
     public ResponseEntity<Page<UsuarioResponseDTO>> listar(
-            @RequestParam(required = false) Boolean ativo,
+            @RequestParam(name = "ativo", required = false) Boolean ativo,
             @RequestParam(name = "q", required = false) String q,
+            @RequestParam(name = "termoBusca", required = false) String termoBusca,
+            @RequestParam(name = "termo", required = false) String termoParam,
             @PageableDefault(size = 20, sort = "nome") Pageable pageable) {
-        Page<Usuario> pagina = this.listarUsuariosUseCase.executar(ativo, q, pageable);
+        String termo = null;
+        if (q != null && !q.trim().isEmpty()) {
+            termo = q.trim();
+        } else if (termoBusca != null && !termoBusca.trim().isEmpty()) {
+            termo = termoBusca.trim();
+        } else if (termoParam != null && !termoParam.trim().isEmpty()) {
+            termo = termoParam.trim();
+        }
+
+        Page<Usuario> pagina = this.listarUsuariosUseCase.executar(ativo, termo, pageable);
         List<UsuarioResponseDTO> dtos = new ArrayList<>();
         for (Usuario u : pagina.getContent()) {
             dtos.add(UsuarioResponseDTO.fromEntity(u));

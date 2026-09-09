@@ -1,6 +1,9 @@
 package com.sistemajuridico.backend.core.usecases;
 
 import com.sistemajuridico.backend.core.domain.Tarefa;
+import com.sistemajuridico.backend.core.domain.Usuario;
+import com.sistemajuridico.backend.core.domain.enums.PerfilAcessoEnum;
+import com.sistemajuridico.backend.core.domain.enums.TipoTarefaEnum;
 import com.sistemajuridico.backend.core.domain.exceptions.RegraNegocioException;
 import com.sistemajuridico.backend.infrastructure.persistence.TarefaRepository;
 import com.sistemajuridico.backend.presentation.dtos.TarefaDTO;
@@ -18,6 +21,42 @@ public class ListarTarefasPorPeriodoUseCase {
 
     public ListarTarefasPorPeriodoUseCase(TarefaRepository tarefaRepository) {
         this.tarefaRepository = tarefaRepository;
+    }
+
+    public List<TarefaDTO> executar(Usuario usuarioLogado,
+                                    LocalDate inicio,
+                                    LocalDate fim,
+                                    Boolean concluida,
+                                    TipoTarefaEnum tipo,
+                                    UUID processoId,
+                                    UUID responsavelId) {
+        if (usuarioLogado == null) {
+            throw new RegraNegocioException("Usuário autenticado não informado para a consulta.");
+        }
+
+        if (inicio != null && fim != null && inicio.isAfter(fim)) {
+            throw new RegraNegocioException("A data inicial não pode ser posterior à data final.");
+        }
+
+        UUID filtroUsuarioId;
+        if (usuarioLogado.getPerfil() == PerfilAcessoEnum.ADMIN || usuarioLogado.getPerfil() == PerfilAcessoEnum.SECRETARIA) {
+            filtroUsuarioId = responsavelId;
+        } else {
+            filtroUsuarioId = usuarioLogado.getId();
+        }
+
+        String tipoStr = null;
+        if (tipo != null) {
+            tipoStr = tipo.name();
+        }
+
+        List<Tarefa> tarefas = this.tarefaRepository.buscarAgenda(filtroUsuarioId, inicio, fim, concluida, tipoStr, processoId);
+        List<TarefaDTO> resultado = new ArrayList<>();
+        for (Tarefa tarefa : tarefas) {
+            resultado.add(TarefaDTO.fromEntity(tarefa));
+        }
+
+        return resultado;
     }
 
     public List<TarefaDTO> executar(UUID usuarioId, LocalDate inicio, LocalDate fim) {
