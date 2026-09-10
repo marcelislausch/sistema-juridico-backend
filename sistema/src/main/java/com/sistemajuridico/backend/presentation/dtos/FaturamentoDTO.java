@@ -1,5 +1,7 @@
 package com.sistemajuridico.backend.presentation.dtos;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sistemajuridico.backend.core.domain.Faturamento;
 import com.sistemajuridico.backend.core.domain.enums.NaturezaFaturamentoEnum;
 import com.sistemajuridico.backend.core.domain.enums.StatusFaturamentoEnum;
@@ -35,8 +37,33 @@ public record FaturamentoDTO(
 
         LocalDate dataPagamento,
 
-        UUID processoId
+        @JsonAlias({"processoId"})
+        ProcessoResumoDTO processo
 ) {
+
+    public FaturamentoDTO(
+            UUID id,
+            String descricao,
+            BigDecimal valor,
+            TipoFaturamentoEnum tipo,
+            StatusFaturamentoEnum status,
+            NaturezaFaturamentoEnum natureza,
+            LocalDate dataVencimento,
+            LocalDate dataPagamento,
+            UUID processoId
+    ) {
+        this(
+                id,
+                descricao,
+                valor,
+                tipo,
+                status,
+                natureza,
+                dataVencimento,
+                dataPagamento,
+                processoId != null ? new ProcessoResumoDTO(processoId, null, null) : null
+        );
+    }
 
     public Faturamento toEntity() {
         Faturamento faturamento = new Faturamento();
@@ -52,9 +79,12 @@ public record FaturamentoDTO(
     }
 
     public static FaturamentoDTO fromEntity(Faturamento faturamento) {
-        UUID processoId = null;
+        if (faturamento == null) {
+            return null;
+        }
+        ProcessoResumoDTO processo = null;
         if (faturamento.getProcesso() != null) {
-            processoId = faturamento.getProcesso().getId();
+            processo = ProcessoResumoDTO.fromEntity(faturamento.getProcesso());
         }
         return new FaturamentoDTO(
                 faturamento.getId(),
@@ -65,7 +95,12 @@ public record FaturamentoDTO(
                 faturamento.getNatureza(),
                 faturamento.getDataVencimento(),
                 faturamento.getDataPagamento(),
-                processoId
+                processo
         );
+    }
+
+    @JsonIgnore
+    public UUID processoId() {
+        return this.processo != null ? this.processo.id() : null;
     }
 }

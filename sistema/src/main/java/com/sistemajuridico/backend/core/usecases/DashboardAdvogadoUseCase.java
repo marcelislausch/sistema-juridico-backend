@@ -16,6 +16,7 @@ import com.sistemajuridico.backend.presentation.dtos.FaturamentoDTO;
 import com.sistemajuridico.backend.presentation.dtos.ResumoDashboardDTO;
 import com.sistemajuridico.backend.presentation.dtos.TarefaDTO;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -46,6 +47,7 @@ public class DashboardAdvogadoUseCase {
         this.audienciaRepository = audienciaRepository;
     }
 
+    @Transactional(readOnly = true)
     public ResumoDashboardDTO executar(UUID usuarioId) {
         int totalClientesAtivos = this.clienteRepository.findAll().size();
         int totalProcessosAndamento = this.processoRepository.countByAdvogadoIdAndFaseAtualNot(usuarioId, FaseProcessualEnum.ARQUIVADO);
@@ -63,7 +65,8 @@ public class DashboardAdvogadoUseCase {
         List<TarefaDTO> proximasTarefas = new ArrayList<>();
         int limiteTarefas = Math.min(5, pendentes.size());
         for (int i = 0; i < limiteTarefas; i++) {
-            proximasTarefas.add(TarefaDTO.fromEntity(pendentes.get(i)));
+            Tarefa tarefa = pendentes.get(i);
+            proximasTarefas.add(TarefaDTO.fromEntity(tarefa));
         }
 
         List<Faturamento> faturasReceber = this.faturamentoRepository.findByStatusAndNaturezaOrderByDataVencimentoAsc(
@@ -81,7 +84,8 @@ public class DashboardAdvogadoUseCase {
         List<FaturamentoDTO> proximasFaturasReceber = new ArrayList<>();
         int limiteFaturas = Math.min(5, faturasReceber.size());
         for (int i = 0; i < limiteFaturas; i++) {
-            proximasFaturasReceber.add(FaturamentoDTO.fromEntity(faturasReceber.get(i)));
+            Faturamento faturamento = faturasReceber.get(i);
+            proximasFaturasReceber.add(FaturamentoDTO.fromEntity(faturamento));
         }
 
         LocalDateTime inicioHoje = hoje.atStartOfDay();

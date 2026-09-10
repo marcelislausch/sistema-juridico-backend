@@ -1,5 +1,7 @@
 package com.sistemajuridico.backend.presentation.dtos;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sistemajuridico.backend.core.domain.Tarefa;
 import com.sistemajuridico.backend.core.domain.enums.TipoTarefaEnum;
 import jakarta.validation.constraints.NotBlank;
@@ -24,8 +26,29 @@ public record TarefaDTO(
         @NotNull(message = "O usuário responsável é obrigatório")
         UUID usuarioId,
 
-        UUID processoId
+        @JsonAlias({"processoId"})
+        ProcessoResumoDTO processo
 ) {
+
+    public TarefaDTO(
+            UUID id,
+            String descricao,
+            LocalDate dataVencimento,
+            Boolean concluida,
+            TipoTarefaEnum tipo,
+            UUID usuarioId,
+            UUID processoId
+    ) {
+        this(
+                id,
+                descricao,
+                dataVencimento,
+                concluida,
+                tipo,
+                usuarioId,
+                processoId != null ? new ProcessoResumoDTO(processoId, null, null) : null
+        );
+    }
 
     public Tarefa toEntity() {
         Tarefa tarefa = new Tarefa();
@@ -38,9 +61,13 @@ public record TarefaDTO(
     }
 
     public static TarefaDTO fromEntity(Tarefa tarefa) {
-        UUID processoId = null;
+        if (tarefa == null) {
+            return null;
+        }
+
+        ProcessoResumoDTO processo = null;
         if (tarefa.getProcesso() != null) {
-            processoId = tarefa.getProcesso().getId();
+            processo = ProcessoResumoDTO.fromEntity(tarefa.getProcesso());
         }
 
         UUID usuarioId = null;
@@ -55,7 +82,12 @@ public record TarefaDTO(
                 tarefa.getConcluida(),
                 tarefa.getTipo(),
                 usuarioId,
-                processoId
+                processo
         );
+    }
+
+    @JsonIgnore
+    public UUID processoId() {
+        return this.processo != null ? this.processo.id() : null;
     }
 }

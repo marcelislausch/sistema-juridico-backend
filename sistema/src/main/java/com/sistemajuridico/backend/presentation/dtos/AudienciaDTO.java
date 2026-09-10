@@ -1,5 +1,7 @@
 package com.sistemajuridico.backend.presentation.dtos;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonRawValue;
 import com.sistemajuridico.backend.core.domain.Audiencia;
 import com.sistemajuridico.backend.core.domain.enums.StatusAudienciaEnum;
@@ -25,8 +27,9 @@ public record AudienciaDTO(
         @JsonRawValue
         String resumoPreparatorioIa,
 
-        @NotNull(message = "O ID do processo é obrigatório")
-        UUID processoId,
+        @NotNull(message = "O processo é obrigatório")
+        @JsonAlias({"processoId"})
+        ProcessoResumoDTO processo,
 
         UUID responsavelId
 ) {
@@ -38,9 +41,36 @@ public record AudienciaDTO(
             String observacoes,
             StatusAudienciaEnum status,
             String resumoPreparatorioIa,
+            ProcessoResumoDTO processo
+    ) {
+        this(id, dataHora, local, observacoes, status, resumoPreparatorioIa, processo, null);
+    }
+
+    public AudienciaDTO(
+            UUID id,
+            LocalDateTime dataHora,
+            String local,
+            String observacoes,
+            StatusAudienciaEnum status,
+            String resumoPreparatorioIa,
             UUID processoId
     ) {
-        this(id, dataHora, local, observacoes, status, resumoPreparatorioIa, processoId, null);
+        this(id, dataHora, local, observacoes, status, resumoPreparatorioIa,
+                processoId != null ? new ProcessoResumoDTO(processoId, null, null) : null, null);
+    }
+
+    public AudienciaDTO(
+            UUID id,
+            LocalDateTime dataHora,
+            String local,
+            String observacoes,
+            StatusAudienciaEnum status,
+            String resumoPreparatorioIa,
+            UUID processoId,
+            UUID responsavelId
+    ) {
+        this(id, dataHora, local, observacoes, status, resumoPreparatorioIa,
+                processoId != null ? new ProcessoResumoDTO(processoId, null, null) : null, responsavelId);
     }
 
     public Audiencia toEntity() {
@@ -59,11 +89,11 @@ public record AudienciaDTO(
             return null;
         }
 
-        UUID processoId = null;
+        ProcessoResumoDTO processo = null;
         UUID responsavelId = null;
 
         if (audiencia.getProcesso() != null) {
-            processoId = audiencia.getProcesso().getId();
+            processo = ProcessoResumoDTO.fromEntity(audiencia.getProcesso());
             if (audiencia.getProcesso().getAdvogado() != null) {
                 responsavelId = audiencia.getProcesso().getAdvogado().getId();
             }
@@ -81,8 +111,13 @@ public record AudienciaDTO(
                 audiencia.getObservacoes(),
                 status,
                 audiencia.getResumoPreparatorioIa(),
-                processoId,
+                processo,
                 responsavelId
         );
+    }
+
+    @JsonIgnore
+    public UUID processoId() {
+        return this.processo != null ? this.processo.id() : null;
     }
 }
