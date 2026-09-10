@@ -29,15 +29,16 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           source: "sistema/target/*.jar"
-          target: "/opt/sistema-juridico/"
+          target: "/opt/sistema-juridico/upload/"
           strip_components: 2
 
-      - name: Renomear arquivo e reiniciar serviço
+      - name: Atualizar app.jar e reiniciar serviço
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            mv /opt/sistema-juridico/*.jar /opt/sistema-juridico/app.jar
+            mv -f /opt/sistema-juridico/upload/*.jar /opt/sistema-juridico/app.jar
+            rm -rf /opt/sistema-juridico/upload
             sudo systemctl restart sistema-juridico.service
