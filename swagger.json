@@ -16,13 +16,591 @@
       "bearerAuth": []
     }
   ],
+  "tags": [
+    {
+      "name": "Andamentos",
+      "description": "Registro e acompanhamento de andamentos processuais"
+    },
+    {
+      "name": "Usuários",
+      "description": "Gestão de equipe, perfis de acesso e credenciais"
+    },
+    {
+      "name": "Busca Global",
+      "description": "Pesquisa unificada em múltiplos domínios (Processos, Clientes, Equipe)"
+    },
+    {
+      "name": "Configurações do Escritório",
+      "description": "Gerenciamento dos dados cadastrais e institucionais do escritório"
+    },
+    {
+      "name": "Processos",
+      "description": "Gestão de processos judiciais, fases processuais e arquivamento"
+    },
+    {
+      "name": "Inteligência Artificial",
+      "description": "Serviços de inteligência artificial e geração de resumos para peças e audiências"
+    },
+    {
+      "name": "Financeiro",
+      "description": "Gestão de faturamentos, honorários, liquidação e relatórios financeiros"
+    },
+    {
+      "name": "Audiências",
+      "description": "Gestão e agendamento de audiências judiciais e resumos preparatórios via IA"
+    },
+    {
+      "name": "Clientes",
+      "description": "Gestão cadastral de clientes, procurações e contratos de honorários"
+    },
+    {
+      "name": "Notificações",
+      "description": "Central de notificações operacionais unificadas do escritório"
+    },
+    {
+      "name": "Tarefas",
+      "description": "Gestão de tarefas internas, agenda operacional e prazos"
+    },
+    {
+      "name": "Integrações Externas",
+      "description": "Monitoramento e integração com serviços judiciais e tribunais eletrônicos"
+    },
+    {
+      "name": "Documentos",
+      "description": "Gestão de arquivos, upload multipart e download de documentos"
+    },
+    {
+      "name": "Autenticação",
+      "description": "Login, perfil autenticado, recuperação e alteração de senha"
+    },
+    {
+      "name": "Dashboard",
+      "description": "Métricas consolidadas, contadores e visão geral do advogado"
+    }
+  ],
   "paths": {
-    "/api/clientes/{id}": {
+    "/api/tarefas/{id}": {
       "put": {
         "tags": [
-          "cliente-controller"
+          "Tarefas"
         ],
+        "summary": "Atualizar tarefa",
+        "description": "Atualiza os dados de uma tarefa existente",
         "operationId": "atualizar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TarefaDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "404": {
+            "description": "Tarefa não encontrada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito de integridade",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados de requisição inválidos",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroValidacaoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regra de negócio violada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Tarefa atualizada com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarefaDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Tarefas"
+        ],
+        "summary": "Excluir tarefa",
+        "description": "Remove uma tarefa do sistema",
+        "operationId": "excluir",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Tarefa excluída com sucesso"
+          },
+          "409": {
+            "description": "Conflito de integridade referencial",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tarefa não encontrada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/processos/{id}": {
+      "get": {
+        "tags": [
+          "Processos"
+        ],
+        "summary": "Buscar processo por ID",
+        "description": "Recupera os detalhes completos de um processo através do seu identificador único",
+        "operationId": "buscarPorId_1",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Processo não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Processo encontrado com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Processos"
+        ],
+        "summary": "Atualizar processo",
+        "description": "Atualiza os dados de um processo judicial existente",
+        "operationId": "atualizar_1",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProcessoDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "404": {
+            "description": "Processo não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito de integridade",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Processo atualizado com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regra de negócio violada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados de requisição inválidos ou campos incorretos",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroValidacaoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/configuracoes/escritorio": {
+      "get": {
+        "tags": [
+          "Configurações do Escritório"
+        ],
+        "summary": "Obter dados do escritório",
+        "description": "Recupera as informações institucionais, endereço e contatos do escritório",
+        "operationId": "obterConfiguracao",
+        "responses": {
+          "404": {
+            "description": "Configuração do escritório não encontrada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Dados do escritório recuperados com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EscritorioDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Configurações do Escritório"
+        ],
+        "summary": "Atualizar dados do escritório",
+        "description": "Atualiza os dados institucionais, endereço e contatos do escritório",
+        "operationId": "atualizarConfiguracao",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EscritorioDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Configurações atualizadas com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EscritorioDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados cadastrais inválidos",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroValidacaoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regra de negócio violada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/clientes/{id}": {
+      "get": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Buscar cliente por ID",
+        "description": "Recupera os detalhes de um cliente através do seu identificador único",
+        "operationId": "buscarPorId_2",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cliente encontrado com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClienteDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Cliente não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Atualizar dados do cliente",
+        "description": "Atualiza as informações cadastrais de um cliente existente",
+        "operationId": "atualizar_2",
         "parameters": [
           {
             "name": "id",
@@ -45,12 +623,300 @@
           "required": true
         },
         "responses": {
+          "400": {
+            "description": "Dados de requisição inválidos ou campos não atendem as validações",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroValidacaoDTO"
+                }
+              }
+            }
+          },
           "200": {
-            "description": "OK",
+            "description": "Cliente atualizado com sucesso",
             "content": {
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ClienteDTO"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito de integridade",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Cliente não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regra de negócio violada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/audiencias/{id}": {
+      "get": {
+        "tags": [
+          "Audiências"
+        ],
+        "summary": "Buscar audiência por ID",
+        "description": "Recupera os detalhes de uma audiência pelo identificador único",
+        "operationId": "buscarPorId_3",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Audiência não encontrada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Audiência retornada com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudienciaDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Audiências"
+        ],
+        "summary": "Atualizar audiência",
+        "description": "Atualiza os dados de uma audiência agendada",
+        "operationId": "atualizar_3",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AudienciaDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "404": {
+            "description": "Audiência não encontrada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Audiência atualizada com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudienciaDTO"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito de integridade",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados de requisição inválidos",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroValidacaoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regra de negócio violada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Audiências"
+        ],
+        "summary": "Excluir audiência",
+        "description": "Remove um agendamento de audiência",
+        "operationId": "excluir_2",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Audiência não encontrada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Audiência excluída com sucesso"
+          },
+          "409": {
+            "description": "Conflito de integridade referencial",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
                 }
               }
             }
@@ -59,28 +925,201 @@
       }
     },
     "/api/usuarios": {
+      "get": {
+        "tags": [
+          "Usuários"
+        ],
+        "summary": "Listagem paginada dos membros da equipe",
+        "description": "Retorna lista paginada de usuários da equipe com filtros por status ativo e termo textual",
+        "operationId": "listar",
+        "parameters": [
+          {
+            "name": "ativo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "termoBusca",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "termo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Zero-based page index (0..N)",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "The size of the page to be returned",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": [
+                "nome,ASC"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de usuários retornada com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedModel"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetros de consulta inválidos",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido para o perfil atual",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
-          "usuario-controller"
+          "Usuários"
         ],
+        "summary": "Cadastrar novo usuário",
+        "description": "Cadastra um novo membro da equipe (ADMIN, ADVOGADO ou SECRETARIA)",
         "operationId": "criar",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UsuarioDTO"
+                "$ref": "#/components/schemas/CriarUsuarioRequest"
               }
             }
           },
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "400": {
+            "description": "Dados de requisição inválidos ou campos não atendem as validações",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/UsuarioDTO"
+                  "$ref": "#/components/schemas/ErroValidacaoDTO"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Usuário cadastrado com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioResponseDTO"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito de integridade (ex: e-mail já cadastrado)",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regra de negócio violada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
                 }
               }
             }
@@ -91,8 +1130,10 @@
     "/api/tarefas": {
       "post": {
         "tags": [
-          "tarefa-controller"
+          "Tarefas"
         ],
+        "summary": "Criar nova tarefa",
+        "description": "Cadastra uma nova tarefa atribuída a um responsável e opcionalmente vinculada a um processo",
         "operationId": "criar_1",
         "requestBody": {
           "content": {
@@ -105,8 +1146,68 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Usuário responsável ou processo informado não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito de integridade",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados de requisição inválidos ou campos obrigatórios ausentes",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroValidacaoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regra de negócio violada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Tarefa criada com sucesso",
             "content": {
               "*/*": {
                 "schema": {
@@ -119,10 +1220,163 @@
       }
     },
     "/api/processos": {
+      "get": {
+        "tags": [
+          "Processos"
+        ],
+        "summary": "Listar processos com paginação e filtros",
+        "description": "Consulta paginada de processos com suporte a filtros dinâmicos por termo, fase, cliente, advogado e status de arquivamento",
+        "operationId": "listar_1",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "termoBusca",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "termo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fase",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PROTOCOLADO",
+                "EM_ANDAMENTO",
+                "EM_RECURSO",
+                "SUSPENSO",
+                "ARQUIVADO"
+              ]
+            }
+          },
+          {
+            "name": "arquivado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "clienteId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "advogadoId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Zero-based page index (0..N)",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "The size of the page to be returned",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Parâmetros de consulta inválidos",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Página de processos retornada com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedModel"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
-          "processo-controller"
+          "Processos"
         ],
+        "summary": "Cadastrar novo processo",
+        "description": "Cadastra um novo processo judicial vinculado a um cliente e advogado responsável",
         "operationId": "criar_2",
         "requestBody": {
           "content": {
@@ -135,12 +1389,72 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Processo cadastrado com sucesso",
             "content": {
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ProcessoDTO"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito de integridade (ex: número CNJ já existente)",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Cliente ou advogado informado não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados de requisição inválidos ou campos obrigatórios ausentes",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroValidacaoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regra de negócio violada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
                 }
               }
             }
@@ -151,8 +1465,10 @@
     "/api/processos/{processoId}/andamentos": {
       "get": {
         "tags": [
-          "andamento-controller"
+          "Andamentos"
         ],
+        "summary": "Listar andamentos por processo",
+        "description": "Recupera o histórico cronológico de andamentos do processo informado",
         "operationId": "listarPorProcesso",
         "parameters": [
           {
@@ -166,8 +1482,18 @@
           }
         ],
         "responses": {
+          "404": {
+            "description": "Processo não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
           "200": {
-            "description": "OK",
+            "description": "Lista de andamentos retornada com sucesso",
             "content": {
               "*/*": {
                 "schema": {
@@ -178,13 +1504,35 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
           }
         }
       },
       "post": {
         "tags": [
-          "andamento-controller"
+          "Andamentos"
         ],
+        "summary": "Cadastrar andamento processual",
+        "description": "Registra um novo andamento ou movimentação vinculada a um processo judicial",
         "operationId": "criar_3",
         "parameters": [
           {
@@ -208,8 +1556,68 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Processo não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito de integridade",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados de requisição inválidos",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroValidacaoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regra de negócio violada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Andamento cadastrado com sucesso",
             "content": {
               "*/*": {
                 "schema": {
@@ -224,8 +1632,10 @@
     "/api/ia/resumos/audiencia": {
       "post": {
         "tags": [
-          "resumo-audiencia-controller"
+          "Inteligência Artificial"
         ],
+        "summary": "Gerar resumo preparatório de audiência via IA a partir de documentos dos autos",
+        "description": "Baixa os PDFs anexados no Google Drive, extrai o texto processual e gera um dossiê tático estruturado com fatos incontroversos, fatos controvertidos, riscos processuais, roteiro de perguntas e parâmetros de acordo",
         "operationId": "resumirParaAudiencia",
         "requestBody": {
           "content": {
@@ -238,12 +1648,52 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "400": {
+            "description": "Lista de identificadores de documentos inválida ou vazia",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/ErroValidacaoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Falha ao baixar documentos ou processar resumo pelo modelo de IA",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Resumo estruturado gerado com sucesso pela inteligência artificial",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumoAudienciaEstruturadoDTO"
                 }
               }
             }
@@ -254,19 +1704,173 @@
     "/api/faturamentos": {
       "get": {
         "tags": [
-          "faturamento-controller"
+          "Financeiro"
         ],
+        "summary": "Listar faturamentos com filtros e paginação",
+        "description": "Consulta paginada de lançamentos financeiros com múltiplos filtros",
         "operationId": "listarTodos",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "termoBusca",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "termo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDENTE",
+                "PAGO",
+                "CANCELADO"
+              ]
+            }
+          },
+          {
+            "name": "natureza",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "A_RECEBER",
+                "A_PAGAR"
+              ]
+            }
+          },
+          {
+            "name": "tipo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HONORARIOS",
+                "CUSTAS",
+                "DESPESAS_ESCRITORIO"
+              ]
+            }
+          },
+          {
+            "name": "vencimentoDe",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "vencimentoAte",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "processoId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Zero-based page index (0..N)",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "The size of the page to be returned",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
         "responses": {
-          "200": {
-            "description": "OK",
+          "400": {
+            "description": "Parâmetros de consulta inválidos",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/FaturamentoDTO"
-                  }
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Página de faturamentos retornada com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedModel"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
                 }
               }
             }
@@ -275,8 +1879,10 @@
       },
       "post": {
         "tags": [
-          "faturamento-controller"
+          "Financeiro"
         ],
+        "summary": "Cadastrar lançamento financeiro",
+        "description": "Cria um novo faturamento ou lançamento financeiro",
         "operationId": "criar_4",
         "requestBody": {
           "content": {
@@ -289,12 +1895,72 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Faturamento criado com sucesso",
             "content": {
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/FaturamentoDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Processo informado não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito de integridade",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regra de negócio violada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados de requisição inválidos ou campos incorretos",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroValidacaoDTO"
                 }
               }
             }
@@ -305,8 +1971,10 @@
     "/api/documentos/upload": {
       "post": {
         "tags": [
-          "documento-controller"
+          "Documentos"
         ],
+        "summary": "Fazer upload de documento",
+        "description": "Envia um novo arquivo multipart vinculado a um processo ou cliente",
         "operationId": "upload",
         "parameters": [
           {
@@ -355,12 +2023,62 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Documento anexado com sucesso",
             "content": {
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/DocumentoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regra de negócio violada ao fazer upload",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Cliente ou processo informado não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Arquivo ausente ou inválido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
                 }
               }
             }
@@ -371,26 +2089,120 @@
     "/api/clientes": {
       "get": {
         "tags": [
-          "cliente-controller"
+          "Clientes"
         ],
-        "operationId": "listar",
+        "summary": "Listar clientes com paginação e filtros",
+        "description": "Retorna lista paginada de clientes filtrando por termo de busca ou tipo",
+        "operationId": "listar_2",
         "parameters": [
           {
-            "name": "pageable",
+            "name": "q",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
-              "$ref": "#/components/schemas/Pageable"
+              "type": "string"
+            }
+          },
+          {
+            "name": "termoBusca",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "termo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tipo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "FISICA",
+                "JURIDICA"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Zero-based page index (0..N)",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "The size of the page to be returned",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Página de clientes obtida com sucesso",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/PageClienteDTO"
+                  "$ref": "#/components/schemas/PagedModel"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetros de consulta inválidos",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
                 }
               }
             }
@@ -399,8 +2211,10 @@
       },
       "post": {
         "tags": [
-          "cliente-controller"
+          "Clientes"
         ],
+        "summary": "Cadastrar novo cliente",
+        "description": "Cadastra um novo cliente (pessoa física ou jurídica) no escritório",
         "operationId": "criar_5",
         "requestBody": {
           "content": {
@@ -413,12 +2227,182 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Cliente cadastrado com sucesso",
             "content": {
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ClienteDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados de requisição inválidos ou campos não atendem as validações",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroValidacaoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito de integridade (ex: CPF/CNPJ já cadastrado)",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regra de negócio violada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/redefinir-senha": {
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Redefinir senha com token",
+        "description": "Conclui a redefinição de senha utilizando o token recebido por e-mail",
+        "operationId": "redefinirSenha",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedefinirSenhaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Senha redefinida com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Política de senha não atendida ou token inválido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados da requisição inválidos",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroValidacaoDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Token não encontrado ou expirado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/recuperar-senha": {
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Solicitar recuperação de senha",
+        "description": "Inicia o fluxo de recuperação de senha gerando token temporário enviado por e-mail",
+        "operationId": "recuperarSenha",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecuperarSenhaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Solicitação aceita; se a conta existir, as instruções foram enviadas",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "E-mail inválido ou malformatado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroValidacaoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regra de negócio violada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
                 }
               }
             }
@@ -429,8 +2413,10 @@
     "/api/auth/login": {
       "post": {
         "tags": [
-          "auth-controller"
+          "Autenticação"
         ],
+        "summary": "Efetuar login",
+        "description": "Autentica as credenciais do usuário e retorna o token JWT de acesso",
         "operationId": "login",
         "requestBody": {
           "content": {
@@ -443,8 +2429,28 @@
           "required": true
         },
         "responses": {
+          "400": {
+            "description": "Dados da requisição inválidos",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroValidacaoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciais inválidas (e-mail ou senha incorretos)",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
           "200": {
-            "description": "OK",
+            "description": "Autenticação bem-sucedida",
             "content": {
               "*/*": {
                 "schema": {
@@ -459,8 +2465,10 @@
     "/api/audiencias": {
       "post": {
         "tags": [
-          "audiencia-controller"
+          "Audiências"
         ],
+        "summary": "Agendar nova audiência",
+        "description": "Cadastra uma nova audiência associada a um processo judicial",
         "operationId": "criar_6",
         "requestBody": {
           "content": {
@@ -473,12 +2481,72 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Processo ou responsável informado não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito de integridade",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Audiência agendada com sucesso",
             "content": {
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/AudienciaDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dados de requisição inválidos ou campos obrigatórios ausentes",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroValidacaoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regra de negócio violada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
                 }
               }
             }
@@ -489,8 +2557,10 @@
     "/api/audiencias/{id}/gerar-resumo-ia": {
       "post": {
         "tags": [
-          "audiencia-controller"
+          "Audiências"
         ],
+        "summary": "Gerar e anexar resumo preparatório por IA a partir de documentos dos autos",
+        "description": "Baixa os PDFs anexados no Google Drive, extrai o texto processual via PDFBox e anexa o resumo preparatório estruturado à audiência",
         "operationId": "gerarResumoIa",
         "parameters": [
           {
@@ -514,12 +2584,62 @@
           "required": true
         },
         "responses": {
+          "404": {
+            "description": "Audiência não encontrada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Lista de identificadores de documentos inválida ou vazia",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroValidacaoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Falha ao processar documentos ou gerar resumo na IA",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
           "200": {
-            "description": "OK",
+            "description": "Resumo gerado e anexado com sucesso",
             "content": {
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/AudienciaDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
                 }
               }
             }
@@ -530,8 +2650,10 @@
     "/api/tarefas/{id}/concluir": {
       "patch": {
         "tags": [
-          "tarefa-controller"
+          "Tarefas"
         ],
+        "summary": "Concluir tarefa",
+        "description": "Marca a tarefa especificada como concluída",
         "operationId": "concluir",
         "parameters": [
           {
@@ -546,11 +2668,124 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Tarefa marcada como concluída com sucesso",
             "content": {
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/TarefaDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tarefa não encontrada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regra de negócio violada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/processos/{id}/desarquivar": {
+      "patch": {
+        "tags": [
+          "Processos"
+        ],
+        "summary": "Desarquivar processo",
+        "description": "Restaura o processo judicial arquivado para atividade",
+        "operationId": "desarquivar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Processo não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regra de negócio violada ao desarquivar processo",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Processo desarquivado com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
                 }
               }
             }
@@ -561,8 +2796,10 @@
     "/api/processos/{id}/arquivar": {
       "patch": {
         "tags": [
-          "processo-controller"
+          "Processos"
         ],
+        "summary": "Arquivar processo",
+        "description": "Marca o processo judicial como arquivado",
         "operationId": "arquivar",
         "parameters": [
           {
@@ -576,8 +2813,48 @@
           }
         ],
         "responses": {
+          "404": {
+            "description": "Processo não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regra de negócio violada ao arquivar processo",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
           "200": {
-            "description": "OK",
+            "description": "Processo arquivado com sucesso",
             "content": {
               "*/*": {
                 "schema": {
@@ -592,8 +2869,10 @@
     "/api/faturamentos/{id}/pagar": {
       "patch": {
         "tags": [
-          "faturamento-controller"
+          "Financeiro"
         ],
+        "summary": "Liquidar faturamento",
+        "description": "Registra o pagamento ou quitação de um lançamento financeiro",
         "operationId": "liquidar",
         "parameters": [
           {
@@ -617,12 +2896,137 @@
           "required": true
         },
         "responses": {
+          "400": {
+            "description": "Data de pagamento inválida",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroValidacaoDTO"
+                }
+              }
+            }
+          },
           "200": {
-            "description": "OK",
+            "description": "Faturamento liquidado com sucesso",
             "content": {
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/FaturamentoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Faturamento não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regra de negócio violada ao liquidar",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/me/senha": {
+      "patch": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Alterar senha autenticada",
+        "description": "Altera a senha do usuário logado mediante confirmação da senha atual",
+        "operationId": "alterarSenha",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlterarSenhaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Senha atual inválida ou dados incorretos",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Senha alterada com sucesso"
+          },
+          "404": {
+            "description": "Usuário não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Política de senha não atendida",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
                 }
               }
             }
@@ -633,8 +3037,10 @@
     "/api/audiencias/{id}/status": {
       "patch": {
         "tags": [
-          "audiencia-controller"
+          "Audiências"
         ],
+        "summary": "Alterar status da audiência",
+        "description": "Modifica o status de uma audiência (ex: REALIZADA, CANCELADA)",
         "operationId": "alterarStatus",
         "parameters": [
           {
@@ -662,11 +3068,124 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Status alterado com sucesso",
             "content": {
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/AudienciaDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Audiência não encontrada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Status informado inválido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regra de negócio violada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/usuarios/{id}": {
+      "get": {
+        "tags": [
+          "Usuários"
+        ],
+        "summary": "Buscar usuário por ID",
+        "description": "Recupera dados detalhados de um membro da equipe",
+        "operationId": "buscarPorId",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usuário recuperado com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioResponseDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Usuário não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
                 }
               }
             }
@@ -677,18 +3196,40 @@
     "/api/usuarios/advogados": {
       "get": {
         "tags": [
-          "usuario-controller"
+          "Usuários"
         ],
+        "summary": "Listar todos os advogados",
+        "description": "Retorna lista de advogados ativos cadastrados no escritório para seleção de responsáveis",
         "operationId": "listarAdvogados",
         "responses": {
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
           "200": {
-            "description": "OK",
+            "description": "Lista de advogados retornada com sucesso",
             "content": {
               "*/*": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/UsuarioDTO"
+                    "$ref": "#/components/schemas/UsuarioResponseDTO"
                   }
                 }
               }
@@ -700,8 +3241,10 @@
     "/api/tarefas/dashboard/{usuarioId}": {
       "get": {
         "tags": [
-          "tarefa-controller"
+          "Tarefas"
         ],
+        "summary": "Listar tarefas para o dashboard",
+        "description": "Recupera tarefas prioritárias pendentes para o painel do usuário informado",
         "operationId": "listarDashboard",
         "parameters": [
           {
@@ -716,7 +3259,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Tarefas do dashboard recuperadas com sucesso",
             "content": {
               "*/*": {
                 "schema": {
@@ -727,6 +3270,178 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Usuário não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tarefas/agenda": {
+      "get": {
+        "tags": [
+          "Tarefas"
+        ],
+        "summary": "Listar agenda de tarefas",
+        "description": "Consulta tarefas por intervalo de datas, status de conclusão, tipo, processo e responsável",
+        "operationId": "listarAgenda",
+        "parameters": [
+          {
+            "name": "inicio",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "fim",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "concluida",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tipo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "DILIGENCIA",
+                "PRAZO",
+                "CONTATO"
+              ]
+            }
+          },
+          {
+            "name": "processoId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "responsavelId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de tarefas da agenda retornada com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TarefaDTO"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetros de consulta inválidos",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regra de negócio violada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Usuário da sessão não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
           }
         }
       }
@@ -734,8 +3449,10 @@
     "/api/processos/cliente/{clienteId}": {
       "get": {
         "tags": [
-          "processo-controller"
+          "Processos"
         ],
+        "summary": "Listar processos por cliente",
+        "description": "Retorna os processos vinculados a um cliente de forma paginada",
         "operationId": "listarPorCliente",
         "parameters": [
           {
@@ -748,21 +3465,242 @@
             }
           },
           {
-            "name": "pageable",
+            "name": "page",
             "in": "query",
-            "required": true,
+            "description": "Zero-based page index (0..N)",
+            "required": false,
             "schema": {
-              "$ref": "#/components/schemas/Pageable"
+              "minimum": 0,
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "The size of the page to be returned",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Processos do cliente retornados com sucesso",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/PageProcessoDTO"
+                  "$ref": "#/components/schemas/PagedModel"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Cliente não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notificacoes/resumo": {
+      "get": {
+        "tags": [
+          "Notificações"
+        ],
+        "summary": "Obtém as notificações operacionais ativas para a data informada a partir do token de sessão",
+        "operationId": "obterResumo",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resumo de notificações retornado com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificacaoResumoDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetros de consulta inválidos",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regra de negócio violada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Usuário da sessão não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/integracoes/tribunais/status": {
+      "get": {
+        "tags": [
+          "Integrações Externas"
+        ],
+        "summary": "Retorna o status atual de sincronização com os tribunais (ex: TJRS, TRF4, TRT4, STJ)",
+        "operationId": "verificarStatusTribunais",
+        "responses": {
+          "200": {
+            "description": "Status das integrações de tribunais retornado com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TribunalStatusDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/faturamentos/resumo": {
+      "get": {
+        "tags": [
+          "Financeiro"
+        ],
+        "summary": "Obter resumo financeiro",
+        "description": "Recupera os totais consolidados de faturamento, valores pendentes e recebidos",
+        "operationId": "obterResumo_1",
+        "responses": {
+          "200": {
+            "description": "Resumo financeiro retornado com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumoFinanceiroDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
                 }
               }
             }
@@ -773,8 +3711,10 @@
     "/api/faturamentos/processo/{processoId}": {
       "get": {
         "tags": [
-          "faturamento-controller"
+          "Financeiro"
         ],
+        "summary": "Listar faturamentos por processo",
+        "description": "Retorna todos os lançamentos financeiros atrelados a um processo judicial",
         "operationId": "listarPorProcesso_1",
         "parameters": [
           {
@@ -788,8 +3728,38 @@
           }
         ],
         "responses": {
+          "404": {
+            "description": "Processo não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
           "200": {
-            "description": "OK",
+            "description": "Lista de faturamentos retornada com sucesso",
             "content": {
               "*/*": {
                 "schema": {
@@ -804,11 +3774,271 @@
         }
       }
     },
+    "/api/documentos/{id}/download": {
+      "get": {
+        "tags": [
+          "Documentos"
+        ],
+        "summary": "Baixar documento",
+        "description": "Realiza o download binário do arquivo armazenado",
+        "operationId": "download",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Download do arquivo iniciado com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Documento não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documentos/processo/{processoId}": {
+      "get": {
+        "tags": [
+          "Documentos"
+        ],
+        "summary": "Listar documentos por processo",
+        "description": "Recupera os metadados de todos os documentos associados a um processo",
+        "operationId": "listarPorProcesso_2",
+        "parameters": [
+          {
+            "name": "processoId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Processo não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Lista de documentos retornada com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentoDTO"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documentos/cliente/{clienteId}": {
+      "get": {
+        "tags": [
+          "Documentos"
+        ],
+        "summary": "Listar documentos por cliente",
+        "description": "Recupera os metadados de todos os documentos associados a um cliente",
+        "operationId": "listarPorCliente_1",
+        "parameters": [
+          {
+            "name": "clienteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de documentos retornada com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentoDTO"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Cliente não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Obter dados do dashboard autenticado",
+        "description": "Recupera os contadores, audiências e tarefas do usuário atualmente autenticado",
+        "operationId": "obterDashboardAutenticado",
+        "responses": {
+          "200": {
+            "description": "Métricas do dashboard recuperadas com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumoDashboardDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regra de negócio violada",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Usuário da sessão não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/dashboard/{usuarioId}": {
       "get": {
         "tags": [
-          "dashboard-controller"
+          "Dashboard"
         ],
+        "summary": "Obter dashboard por ID de usuário",
+        "description": "Recupera as métricas e indicadores de um usuário/advogado específico",
         "operationId": "obterDashboard",
         "parameters": [
           {
@@ -823,11 +4053,41 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Dashboard recuperado com sucesso",
             "content": {
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ResumoDashboardDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Usuário não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
                 }
               }
             }
@@ -838,8 +4098,10 @@
     "/api/clientes/{id}/procuracao": {
       "get": {
         "tags": [
-          "cliente-controller"
+          "Clientes"
         ],
+        "summary": "Gerar procuração em PDF",
+        "description": "Gera o arquivo PDF da procuração ad judicia com os dados do cliente",
         "operationId": "gerarProcuracao",
         "parameters": [
           {
@@ -850,16 +4112,345 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "acao",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "varaCivel",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "comarca",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "imprimirDeclaracao",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
           }
         ],
         "responses": {
+          "422": {
+            "description": "Regra de negócio violada ao gerar documento",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
           "200": {
-            "description": "OK",
+            "description": "Procuração gerada com sucesso",
             "content": {
               "*/*": {
                 "schema": {
                   "type": "string",
                   "format": "byte"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Cliente não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/clientes/{id}/contrato-honorarios": {
+      "get": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Gerar contrato de honorários em PDF",
+        "description": "Gera a minuta do contrato de prestação de serviços advocatícios em PDF",
+        "operationId": "gerarContratoHonorarios",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "acao",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "vara",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "comarca",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "valorServicos",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "objetivoDemanda",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "422": {
+            "description": "Regra de negócio violada ao gerar documento",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Contrato de honorários gerado com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Cliente não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/busca": {
+      "get": {
+        "tags": [
+          "Busca Global"
+        ],
+        "summary": "Realiza pesquisa global textual consolidando resultados de processos, clientes e usuários",
+        "operationId": "buscar",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tipos",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "PROCESSO",
+                  "CLIENTE",
+                  "USUARIO"
+                ]
+              }
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultados da pesquisa consolidada retornados com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ItemBuscaDTO"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetro de busca textual obrigatório não informado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Obter dados do usuário logado",
+        "description": "Recupera os dados de perfil do usuário autenticado no token JWT",
+        "operationId": "me",
+        "responses": {
+          "401": {
+            "description": "Não autenticado ou token inválido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Usuário associado ao token não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Perfil do usuário logado retornado com sucesso",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioResponseDTO"
                 }
               }
             }
@@ -870,9 +4461,11 @@
     "/api/audiencias/processo/{processoId}": {
       "get": {
         "tags": [
-          "audiencia-controller"
+          "Audiências"
         ],
-        "operationId": "listarPorProcesso_2",
+        "summary": "Listar audiências por processo",
+        "description": "Recupera todas as audiências vinculadas a um processo específico",
+        "operationId": "listarPorProcesso_3",
         "parameters": [
           {
             "name": "processoId",
@@ -885,8 +4478,18 @@
           }
         ],
         "responses": {
+          "404": {
+            "description": "Processo não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
           "200": {
-            "description": "OK",
+            "description": "Lista de audiências retornada com sucesso",
             "content": {
               "*/*": {
                 "schema": {
@@ -894,6 +4497,26 @@
                   "items": {
                     "$ref": "#/components/schemas/AudienciaDTO"
                   }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
                 }
               }
             }
@@ -904,32 +4527,85 @@
     "/api/audiencias/agenda": {
       "get": {
         "tags": [
-          "audiencia-controller"
+          "Audiências"
         ],
-        "operationId": "listarAgenda",
+        "summary": "Listar agenda de audiências",
+        "description": "Retorna audiências agendadas com filtros por período, status, processo e responsável",
+        "operationId": "listarAgenda_1",
         "parameters": [
           {
             "name": "inicio",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string",
-              "format": "date-time"
+              "format": "date"
             }
           },
           {
             "name": "fim",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string",
-              "format": "date-time"
+              "format": "date"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "AGENDADA",
+                "REALIZADA",
+                "CANCELADA"
+              ]
+            }
+          },
+          {
+            "name": "processoId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "responsavelId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
         "responses": {
+          "400": {
+            "description": "Parâmetros de consulta inválidos",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
           "200": {
-            "description": "OK",
+            "description": "Agenda de audiências retornada com sucesso",
             "content": {
               "*/*": {
                 "schema": {
@@ -940,6 +4616,82 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documentos/{id}": {
+      "delete": {
+        "tags": [
+          "Documentos"
+        ],
+        "summary": "Excluir documento",
+        "description": "Remove o documento e exclui o arquivo associado",
+        "operationId": "excluir_1",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Documento excluído com sucesso"
+          },
+          "403": {
+            "description": "Acesso proibido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito ao excluir arquivo",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Documento não encontrado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroPadraoDTO"
+                }
+              }
+            }
           }
         }
       }
@@ -947,6 +4699,229 @@
   },
   "components": {
     "schemas": {
+      "ProcessoResumoDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "numeroCnj": {
+            "type": "string"
+          },
+          "nomeCliente": {
+            "type": "string"
+          }
+        }
+      },
+      "TarefaDTO": {
+        "required": [
+          "dataVencimento",
+          "descricao",
+          "usuarioId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "dataVencimento": {
+            "type": "string",
+            "format": "date"
+          },
+          "concluida": {
+            "type": "boolean"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "DILIGENCIA",
+              "PRAZO",
+              "CONTATO"
+            ]
+          },
+          "usuarioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "processo": {
+            "$ref": "#/components/schemas/ProcessoResumoDTO"
+          }
+        }
+      },
+      "ErroPadraoDTO": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "description": "Data e hora em que o erro ocorreu",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "integer",
+            "description": "Código HTTP do erro",
+            "format": "int32",
+            "example": 400
+          },
+          "error": {
+            "type": "string",
+            "description": "Identificador ou classificação do erro",
+            "example": "Bad Request"
+          },
+          "message": {
+            "type": "string",
+            "description": "Descrição detalhada da mensagem de erro",
+            "example": "Dados inválidos fornecidos"
+          }
+        },
+        "description": "Estrutura padrão de resposta para erros da API"
+      },
+      "CampoErroDTO": {
+        "type": "object",
+        "properties": {
+          "campo": {
+            "type": "string",
+            "description": "Nome do campo que falhou na validação",
+            "example": "email"
+          },
+          "mensagem": {
+            "type": "string",
+            "description": "Mensagem descrevendo o motivo da falha",
+            "example": "E-mail inválido"
+          }
+        },
+        "description": "Detalhe do erro de validação em um campo específico"
+      },
+      "ErroValidacaoDTO": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "description": "Data e hora em que o erro ocorreu",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "integer",
+            "description": "Código HTTP do erro",
+            "format": "int32",
+            "example": 400
+          },
+          "error": {
+            "type": "string",
+            "description": "Identificador ou classificação do erro",
+            "example": "Validation Error"
+          },
+          "message": {
+            "type": "string",
+            "description": "Mensagem geral do erro de validação",
+            "example": "Erro de validação nos campos informados."
+          },
+          "fieldErrors": {
+            "type": "array",
+            "description": "Lista detalhada dos erros encontrados por campo",
+            "items": {
+              "$ref": "#/components/schemas/CampoErroDTO"
+            }
+          }
+        },
+        "description": "Estrutura de resposta para erros de validação de campos"
+      },
+      "ProcessoDTO": {
+        "required": [
+          "clienteId",
+          "numeroCnj"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "numeroCnj": {
+            "type": "string"
+          },
+          "assunto": {
+            "type": "string"
+          },
+          "faseAtual": {
+            "type": "string",
+            "enum": [
+              "PROTOCOLADO",
+              "EM_ANDAMENTO",
+              "EM_RECURSO",
+              "SUSPENSO",
+              "ARQUIVADO"
+            ]
+          },
+          "dataCriacao": {
+            "type": "string",
+            "format": "date"
+          },
+          "clienteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "advogadoId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "EscritorioDTO": {
+        "required": [
+          "email",
+          "razaoSocial"
+        ],
+        "type": "object",
+        "properties": {
+          "razaoSocial": {
+            "type": "string"
+          },
+          "nomeFantasia": {
+            "type": "string"
+          },
+          "cnpj": {
+            "type": "string"
+          },
+          "registroOabSociedade": {
+            "type": "string"
+          },
+          "telefone": {
+            "type": "string"
+          },
+          "whatsapp": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "cep": {
+            "type": "string"
+          },
+          "logradouro": {
+            "type": "string"
+          },
+          "numero": {
+            "type": "string"
+          },
+          "complemento": {
+            "type": "string"
+          },
+          "bairro": {
+            "type": "string"
+          },
+          "cidade": {
+            "type": "string"
+          },
+          "uf": {
+            "type": "string"
+          }
+        }
+      },
       "ClienteDTO": {
         "required": [
           "cpfCnpj",
@@ -1026,12 +5001,82 @@
           }
         }
       },
-      "UsuarioDTO": {
+      "AudienciaDTO": {
+        "required": [
+          "dataHora",
+          "local",
+          "processo"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dataHora": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "local": {
+            "type": "string"
+          },
+          "observacoes": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "AGENDADA",
+              "REALIZADA",
+              "CANCELADA"
+            ]
+          },
+          "resumoPreparatorioIa": {
+            "type": "string"
+          },
+          "processo": {
+            "$ref": "#/components/schemas/ProcessoResumoDTO"
+          },
+          "responsavelId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "CriarUsuarioRequest": {
         "required": [
           "email",
           "nome",
-          "perfil"
+          "perfil",
+          "senha"
         ],
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "senha": {
+            "maxLength": 2147483647,
+            "minLength": 6,
+            "type": "string"
+          },
+          "perfil": {
+            "type": "string",
+            "enum": [
+              "ADMIN",
+              "ADVOGADO",
+              "SECRETARIA"
+            ]
+          },
+          "oab": {
+            "type": "string"
+          }
+        }
+      },
+      "UsuarioResponseDTO": {
         "type": "object",
         "properties": {
           "id": {
@@ -1042,9 +5087,6 @@
             "type": "string"
           },
           "email": {
-            "type": "string"
-          },
-          "senha": {
             "type": "string"
           },
           "perfil": {
@@ -1060,80 +5102,6 @@
           },
           "ativo": {
             "type": "boolean"
-          }
-        }
-      },
-      "TarefaDTO": {
-        "required": [
-          "dataVencimento",
-          "descricao",
-          "usuarioId"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "descricao": {
-            "type": "string"
-          },
-          "dataVencimento": {
-            "type": "string",
-            "format": "date"
-          },
-          "concluida": {
-            "type": "boolean"
-          },
-          "tipo": {
-            "type": "string",
-            "enum": [
-              "DILIGENCIA",
-              "PRAZO",
-              "CONTATO"
-            ]
-          },
-          "usuarioId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "processoId": {
-            "type": "string",
-            "format": "uuid"
-          }
-        }
-      },
-      "ProcessoDTO": {
-        "required": [
-          "clienteId",
-          "numeroCnj"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "numeroCnj": {
-            "type": "string"
-          },
-          "assunto": {
-            "type": "string"
-          },
-          "faseAtual": {
-            "type": "string"
-          },
-          "dataCriacao": {
-            "type": "string",
-            "format": "date"
-          },
-          "clienteId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "advogadoId": {
-            "type": "string",
-            "format": "uuid"
           }
         }
       },
@@ -1171,14 +5139,87 @@
       },
       "ResumoPecaDTO": {
         "required": [
-          "conteudoPeca"
+          "documentosIds"
         ],
         "type": "object",
         "properties": {
-          "conteudoPeca": {
-            "type": "string"
+          "documentosIds": {
+            "type": "array",
+            "description": "Lista de identificadores dos documentos (UUID do sistema ou ID no Google Drive) a serem lidos e sumarizados pela IA",
+            "example": [
+              "1PPOtwVobdFDcWgy52WS7rpy0pehRiJAZ",
+              "a2d5926a-939e-4c7b-94ec-7cfa8e1b1234"
+            ],
+            "items": {
+              "type": "string",
+              "description": "Lista de identificadores dos documentos (UUID do sistema ou ID no Google Drive) a serem lidos e sumarizados pela IA",
+              "example": "[\"1PPOtwVobdFDcWgy52WS7rpy0pehRiJAZ\",\"a2d5926a-939e-4c7b-94ec-7cfa8e1b1234\"]"
+            }
           }
-        }
+        },
+        "description": "Payload para requisição de resumo preparatório de audiência a partir de documentos dos autos"
+      },
+      "ResumoAudienciaEstruturadoDTO": {
+        "type": "object",
+        "properties": {
+          "fatosIncontroversos": {
+            "type": "array",
+            "description": "Fatos já pacificados, incontroversos ou admitidos nos autos",
+            "example": [
+              "Vínculo empregatício formalizado no período de 01/02/2022 a 15/03/2024",
+              "Demissão imotivada"
+            ],
+            "items": {
+              "type": "string",
+              "description": "Fatos já pacificados, incontroversos ou admitidos nos autos",
+              "example": "[\"Vínculo empregatício formalizado no período de 01/02/2022 a 15/03/2024\",\"Demissão imotivada\"]"
+            }
+          },
+          "fatosControvertidos": {
+            "type": "array",
+            "description": "Pontos de conflito fático que dependem de instrução probatória ou prova oral",
+            "example": [
+              "Cumprimento de horas extras habituais além da jornada contratual",
+              "Existência de dano moral decorrente de assédio"
+            ],
+            "items": {
+              "type": "string",
+              "description": "Pontos de conflito fático que dependem de instrução probatória ou prova oral",
+              "example": "[\"Cumprimento de horas extras habituais além da jornada contratual\",\"Existência de dano moral decorrente de assédio\"]"
+            }
+          },
+          "riscosProcessuais": {
+            "type": "array",
+            "description": "Preliminares processuais, fragilidades da tese e riscos de sucumbência",
+            "example": [
+              "Risco de prescrição bienal ou quinquenal",
+              "Fragilidade na prova documental de jornada"
+            ],
+            "items": {
+              "type": "string",
+              "description": "Preliminares processuais, fragilidades da tese e riscos de sucumbência",
+              "example": "[\"Risco de prescrição bienal ou quinquenal\",\"Fragilidade na prova documental de jornada\"]"
+            }
+          },
+          "roteiroPerguntas": {
+            "type": "array",
+            "description": "Roteiro de perguntas sugeridas para inquirição de testemunhas ou depoimento da parte contrária",
+            "example": [
+              "Indagar a testemunha se havia controle formal de ponto e se as horas extras eram registradas fielmente"
+            ],
+            "items": {
+              "type": "string",
+              "description": "Roteiro de perguntas sugeridas para inquirição de testemunhas ou depoimento da parte contrária",
+              "example": "[\"Indagar a testemunha se havia controle formal de ponto e se as horas extras eram registradas fielmente\"]"
+            }
+          },
+          "parametrosAcordo": {
+            "type": "string",
+            "description": "Parâmetros, diretrizes e estimativas táticas para formulação de propostas de acordo",
+            "example": "Recomenda-se proposta conciliatória de até R$ 8.000,00 parcelado em 3x, considerando o risco probatório das horas extras"
+          }
+        },
+        "description": "Dossiê estruturado preparatório para audiência gerado por Inteligência Artificial"
       },
       "FaturamentoDTO": {
         "required": [
@@ -1231,9 +5272,8 @@
             "type": "string",
             "format": "date"
           },
-          "processoId": {
-            "type": "string",
-            "format": "uuid"
+          "processo": {
+            "$ref": "#/components/schemas/ProcessoResumoDTO"
           }
         }
       },
@@ -1266,6 +5306,32 @@
           }
         }
       },
+      "RedefinirSenhaRequest": {
+        "required": [
+          "novaSenha",
+          "token"
+        ],
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "novaSenha": {
+            "type": "string"
+          }
+        }
+      },
+      "RecuperarSenhaRequest": {
+        "required": [
+          "email"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          }
+        }
+      },
       "LoginDTO": {
         "required": [
           "email",
@@ -1278,6 +5344,9 @@
           },
           "senha": {
             "type": "string"
+          },
+          "manterConectado": {
+            "type": "boolean"
           }
         }
       },
@@ -1289,55 +5358,27 @@
           }
         }
       },
-      "AudienciaDTO": {
-        "required": [
-          "dataHora",
-          "local",
-          "processoId"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "dataHora": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "local": {
-            "type": "string"
-          },
-          "observacoes": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "AGENDADA",
-              "REALIZADA",
-              "CANCELADA"
-            ]
-          },
-          "resumoPreparatorioIa": {
-            "type": "string"
-          },
-          "processoId": {
-            "type": "string",
-            "format": "uuid"
-          }
-        }
-      },
       "GerarResumoAudienciaDTO": {
         "required": [
-          "conteudoPeca"
+          "documentosIds"
         ],
         "type": "object",
         "properties": {
-          "conteudoPeca": {
-            "type": "string"
+          "documentosIds": {
+            "type": "array",
+            "description": "Lista de identificadores dos documentos (UUID do sistema ou ID no Google Drive) a serem processados pela IA",
+            "example": [
+              "1PPOtwVobdFDcWgy52WS7rpy0pehRiJAZ",
+              "a2d5926a-939e-4c7b-94ec-7cfa8e1b1234"
+            ],
+            "items": {
+              "type": "string",
+              "description": "Lista de identificadores dos documentos (UUID do sistema ou ID no Google Drive) a serem processados pela IA",
+              "example": "[\"1PPOtwVobdFDcWgy52WS7rpy0pehRiJAZ\",\"a2d5926a-939e-4c7b-94ec-7cfa8e1b1234\"]"
+            }
           }
-        }
+        },
+        "description": "Payload para geração e anexo de resumo preparatório de audiência a partir de documentos dos autos"
       },
       "LiquidarFaturamentoDTO": {
         "required": [
@@ -1351,122 +5392,169 @@
           }
         }
       },
-      "Pageable": {
+      "AlterarSenhaRequest": {
+        "required": [
+          "novaSenha",
+          "senhaAtual"
+        ],
         "type": "object",
         "properties": {
-          "page": {
-            "minimum": 0,
-            "type": "integer",
-            "format": "int32"
+          "senhaAtual": {
+            "type": "string"
           },
-          "size": {
-            "minimum": 1,
-            "type": "integer",
-            "format": "int32"
-          },
-          "sort": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+          "novaSenha": {
+            "type": "string"
           }
         }
       },
-      "PageProcessoDTO": {
+      "PageMetadata": {
         "type": "object",
         "properties": {
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "number": {
+            "type": "integer",
+            "format": "int64"
+          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
           "totalPages": {
             "type": "integer",
-            "format": "int32"
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
-          },
-          "size": {
-            "type": "integer",
-            "format": "int32"
-          },
+            "format": "int64"
+          }
+        }
+      },
+      "PagedModel": {
+        "type": "object",
+        "properties": {
           "content": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ProcessoDTO"
+              "type": "object"
             }
           },
-          "number": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "sort": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SortObject"
-            }
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "numberOfElements": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "empty": {
-            "type": "boolean"
+          "page": {
+            "$ref": "#/components/schemas/PageMetadata"
           }
         }
       },
-      "PageableObject": {
+      "NotificacaoItemDTO": {
         "type": "object",
         "properties": {
-          "unpaged": {
-            "type": "boolean"
+          "id": {
+            "type": "string",
+            "format": "uuid"
           },
-          "paged": {
-            "type": "boolean"
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "AUDIENCIA",
+              "TAREFA",
+              "FINANCEIRO"
+            ]
           },
-          "offset": {
-            "type": "integer",
-            "format": "int64"
+          "titulo": {
+            "type": "string"
           },
-          "sort": {
+          "descricao": {
+            "type": "string"
+          },
+          "horario": {
+            "type": "string"
+          },
+          "destino": {
+            "type": "string",
+            "enum": [
+              "audiencias",
+              "agenda",
+              "financeiro"
+            ]
+          },
+          "recursoTipo": {
+            "type": "string",
+            "enum": [
+              "AUDIENCIA",
+              "TAREFA",
+              "FATURAMENTO"
+            ]
+          },
+          "recursoId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "NotificacaoResumoDTO": {
+        "type": "object",
+        "properties": {
+          "notificacoes": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SortObject"
+              "$ref": "#/components/schemas/NotificacaoItemDTO"
             }
           },
-          "pageNumber": {
+          "quantidadeAgenda": {
             "type": "integer",
             "format": "int32"
           },
-          "pageSize": {
+          "quantidadeFinanceiro": {
             "type": "integer",
             "format": "int32"
           }
         }
       },
-      "SortObject": {
+      "TribunalStatusDTO": {
         "type": "object",
         "properties": {
-          "direction": {
-            "type": "string"
+          "status": {
+            "type": "string",
+            "description": "Status consolidado da comunicação",
+            "example": "OPERACIONAL",
+            "enum": [
+              "OPERACIONAL",
+              "DEGRADADO",
+              "INDISPONIVEL"
+            ]
           },
-          "nullHandling": {
-            "type": "string"
+          "atualizadoEm": {
+            "type": "string",
+            "description": "Timestamp da última verificação",
+            "format": "date-time"
           },
-          "ascending": {
-            "type": "boolean"
+          "mensagem": {
+            "type": "string",
+            "description": "Mensagem descritiva da situação das integrações",
+            "example": "Todos os serviços judiciais operando com sincronização regular."
           },
-          "property": {
-            "type": "string"
+          "tribunaisMonitorados": {
+            "type": "array",
+            "description": "Lista de tribunais monitorados pelo sistema",
+            "items": {
+              "type": "string",
+              "description": "Lista de tribunais monitorados pelo sistema"
+            }
+          }
+        },
+        "description": "Status de sincronização e saúde das integrações com os tribunais eletrônicos"
+      },
+      "ResumoFinanceiroDTO": {
+        "type": "object",
+        "properties": {
+          "totalReceberPendente": {
+            "type": "number"
           },
-          "ignoreCase": {
-            "type": "boolean"
+          "totalPagarPendente": {
+            "type": "number"
+          },
+          "totalRecebidoMes": {
+            "type": "number"
+          },
+          "totalPagoMes": {
+            "type": "number"
           }
         }
       },
@@ -1499,55 +5587,42 @@
             "items": {
               "$ref": "#/components/schemas/FaturamentoDTO"
             }
+          },
+          "audienciasHoje": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "proximasAudiencias": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AudienciaDTO"
+            }
           }
         }
       },
-      "PageClienteDTO": {
+      "ItemBuscaDTO": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
+          "id": {
+            "type": "string",
+            "format": "uuid"
           },
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "PROCESSO",
+              "CLIENTE",
+              "USUARIO"
+            ]
           },
-          "first": {
-            "type": "boolean"
+          "titulo": {
+            "type": "string"
           },
-          "last": {
-            "type": "boolean"
+          "subtitulo": {
+            "type": "string"
           },
-          "size": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ClienteDTO"
-            }
-          },
-          "number": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "sort": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SortObject"
-            }
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "numberOfElements": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "empty": {
-            "type": "boolean"
+          "rota": {
+            "type": "string"
           }
         }
       }
