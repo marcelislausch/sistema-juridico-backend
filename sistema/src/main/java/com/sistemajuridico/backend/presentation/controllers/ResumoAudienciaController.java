@@ -1,5 +1,6 @@
 package com.sistemajuridico.backend.presentation.controllers;
 
+import com.sistemajuridico.backend.core.domain.dto.ResumoAudienciaEstruturadoDTO;
 import com.sistemajuridico.backend.core.usecases.GerarResumoAudienciaUseCase;
 import com.sistemajuridico.backend.presentation.dtos.ErroPadraoDTO;
 import com.sistemajuridico.backend.presentation.dtos.ErroValidacaoDTO;
@@ -29,20 +30,23 @@ public class ResumoAudienciaController {
     }
 
     @PostMapping("/audiencia")
-    @Operation(summary = "Gerar resumo preparatório de audiência via IA", description = "Gera um resumo estruturado e pontos de atenção com base no conteúdo da peça processual informada")
+    @Operation(summary = "Gerar resumo preparatório de audiência via IA a partir de documentos dos autos",
+            description = "Baixa os PDFs anexados no Google Drive, extrai o texto processual e gera um dossiê tático estruturado com fatos incontroversos, fatos controvertidos, riscos processuais, roteiro de perguntas e parâmetros de acordo")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Resumo gerado com sucesso pela inteligência artificial"),
-            @ApiResponse(responseCode = "400", description = "Dados da requisição inválidos ou peça vazia",
+            @ApiResponse(responseCode = "200", description = "Resumo estruturado gerado com sucesso pela inteligência artificial",
+                    content = @Content(schema = @Schema(implementation = ResumoAudienciaEstruturadoDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Lista de identificadores de documentos inválida ou vazia",
                     content = @Content(schema = @Schema(implementation = ErroValidacaoDTO.class))),
             @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "422", description = "Falha ao processar resumo pelo modelo de IA",
+            @ApiResponse(responseCode = "422", description = "Falha ao baixar documentos ou processar resumo pelo modelo de IA",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
-    public ResponseEntity<String> resumirParaAudiencia(@RequestBody @Valid ResumoPecaDTO dto) {
-        String resumo = this.gerarResumoAudienciaUseCase.executar(dto.conteudoPeca());
+    public ResponseEntity<ResumoAudienciaEstruturadoDTO> resumirParaAudiencia(@RequestBody @Valid ResumoPecaDTO dto) {
+        ResumoAudienciaEstruturadoDTO resumo = this.gerarResumoAudienciaUseCase.executar(dto.documentosIds());
         return ResponseEntity.ok(resumo);
     }
 }
+

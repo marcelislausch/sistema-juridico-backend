@@ -68,7 +68,7 @@ O sistema é estruturado em módulos lógicos de alta coesão e baixo acoplament
     *   Exposição do status operacional das conexões e sincronizações eletrônicas com tribunais (TJRS, TRF4, TRT4, STJ) utilizando o enum `StatusTribunalEnum` (`OPERACIONAL`, `DEGRADADO`, `INDISPONIVEL`).
 
 *   **GED (Gestão Eletrônica de Documentos) & Motor de Emissão:**
-    *   Armazenamento físico de arquivos via `LocalStorageService` (`uploads/documentos`) vinculado a clientes e processos.
+    *   Armazenamento físico de arquivos via `LocalStorageService` (`../uploads/documentos`) vinculado a clientes e processos.
     *   Upload multipart (`POST /api/documentos/upload`), listagem de anexos por cliente (`GET /api/documentos/cliente/{clienteId}`), listagem por processo (`GET /api/documentos/processo/{processoId}`), download com detecção dinâmica de MediaType (`GET /api/documentos/{id}/download`) e exclusão física/lógica sincronizada (`DELETE /api/documentos/{id}`).
     *   **Motor Oficial de Geração de Documentos (`PdfDocumentGeneratorService`):** Emissão de PDFs com biblioteca iText, embutimento obrigatório de fontes TrueType (`Bookman Old Style` via `BaseFont.EMBEDDED`), cabeçalho e rodapé fixos automatizados via eventos de página:
         *   **Procuração Ad Judicia & Declaração de Hipossuficiência (AJG):** Emissão via `GET /api/clientes/{id}/procuracao` com parametrização dinâmica de ação, vara, comarca e toggle booleano para impressão condicional da página de declaração.

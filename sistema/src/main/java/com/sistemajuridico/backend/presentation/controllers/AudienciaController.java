@@ -212,10 +212,11 @@ public class AudienciaController {
     }
 
     @PostMapping("/{id}/gerar-resumo-ia")
-    @Operation(summary = "Gerar e anexar resumo preparatório por IA", description = "Processa o texto da peça processual via IA e anexa o resumo preparatório à audiência")
+    @Operation(summary = "Gerar e anexar resumo preparatório por IA a partir de documentos dos autos",
+            description = "Baixa os PDFs anexados no Google Drive, extrai o texto processual via PDFBox e anexa o resumo preparatório estruturado à audiência")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Resumo gerado e anexado com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Conteúdo da peça inválido ou vazio",
+            @ApiResponse(responseCode = "400", description = "Lista de identificadores de documentos inválida ou vazia",
                     content = @Content(schema = @Schema(implementation = ErroValidacaoDTO.class))),
             @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
@@ -223,11 +224,11 @@ public class AudienciaController {
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "404", description = "Audiência não encontrada",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "422", description = "Falha ao gerar resumo na IA",
+            @ApiResponse(responseCode = "422", description = "Falha ao processar documentos ou gerar resumo na IA",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     public ResponseEntity<AudienciaDTO> gerarResumoIa(@PathVariable UUID id, @RequestBody @Valid GerarResumoAudienciaDTO dto) {
-        Audiencia audienciaAtualizada = this.gerarEAnexarResumoAudienciaUseCase.executar(id, dto.conteudoPeca());
+        Audiencia audienciaAtualizada = this.gerarEAnexarResumoAudienciaUseCase.executar(id, dto.documentosIds());
         return ResponseEntity.ok(AudienciaDTO.fromEntity(audienciaAtualizada));
     }
 }

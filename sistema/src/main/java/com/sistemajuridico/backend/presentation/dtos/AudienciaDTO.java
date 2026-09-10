@@ -1,5 +1,6 @@
 package com.sistemajuridico.backend.presentation.dtos;
 
+import com.fasterxml.jackson.annotation.JsonRawValue;
 import com.sistemajuridico.backend.core.domain.Audiencia;
 import com.sistemajuridico.backend.core.domain.enums.StatusAudienciaEnum;
 import jakarta.validation.constraints.NotBlank;
@@ -21,6 +22,7 @@ public record AudienciaDTO(
 
         StatusAudienciaEnum status,
 
+        @JsonRawValue
         String resumoPreparatorioIa,
 
         @NotNull(message = "O ID do processo é obrigatório")
