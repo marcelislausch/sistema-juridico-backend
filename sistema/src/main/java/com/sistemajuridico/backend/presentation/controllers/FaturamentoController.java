@@ -6,14 +6,8 @@ import com.sistemajuridico.backend.core.domain.Faturamento;
 import com.sistemajuridico.backend.core.domain.enums.NaturezaFaturamentoEnum;
 import com.sistemajuridico.backend.core.domain.enums.StatusFaturamentoEnum;
 import com.sistemajuridico.backend.core.domain.enums.TipoFaturamentoEnum;
-import com.sistemajuridico.backend.core.usecases.CadastrarFaturamentoUseCase;
-import com.sistemajuridico.backend.core.usecases.LiquidarFaturamentoUseCase;
-import com.sistemajuridico.backend.core.usecases.ListarFaturamentosUseCase;
-import com.sistemajuridico.backend.core.usecases.ObterResumoFinanceiroUseCase;
-import com.sistemajuridico.backend.presentation.dtos.FaturamentoDTO;
-import com.sistemajuridico.backend.presentation.dtos.LiquidarFaturamentoDTO;
-import com.sistemajuridico.backend.presentation.dtos.ResumoFinanceiroDTO;
-import jakarta.validation.Valid;
+import com.sistemajuridico.backend.core.usecases.*;
+import com.sistemajuridico.backend.presentation.dtos.*;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -30,20 +24,29 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/faturamentos")
+@RequestMapping({"/api/faturamentos", "/api/faturamento"})
 public class FaturamentoController implements FaturamentoControllerOpenApi {
 
     private final CadastrarFaturamentoUseCase cadastrarFaturamentoUseCase;
+    private final GerarParcelamentoUseCase gerarParcelamentoUseCase;
     private final LiquidarFaturamentoUseCase liquidarFaturamentoUseCase;
+    private final LiquidarParcialFaturamentoUseCase liquidarParcialFaturamentoUseCase;
+    private final RepassarFaturamentoUseCase repassarFaturamentoUseCase;
     private final ListarFaturamentosUseCase listarFaturamentosUseCase;
     private final ObterResumoFinanceiroUseCase obterResumoFinanceiroUseCase;
 
     public FaturamentoController(CadastrarFaturamentoUseCase cadastrarFaturamentoUseCase,
+                                 GerarParcelamentoUseCase gerarParcelamentoUseCase,
                                  LiquidarFaturamentoUseCase liquidarFaturamentoUseCase,
+                                 LiquidarParcialFaturamentoUseCase liquidarParcialFaturamentoUseCase,
+                                 RepassarFaturamentoUseCase repassarFaturamentoUseCase,
                                  ListarFaturamentosUseCase listarFaturamentosUseCase,
                                  ObterResumoFinanceiroUseCase obterResumoFinanceiroUseCase) {
         this.cadastrarFaturamentoUseCase = cadastrarFaturamentoUseCase;
+        this.gerarParcelamentoUseCase = gerarParcelamentoUseCase;
         this.liquidarFaturamentoUseCase = liquidarFaturamentoUseCase;
+        this.liquidarParcialFaturamentoUseCase = liquidarParcialFaturamentoUseCase;
+        this.repassarFaturamentoUseCase = repassarFaturamentoUseCase;
         this.listarFaturamentosUseCase = listarFaturamentosUseCase;
         this.obterResumoFinanceiroUseCase = obterResumoFinanceiroUseCase;
     }
@@ -57,17 +60,50 @@ public class FaturamentoController implements FaturamentoControllerOpenApi {
 
     @Override
     @PostMapping
-    public ResponseEntity<FaturamentoDTO> criar(@RequestBody @Valid FaturamentoDTO dto) {
+    public ResponseEntity<FaturamentoDTO> criar(@RequestBody FaturamentoDTO dto) {
         Faturamento faturamento = dto.toEntity();
         Faturamento faturamentoSalvo = cadastrarFaturamentoUseCase.executar(faturamento, dto.processoId());
         return ResponseEntity.status(HttpStatus.CREATED).body(FaturamentoDTO.fromEntity(faturamentoSalvo));
     }
 
     @Override
-    @PatchMapping("/{id}/pagar")
-    public ResponseEntity<FaturamentoDTO> liquidar(@PathVariable UUID id, @RequestBody @Valid LiquidarFaturamentoDTO dto) {
-        Faturamento faturamentoLiquidado = liquidarFaturamentoUseCase.executar(id, dto.dataPagamento());
+    @PostMapping("/parcelamento")
+    public ResponseEntity<List<FaturamentoDTO>> gerarParcelamento(@RequestBody List<FaturamentoDTO> dtos) {
+        List<Faturamento> faturamentosSalvos = this.gerarParcelamentoUseCase.executar(dtos);
+        List<FaturamentoDTO> response = new ArrayList<>();
+        for (Faturamento faturamento : faturamentosSalvos) {
+            response.add(FaturamentoDTO.fromEntity(faturamento));
+        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Override
+    @PatchMapping(value = {"/{id}/liquidar", "/{id}/pagar"})
+    public ResponseEntity<FaturamentoDTO> liquidar(@PathVariable UUID id, @RequestBody(required = false) LiquidarFaturamentoDTO dto) {
+        LocalDate dataPagamento = dto != null ? dto.dataPagamento() : null;
+        Faturamento faturamentoLiquidado = this.liquidarFaturamentoUseCase.executar(id, dataPagamento);
         return ResponseEntity.ok(FaturamentoDTO.fromEntity(faturamentoLiquidado));
+    }
+
+    @Override
+    @PatchMapping("/{id}/liquidar-parcial")
+    public ResponseEntity<FaturamentoDTO> liquidarParcial(@PathVariable UUID id, @RequestBody LiquidarParcialDTO dto) {
+        Faturamento faturamentoOriginal = this.liquidarParcialFaturamentoUseCase.executar(
+                id,
+                dto.valorPago(),
+                dto.novaDataVencimento(),
+                dto.dataPagamento()
+        );
+        return ResponseEntity.ok(FaturamentoDTO.fromEntity(faturamentoOriginal));
+    }
+
+    @Override
+    @PatchMapping("/{id}/repassar")
+    public ResponseEntity<FaturamentoDTO> repassar(@PathVariable UUID id, @RequestBody(required = false) RepassarFaturamentoDTO dto) {
+        LocalDate dataRepasse = dto != null ? dto.dataRepasse() : null;
+        String formaRepasse = dto != null ? dto.formaRepasse() : null;
+        Faturamento faturamentoRepassado = this.repassarFaturamentoUseCase.executar(id, dataRepasse, formaRepasse);
+        return ResponseEntity.ok(FaturamentoDTO.fromEntity(faturamentoRepassado));
     }
 
     @Override

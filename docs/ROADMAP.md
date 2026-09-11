@@ -75,12 +75,22 @@ Módulos, fluxos e infraestruturas 100% implementados, testados, blindados contr
 - **Ciclo de Vida Processual:** Abertura, edição cadastral, atualização de fase processual (`INICIAL`, `INSTRUCAO`, `DECISAO`, `RECURSAL`, `EXECUCAO`, `ARQUIVADO`) e número CNJ unívoco.
 - **Regras de Negócio de Arquivamento:** Verificação defensiva de débitos financeiros pendentes antes de autorizar o arquivamento (`PATCH /api/processos/{id}/arquivar`), com possibilidade de desarquivamento (`PATCH /api/processos/{id}/desarquivar`).
 - **Linha do Tempo de Andamentos:** Registro cronológico de movimentações com classificação de origem (`AUTOMATICO`, `MANUAL`, `IA`).
+- **[X] CONCLUÍDO - Ajustes na Gestão de Processos (Parte Adversa/Valor):**
+  - Mapeamento e persistência da qualificação da lide: `parteAdversa`, `cpfCnpjParteAdversa`, `papelCliente` (Enum `PapelClienteEnum`: `AUTOR`, `REU`, `TERCEIRO_INTERESSADO`), `valorCausa` com precisão decimal (`BigDecimal(15,2)`) e `comarca`.
+  - Propagação completa em DTOs (`ProcessoDTO`), mappers imperativos e Casos de Uso (`CadastrarProcessoUseCase`, `AtualizarProcessoUseCase`).
 
 ### 1.10. Financeiro, Fluxo de Caixa e Faturamento
 - **Controle Bipolar de Lançamentos:** Gestão de receitas e despesas pela natureza (`A_RECEBER`, `A_PAGAR`) e classificação de despesa/honorários (`HONORARIOS`, `CUSTAS`, `DESPESAS_ESCRITORIO`).
 - **Liquidação com Registro Histórico:** Quitação de títulos com data de pagamento obrigatória (`PATCH /api/faturamentos/{id}/pagar`) e controle de status (`PENDENTE`, `PAGO`, `CANCELADO`).
 - **Resumo Financeiro Executivo:** Endpoint `GET /api/faturamentos/resumo` com cálculo em tempo real de saldo previsto, valores recebidos, a pagar e taxa de adimplência/inadimplência.
 - **Filtros Financeiros Multicritério:** Listagem paginada no servidor cruzando intervalo de datas, status, natureza, tipo e vínculo com processo.
+- **[X] CONCLUÍDO - Evolução do Módulo Financeiro (Parcelamentos, Liquidação Parcial e Repasses):**
+  - **Assistente de Parcelamento Inteligente (`POST /api/faturamento/parcelamento`):** Criação e persistência em lote de lançamentos financeiros decorrentes da simulação de parcelas, via `GerarParcelamentoUseCase` em laços imperativos puros, com vínculo de numeração (`numeroParcela`, `totalParcelas`) e amarração com o processo judicial.
+  - **Baixa Integral Expressa (`PATCH /api/faturamento/{id}/liquidar`):** Quitação total com registro de data de pagamento efetiva (`dataPagamento`) e transição de status para `PAGO` via `LiquidarFaturamentoUseCase`.
+  - **Baixa Parcial com Desdobramento de Saldo (`PATCH /api/faturamento/{id}/liquidar-parcial`):** Recebimento parcial onde o título original é quitado no valor pago (`PAGO`) e o saldo remanescente é automaticamente clonado/desdobrado em uma nova fatura com status `PENDENTE` e nova data de vencimento via `LiquidarParcialFaturamentoUseCase`.
+  - **Gestão de Repasses Sucumbenciais a Clientes (`PATCH /api/faturamento/{id}/repassar`):** Gestão condicional de receitas com origem `TERCEIRO_SUCUMBENCIA`, apuração de retenção de honorários (`valorHonorariosRetidos`) e saldo do cliente (`valorRepasseCliente`), controle de status (`statusRepasse: PENDENTE | REPASSADO`), forma de repasse e liquidação via `RepassarFaturamentoUseCase`.
+  - **Padronização de Precisão Decimal:** Blindagem contábil de todas as colunas monetárias (`BigDecimal`) com `@Column(precision = 15, scale = 2)`.
+  - **Validação OpenAPI Estrita:** Isolamento das anotações `@Valid` nos contratos OpenAPI (`FaturamentoControllerOpenApi`), mantendo a implementação concreta em conformidade com as regras do Bean Validation (`HV000151`).
 
 ### 1.11. Produtividade: Agenda, Tarefas, Notificações e Dashboard
 - **Tarefas e Prazos Processuais:** CRUD completo de tarefas (`DILIGENCIA`, `PRAZO`, `CONTATO`), vinculadas a usuários e processos, com controle de conclusão (`PATCH /api/tarefas/{id}/concluir`) e consulta por período (`GET /api/tarefas/agenda`).
@@ -161,8 +171,8 @@ Grandes iniciativas e automações planejadas para as próximas etapas de desenv
 | **Clientes (CRM)** | `ClienteController` | `CadastrarClienteUseCase`, `DocumentoValidator`| `ClienteRepository` | ✅ Produção |
 | **Documentos PDF** | `ClienteController` (Rotas PDF) | `PdfDocumentGeneratorService` (iText) | `ClienteRepository`, `EscritorioRepository` | ✅ Produção |
 | **GED & Storage** | `DocumentoController` | `UploadDocumentoUseCase`, `GoogleDriveStorageService` | `DocumentoRepository` | ✅ Produção |
-| **Processos** | `ProcessoController`, `AndamentoController` | `CadastrarProcessoUseCase`, `ArquivarProcessoUseCase` | `ProcessoRepository`, `AndamentoRepository` | ✅ Produção |
-| **Financeiro** | `FaturamentoController` | `LiquidarFaturamentoUseCase`, `ObterResumoFinanceiroUseCase` | `FaturamentoRepository` | ✅ Produção |
+| **Processos** | `ProcessoController`, `AndamentoController` | `CadastrarProcessoUseCase`, `AtualizarProcessoUseCase`, `ArquivarProcessoUseCase` | `ProcessoRepository`, `AndamentoRepository` | ✅ Produção |
+| **Financeiro** | `FaturamentoController` | `GerarParcelamentoUseCase`, `LiquidarFaturamentoUseCase`, `LiquidarParcialFaturamentoUseCase`, `RepassarFaturamentoUseCase`, `ObterResumoFinanceiroUseCase` | `FaturamentoRepository` | ✅ Produção |
 | **Agenda & Tarefas** | `AudienciaController`, `TarefaController` | `CadastrarAudienciaUseCase`, `CriarTarefaUseCase` | `AudienciaRepository`, `TarefaRepository` | ✅ Produção |
 | **Dashboard & Avisos**| `DashboardController`, `NotificacaoController`, `BuscaGlobalController` | `DashboardAdvogadoUseCase`, `ObterResumoNotificacoesUseCase`, `BuscaGlobalUseCase` | Múltiplos Repositories via SQL Nativo | ✅ Produção |
 | **Resumos IA** | `ResumoAudienciaController` | `GerarResumoAudienciaUseCase`, `SpringAIResumoService` | `AudienciaRepository` | 🚧 Em Refinamento |

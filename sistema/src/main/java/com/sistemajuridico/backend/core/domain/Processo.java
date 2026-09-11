@@ -1,11 +1,13 @@
 package com.sistemajuridico.backend.core.domain;
 
 import com.sistemajuridico.backend.core.domain.enums.FaseProcessualEnum;
+import com.sistemajuridico.backend.core.domain.enums.PapelClienteEnum;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -28,6 +30,21 @@ public class Processo extends AuditableEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "fase_atual")
     private FaseProcessualEnum faseAtual;
+
+    @Column(name = "parte_adversa")
+    private String parteAdversa;
+
+    @Column(name = "cpf_cnpj_parte_adversa")
+    private String cpfCnpjParteAdversa;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "papel_cliente")
+    private PapelClienteEnum papelCliente;
+
+    @Column(name = "valor_causa", precision = 15, scale = 2)
+    private BigDecimal valorCausa;
+
+    private String comarca;
 
     @Column(name = "data_criacao")
     private LocalDate dataCriacao = LocalDate.now();

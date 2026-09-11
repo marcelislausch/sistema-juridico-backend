@@ -174,6 +174,27 @@ Todas as respostas de erro da API seguem schemas canônicos e consistentes:
 *   **Buscar Detalhes por ID:** `GET /api/processos/{id}`
 *   **Criar Processo:** `POST /api/processos`
 *   **Editar Processo:** `PUT /api/processos/{id}`
+    *   **Payload do Processo (`ProcessoDTO`):**
+        ```json
+        {
+          "numeroCnj": "5001234-88.2026.8.21.0016",
+          "assunto": "Ação Revisional de Contrato Bancário",
+          "faseAtual": "INICIAL",
+          "parteAdversa": "Banco do Brasil S.A.",
+          "cpfCnpjParteAdversa": "00.000.000/0001-91",
+          "papelCliente": "AUTOR",
+          "valorCausa": 75000.00,
+          "comarca": "Ijuí/RS",
+          "clienteId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+          "advogadoId": "7b8c9d0e-1234-5678-9abc-def012345678"
+        }
+        ```
+    *   **Campos de Qualificação da Lide:**
+        *   `parteAdversa` (string, opcional): Nome completo ou razão social da parte contrária.
+        *   `cpfCnpjParteAdversa` (string, opcional): CPF ou CNPJ da parte adversa (com máscara no front, gravado limpo).
+        *   `papelCliente` (Enum `PapelClienteEnum`): Posição jurídica do cliente: `AUTOR`, `REU`, `TERCEIRO_INTERESSADO`.
+        *   `valorCausa` (number/decimal, opcional): Valor atribuído à causa na petição.
+        *   `comarca` (string, opcional): Foro/comarca da ação (ex.: `"Ijuí/RS"`, `"Porto Alegre/RS"`).
 *   **Arquivar Processo:** `PATCH /api/processos/{id}/arquivar`
 *   **Desarquivar Processo:** `PATCH /api/processos/{id}/desarquivar`
 *   **Andamentos do Processo:** `GET /api/processos/{processoId}/andamentos` e `POST /api/processos/{processoId}/andamentos`
@@ -186,11 +207,35 @@ Todas as respostas de erro da API seguem schemas canônicos e consistentes:
 *   **Obter Totais:** `GET /api/faturamentos/resumo`
     *   Retorna `ResumoFinanceiroDTO` com `totalReceber`, `totalPagar`, `saldoPrevisto` e `totalVencido`.
 
+#### Modelo de Dados da Fatura (`FaturamentoDTO`)
+```json
+{
+  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "descricao": "Honorários Contratuais - Inicial",
+  "valor": 3000.00,
+  "tipo": "HONORARIOS",
+  "status": "PENDENTE",
+  "natureza": "A_RECEBER",
+  "dataVencimento": "2026-10-15",
+  "dataPagamento": null,
+  "processoId": "8f3b49c1-5717-4562-b3fc-2c963f66afa6",
+  "numeroParcela": 1,
+  "totalParcelas": 3,
+  "origemPagamento": "TERCEIRO_SUCUMBENCIA",
+  "valorHonorariosRetidos": 1000.00,
+  "valorRepasseCliente": 2000.00,
+  "statusRepasse": "PENDENTE",
+  "formaRepasse": "PIX",
+  "dadosBancariosCliente": "Banco Banrisul - Ag 0240 CC 06.012345-0 (Chave PIX: 123.456.789-00)",
+  "dataRepasse": null
+}
+```
+
 #### Listagem e Lançamentos
 *   **Listar Faturamentos (Paginado com Múltiplos Filtros no Servidor):** `GET /api/faturamentos`
     *   **Query Parameters:**
         *   `q` ou `termoBusca` (string): Busca textual na descrição da fatura.
-        *   `status` (Enum `StatusFaturamentoEnum`): `PENDENTE`, `PAGO`, `CANCELADO`.
+        *   `status` (Enum `StatusFaturamentoEnum`): `PENDENTE`, `PAGO`, `PARCIALMENTE_PAGO`, `CANCELADO`.
         *   `natureza` (Enum `NaturezaFaturamentoEnum`): `A_RECEBER`, `A_PAGAR`.
         *   `tipo` (Enum `TipoFaturamentoEnum`): `HONORARIOS`, `CUSTAS`, `DESPESAS_ESCRITORIO`.
         *   `vencimentoDe` (date: `YYYY-MM-DD`): Data inicial do intervalo de vencimento.
@@ -198,9 +243,75 @@ Todas as respostas de erro da API seguem schemas canônicos e consistentes:
         *   `processoId` (UUID): Filtro por processo judicial.
         *   `page` (int, default = 0), `size` (int, default = 10), `sort`.
 *   **Listar por Processo:** `GET /api/faturamentos/processo/{processoId}`
-*   **Cadastrar Fatura:** `POST /api/faturamentos`
-*   **Liquidar Fatura:** `PATCH /api/faturamentos/{id}/pagar`
-    *   **Body Obrigatório:** `{ "dataPagamento": "2026-09-08" }`
+*   **Cadastrar Fatura Única:** `POST /api/faturamentos` (faturamento individual).
+*   **Gerar Parcelamento:** `POST /api/faturamento/parcelamento` (gravação de múltiplas parcelas geradas pelo assistente).
+
+#### Assistente de Parcelamento (Modal de Faturamento)
+O modal de cadastro e lançamento financeiro dispõe do **Assistente de Parcelamento** para automação de contratos divididos:
+1.  **Parâmetros de Entrada:** O operador informa o **Valor Total** (ex.: R$ 6.000,00), a quantidade de parcelas no campo **Total de Parcelas** (ex.: `3`) e a **Data do Primeiro Vencimento**.
+2.  **Simulação em Grid Editável:**
+    *   O sistema gera dinamicamente um grid interativo com as parcelas calculadas (`numeroParcela`, `totalParcelas`, `descricao`, `valor` e `dataVencimento`).
+    *   O usuário possui flexibilidade para **editar individualmente** o valor e a data de vencimento de qualquer parcela no próprio grid (permitindo ajustes manuais de centavos ou parcelas com valores desiguais).
+3.  **Trava Matemática Obrigatória (Validação de Integridade):**
+    *   O botão **"Salvar"** do formulário permanece **estritamente desabilitado** caso a somatória dos valores de todas as linhas do grid seja diferente do valor total informado:
+        $$\sum \text{parcelas} \neq \text{valorTotal}$$
+    *   A interface deve exibir uma caixa de conferência em tempo real com:
+        *   *Valor Total Informado*
+        *   *Soma das Parcelas no Grid*
+        *   *Diferença Pendente:* destacada em **vermelho** se houver divergência e em **verde** com mensagem de consistência quando a soma bater com exatidão (`Diferença: R$ 0,00`).
+4.  **Persistência:** Ao salvar com a trava matemática validada, o front-end envia o array de faturamentos para a rota `POST /api/faturamento/parcelamento` para gravação de todas as parcelas no backend.
+
+#### Regra de Exibição Condicional do Repasse
+Em situações onde o escritório recebe valores de terceiros ou sucumbência processual em conta institucional:
+*   **Gatilho de Renderização:** O bloco de campos de **Repasse ao Cliente** só deve ser renderizado na tela se o campo `origemPagamento` for selecionado como `TERCEIRO_SUCUMBENCIA`.
+*   **Ocultamento para Pagamento Direto:** Se `origemPagamento` for igual a `DIRETO_CLIENTE` (ou nulo/omitido), o bloco de repasse **não deve ser exibido**, mantendo a interface enxuta.
+*   **Campos do Bloco de Repasse (`TERCEIRO_SUCUMBENCIA`):**
+    *   `valorHonorariosRetidos` (number): Valor retido a título de honorários advocatícios contratuais/sucumbenciais.
+    *   `valorRepasseCliente` (number): Saldo líquido que deve ser transferido ao cliente (`valor - valorHonorariosRetidos`).
+    *   `dadosBancariosCliente` (string): Dados da conta bancária ou chave PIX do cliente para repasse.
+    *   `formaRepasse` (string): Modalidade do repasse (`PIX`, `TED`, `DOC`, `DINHEIRO`, `CHEQUE`).
+    *   `statusRepasse` (Enum `StatusRepasseEnum`): Situação da transferência (`PENDENTE`, `REPASSADO`).
+    *   `dataRepasse` (date): Data efetiva da realização da transferência bancária.
+
+#### Fluxo de Liquidação (Baixa Integral e Baixa Parcial)
+A tela de liquidação (ação de dar baixa na fatura) deve oferecer ao operador a seleção entre **Pagamento Total (Integral)** ou **Pagamento Parcial**:
+
+1.  **Baixa Integral (Total):**
+    *   **Rota:** `PATCH /api/faturamento/{id}/liquidar`
+    *   **Payload de Envio:**
+        ```json
+        {
+          "dataPagamento": "2026-09-10"
+        }
+        ```
+    *   **Comportamento:** Quitação completa do título, atualizando o status para `PAGO`.
+
+2.  **Baixa Parcial:**
+    *   **Rota:** `PATCH /api/faturamento/{id}/liquidar-parcial`
+    *   **Campos Solicitados na Modal:**
+        *   `valorPago` (number): Valor parcial que está sendo recebido (deve ser $> 0$ e $<$ valor total da fatura).
+        *   `dataPagamento` (date): Data do efetivo pagamento parcial.
+        *   `novaDataVencimento` (date, obrigatório): Nova data de vencimento estipulada para a cobrança da diferença restante.
+    *   **Payload de Envio:**
+        ```json
+        {
+          "valorPago": 1500.00,
+          "dataPagamento": "2026-09-10",
+          "novaDataVencimento": "2026-10-10"
+        }
+        ```
+    *   **Comportamento no Backend:** Registra o valor parcial pago, altera o status da fatura para `PARCIALMENTE_PAGO` e realiza a criação/desdobramento de uma nova fatura com o saldo devedor restante (`valorTotal - valorPago`) e a nova data de vencimento para controle da cobrança.
+
+3.  **Efetivação de Repasse:**
+    *   **Rota:** `PATCH /api/faturamento/{id}/repassar`
+    *   **Payload de Envio:**
+        ```json
+        {
+          "dataRepasse": "2026-09-10",
+          "formaRepasse": "PIX"
+        }
+        ```
+    *   **Comportamento:** Marca o repasse como `REPASSADO` e registra a data e forma do pagamento ao cliente.
 
 ---
 
@@ -365,6 +476,6 @@ Atende à tela completa de "Equipe & Usuários" que engloba Admins, Advogados e 
 | `Topbar.tsx` (Tribunais) | Texto estático "Tribunais Sincronizados" | `GET /api/integracoes/tribunais/status` |
 | `TeamTab.tsx` | Chamava `/usuarios/advogados` e mockava perfil | `GET /api/usuarios?page=0&size=20&ativo=true` |
 | `ClientsPage.tsx` | `collectAllPages` e filtro em memória | `GET /api/clientes?q=&tipo=&page=&size=` |
-| `ProcessesPage.tsx` | Download de 500 itens e filtro local | `GET /api/processos?q=&fase=&page=&size=` |
-| `FinanceiroPage.tsx` | Paginação e somatórios no navegador | `GET /api/faturamentos?q=&status=&natureza=` |
+| `ProcessesPage.tsx` | Download de 500 itens e filtro local | `GET /api/processos?q=&fase=&page=&size=` + cadastro/edição com qualificação da lide (`parteAdversa`, `cpfCnpjParteAdversa`, `papelCliente`, `valorCausa`, `comarca`) |
+| `FinanceiroPage.tsx` | Paginação e somatórios no navegador | `GET /api/faturamentos?q=&status=&natureza=` + Assistente de Parcelamento (`/parcelamento` com trava matemática), Repasse condicional (`TERCEIRO_SUCUMBENCIA`), Baixa Integral (`/liquidar`), Baixa Parcial com desdobramento (`/liquidar-parcial`) e Repasse (`/repassar`) |
 | `Dashboard.tsx` | Erro ao ler campos opcionais nulos | `GET /api/dashboard` (DTO com valores padrão garantidos) |

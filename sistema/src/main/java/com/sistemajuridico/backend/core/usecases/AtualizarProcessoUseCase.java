@@ -26,6 +26,11 @@ public class AtualizarProcessoUseCase {
         Processo processoExistente = optProcesso.get();
         processoExistente.setAssunto(dadosAtualizados.getAssunto());
         processoExistente.setFaseAtual(dadosAtualizados.getFaseAtual());
+        processoExistente.setParteAdversa(dadosAtualizados.getParteAdversa());
+        processoExistente.setCpfCnpjParteAdversa(dadosAtualizados.getCpfCnpjParteAdversa());
+        processoExistente.setPapelCliente(dadosAtualizados.getPapelCliente());
+        processoExistente.setValorCausa(dadosAtualizados.getValorCausa());
+        processoExistente.setComarca(dadosAtualizados.getComarca());
 
         return this.processoRepository.save(processoExistente);
     }

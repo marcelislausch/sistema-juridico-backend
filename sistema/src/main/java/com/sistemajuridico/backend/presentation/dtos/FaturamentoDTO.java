@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sistemajuridico.backend.core.domain.Faturamento;
 import com.sistemajuridico.backend.core.domain.enums.NaturezaFaturamentoEnum;
+import com.sistemajuridico.backend.core.domain.enums.OrigemPagamentoEnum;
 import com.sistemajuridico.backend.core.domain.enums.StatusFaturamentoEnum;
+import com.sistemajuridico.backend.core.domain.enums.StatusRepasseEnum;
 import com.sistemajuridico.backend.core.domain.enums.TipoFaturamentoEnum;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -38,7 +40,25 @@ public record FaturamentoDTO(
         LocalDate dataPagamento,
 
         @JsonAlias({"processoId"})
-        ProcessoResumoDTO processo
+        ProcessoResumoDTO processo,
+
+        Integer numeroParcela,
+
+        Integer totalParcelas,
+
+        OrigemPagamentoEnum origemPagamento,
+
+        BigDecimal valorHonorariosRetidos,
+
+        BigDecimal valorRepasseCliente,
+
+        StatusRepasseEnum statusRepasse,
+
+        String formaRepasse,
+
+        String dadosBancariosCliente,
+
+        LocalDate dataRepasse
 ) {
 
     public FaturamentoDTO(
@@ -61,7 +81,91 @@ public record FaturamentoDTO(
                 natureza,
                 dataVencimento,
                 dataPagamento,
-                processoId != null ? new ProcessoResumoDTO(processoId, null, null) : null
+                processoId != null ? new ProcessoResumoDTO(processoId, null, null) : null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    public FaturamentoDTO(
+            UUID id,
+            String descricao,
+            BigDecimal valor,
+            TipoFaturamentoEnum tipo,
+            StatusFaturamentoEnum status,
+            NaturezaFaturamentoEnum natureza,
+            LocalDate dataVencimento,
+            LocalDate dataPagamento,
+            ProcessoResumoDTO processo
+    ) {
+        this(
+                id,
+                descricao,
+                valor,
+                tipo,
+                status,
+                natureza,
+                dataVencimento,
+                dataPagamento,
+                processo,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    public FaturamentoDTO(
+            UUID id,
+            String descricao,
+            BigDecimal valor,
+            TipoFaturamentoEnum tipo,
+            StatusFaturamentoEnum status,
+            NaturezaFaturamentoEnum natureza,
+            LocalDate dataVencimento,
+            LocalDate dataPagamento,
+            UUID processoId,
+            Integer numeroParcela,
+            Integer totalParcelas,
+            OrigemPagamentoEnum origemPagamento,
+            BigDecimal valorHonorariosRetidos,
+            BigDecimal valorRepasseCliente,
+            StatusRepasseEnum statusRepasse,
+            String formaRepasse,
+            String dadosBancariosCliente,
+            LocalDate dataRepasse
+    ) {
+        this(
+                id,
+                descricao,
+                valor,
+                tipo,
+                status,
+                natureza,
+                dataVencimento,
+                dataPagamento,
+                processoId != null ? new ProcessoResumoDTO(processoId, null, null) : null,
+                numeroParcela,
+                totalParcelas,
+                origemPagamento,
+                valorHonorariosRetidos,
+                valorRepasseCliente,
+                statusRepasse,
+                formaRepasse,
+                dadosBancariosCliente,
+                dataRepasse
         );
     }
 
@@ -75,6 +179,15 @@ public record FaturamentoDTO(
         faturamento.setNatureza(this.natureza());
         faturamento.setDataVencimento(this.dataVencimento());
         faturamento.setDataPagamento(this.dataPagamento());
+        faturamento.setNumeroParcela(this.numeroParcela());
+        faturamento.setTotalParcelas(this.totalParcelas());
+        faturamento.setOrigemPagamento(this.origemPagamento());
+        faturamento.setValorHonorariosRetidos(this.valorHonorariosRetidos());
+        faturamento.setValorRepasseCliente(this.valorRepasseCliente());
+        faturamento.setStatusRepasse(this.statusRepasse());
+        faturamento.setFormaRepasse(this.formaRepasse());
+        faturamento.setDadosBancariosCliente(this.dadosBancariosCliente());
+        faturamento.setDataRepasse(this.dataRepasse());
         return faturamento;
     }
 
@@ -95,7 +208,16 @@ public record FaturamentoDTO(
                 faturamento.getNatureza(),
                 faturamento.getDataVencimento(),
                 faturamento.getDataPagamento(),
-                processo
+                processo,
+                faturamento.getNumeroParcela(),
+                faturamento.getTotalParcelas(),
+                faturamento.getOrigemPagamento(),
+                faturamento.getValorHonorariosRetidos(),
+                faturamento.getValorRepasseCliente(),
+                faturamento.getStatusRepasse(),
+                faturamento.getFormaRepasse(),
+                faturamento.getDadosBancariosCliente(),
+                faturamento.getDataRepasse()
         );
     }
 

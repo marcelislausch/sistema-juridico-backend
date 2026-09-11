@@ -6,6 +6,7 @@ import com.sistemajuridico.backend.core.domain.exceptions.RecursoNaoEncontradoEx
 import com.sistemajuridico.backend.core.domain.exceptions.RegraNegocioException;
 import com.sistemajuridico.backend.infrastructure.persistence.FaturamentoRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -20,19 +21,18 @@ public class LiquidarFaturamentoUseCase {
         this.faturamentoRepository = faturamentoRepository;
     }
 
+    @Transactional
     public Faturamento executar(UUID faturamentoId, LocalDate dataPagamento) {
         Optional<Faturamento> optFaturamento = faturamentoRepository.findById(faturamentoId);
         if (optFaturamento.isEmpty()) {
             throw new RecursoNaoEncontradoException("Faturamento não encontrado!");
         }
 
-        if (dataPagamento == null) {
-            throw new RegraNegocioException("A data de pagamento é obrigatória para liquidar a fatura!");
-        }
-
         Faturamento faturamento = optFaturamento.get();
+        LocalDate dataEfetiva = dataPagamento != null ? dataPagamento : LocalDate.now();
+
         faturamento.setStatus(StatusFaturamentoEnum.PAGO);
-        faturamento.setDataPagamento(dataPagamento);
+        faturamento.setDataPagamento(dataEfetiva);
 
         return faturamentoRepository.save(faturamento);
     }
