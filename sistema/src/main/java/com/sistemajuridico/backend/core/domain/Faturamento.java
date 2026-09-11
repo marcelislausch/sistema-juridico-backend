@@ -72,7 +72,11 @@ public class Faturamento extends AuditableEntity {
     @Column(name = "data_repasse")
     private LocalDate dataRepasse;
 
-    @ManyToOne
-    @JoinColumn(name = "processo_id")
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "processo_id", nullable = true)
     private Processo processo;
+
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "cliente_id")
+    private Cliente cliente;
 }

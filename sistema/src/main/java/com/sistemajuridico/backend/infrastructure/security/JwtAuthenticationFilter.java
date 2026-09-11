@@ -34,6 +34,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (path.startsWith("/api/auth/recuperar-senha")
                     || path.startsWith("/api/auth/redefinir-senha")
                     || path.startsWith("/api/auth/login")
+                    || path.startsWith("/api/integracoes/google-calendar/webhook")
                     || path.startsWith("/v3/api-docs")
                     || path.startsWith("/swagger-ui")) {
                 return true;

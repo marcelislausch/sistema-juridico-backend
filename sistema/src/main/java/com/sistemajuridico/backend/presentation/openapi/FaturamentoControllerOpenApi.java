@@ -3,6 +3,7 @@ package com.sistemajuridico.backend.presentation.openapi;
 import com.sistemajuridico.backend.core.domain.enums.NaturezaFaturamentoEnum;
 import com.sistemajuridico.backend.core.domain.enums.StatusFaturamentoEnum;
 import com.sistemajuridico.backend.core.domain.enums.TipoFaturamentoEnum;
+import com.sistemajuridico.backend.presentation.dtos.ConsultaAvulsaDTO;
 import com.sistemajuridico.backend.presentation.dtos.ErroPadraoDTO;
 import com.sistemajuridico.backend.presentation.dtos.ErroValidacaoDTO;
 import com.sistemajuridico.backend.presentation.dtos.FaturamentoDTO;
@@ -150,4 +151,20 @@ public interface FaturamentoControllerOpenApi {
             UUID processoId,
             Pageable pageable
     );
+
+    @Operation(summary = "Lançar consulta avulsa", description = "Cria e liquida imediatamente um faturamento de consulta jurídica avulsa sem vínculo processual, associado apenas ao cliente com status PAGO")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Consulta avulsa registrada e liquidada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados da consulta inválidos",
+                    content = @Content(schema = @Schema(implementation = ErroValidacaoDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
+                    content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
+            @ApiResponse(responseCode = "403", description = "Acesso proibido",
+                    content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Cliente não encontrado",
+                    content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
+            @ApiResponse(responseCode = "422", description = "Regra de negócio violada",
+                    content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
+    })
+    ResponseEntity<FaturamentoDTO> registrarConsultaAvulsa(@Valid ConsultaAvulsaDTO dto);
 }

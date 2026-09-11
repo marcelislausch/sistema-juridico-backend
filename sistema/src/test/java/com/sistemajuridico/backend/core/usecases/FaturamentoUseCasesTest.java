@@ -1,12 +1,15 @@
 package com.sistemajuridico.backend.core.usecases;
 
+import com.sistemajuridico.backend.core.domain.Cliente;
 import com.sistemajuridico.backend.core.domain.Faturamento;
 import com.sistemajuridico.backend.core.domain.Processo;
 import com.sistemajuridico.backend.core.domain.enums.*;
 import com.sistemajuridico.backend.core.domain.exceptions.RecursoNaoEncontradoException;
 import com.sistemajuridico.backend.core.domain.exceptions.RegraNegocioException;
+import com.sistemajuridico.backend.infrastructure.persistence.ClienteRepository;
 import com.sistemajuridico.backend.infrastructure.persistence.FaturamentoRepository;
 import com.sistemajuridico.backend.infrastructure.persistence.ProcessoRepository;
+import com.sistemajuridico.backend.presentation.dtos.ConsultaAvulsaDTO;
 import com.sistemajuridico.backend.presentation.dtos.FaturamentoDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,10 +38,14 @@ class FaturamentoUseCasesTest {
     @Mock
     private ProcessoRepository processoRepository;
 
+    @Mock
+    private ClienteRepository clienteRepository;
+
     private GerarParcelamentoUseCase gerarParcelamentoUseCase;
     private LiquidarFaturamentoUseCase liquidarFaturamentoUseCase;
     private LiquidarParcialFaturamentoUseCase liquidarParcialFaturamentoUseCase;
     private RepassarFaturamentoUseCase repassarFaturamentoUseCase;
+    private RegistrarConsultaAvulsaUseCase registrarConsultaAvulsaUseCase;
 
     @BeforeEach
     void setUp() {
@@ -46,6 +53,7 @@ class FaturamentoUseCasesTest {
         this.liquidarFaturamentoUseCase = new LiquidarFaturamentoUseCase(faturamentoRepository);
         this.liquidarParcialFaturamentoUseCase = new LiquidarParcialFaturamentoUseCase(faturamentoRepository);
         this.repassarFaturamentoUseCase = new RepassarFaturamentoUseCase(faturamentoRepository);
+        this.registrarConsultaAvulsaUseCase = new RegistrarConsultaAvulsaUseCase(faturamentoRepository, clienteRepository);
     }
 
     @Test
@@ -241,5 +249,116 @@ class FaturamentoUseCasesTest {
         assertThrows(RecursoNaoEncontradoException.class, () ->
                 repassarFaturamentoUseCase.executar(id, null, null)
         );
+    }
+
+    @Test
+    void shouldRegistrarConsultaAvulsaComSucessoSemVinculoProcessual() {
+        UUID clienteId = UUID.randomUUID();
+        Cliente cliente = new Cliente();
+        cliente.setId(clienteId);
+        cliente.setNome("João da Silva");
+
+        when(clienteRepository.findById(clienteId)).thenReturn(Optional.of(cliente));
+        when(faturamentoRepository.save(any(Faturamento.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ConsultaAvulsaDTO dto = new ConsultaAvulsaDTO(
+                clienteId,
+                new BigDecimal("250.00"),
+                "Consulta inicial sobre rescisão trabalhista",
+                null,
+                "PIX"
+        );
+
+        Faturamento resultado = registrarConsultaAvulsaUseCase.executar(dto);
+
+        assertNotNull(resultado);
+        assertEquals(cliente, resultado.getCliente());
+        assertNull(resultado.getProcesso(), "O faturamento de consulta avulsa não deve ter processo vinculado");
+        assertEquals(new BigDecimal("250.00"), resultado.getValor());
+        assertEquals("Consulta inicial sobre rescisão trabalhista", resultado.getDescricao());
+        assertEquals(TipoFaturamentoEnum.CONSULTA_AVULSA, resultado.getTipo());
+        assertEquals(NaturezaFaturamentoEnum.A_RECEBER, resultado.getNatureza());
+        assertEquals(StatusFaturamentoEnum.PAGO, resultado.getStatus(), "Status deve ser PAGO imediatamente na criação");
+        assertEquals(LocalDate.now(), resultado.getDataPagamento());
+        assertEquals(LocalDate.now(), resultado.getDataVencimento());
+        assertEquals(Integer.valueOf(1), resultado.getNumeroParcela());
+        assertEquals(Integer.valueOf(1), resultado.getTotalParcelas());
+        assertEquals("PIX", resultado.getFormaRepasse());
+
+        verify(clienteRepository, times(1)).findById(clienteId);
+        verify(faturamentoRepository, times(1)).save(any(Faturamento.class));
+    }
+
+    @Test
+    void shouldRegistrarConsultaAvulsaComDataInformada() {
+        UUID clienteId = UUID.randomUUID();
+        Cliente cliente = new Cliente();
+        cliente.setId(clienteId);
+
+        when(clienteRepository.findById(clienteId)).thenReturn(Optional.of(cliente));
+        when(faturamentoRepository.save(any(Faturamento.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        LocalDate dataEspecifica = LocalDate.of(2026, 9, 10);
+        ConsultaAvulsaDTO dto = new ConsultaAvulsaDTO(
+                clienteId,
+                new BigDecimal("500.00"),
+                "Parecer previdenciário",
+                dataEspecifica,
+                "Cartão de Débito"
+        );
+
+        Faturamento resultado = registrarConsultaAvulsaUseCase.executar(dto);
+
+        assertNotNull(resultado);
+        assertEquals(StatusFaturamentoEnum.PAGO, resultado.getStatus());
+        assertEquals(dataEspecifica, resultado.getDataPagamento());
+        assertEquals(dataEspecifica, resultado.getDataVencimento());
+        assertNull(resultado.getProcesso());
+        assertEquals(cliente, resultado.getCliente());
+    }
+
+    @Test
+    void shouldThrowWhenClienteNaoEncontradoAoRegistrarConsultaAvulsa() {
+        UUID clienteId = UUID.randomUUID();
+        when(clienteRepository.findById(clienteId)).thenReturn(Optional.empty());
+
+        ConsultaAvulsaDTO dto = new ConsultaAvulsaDTO(
+                clienteId,
+                new BigDecimal("250.00"),
+                "Consulta não realizada",
+                null,
+                null
+        );
+
+        assertThrows(RecursoNaoEncontradoException.class, () ->
+                registrarConsultaAvulsaUseCase.executar(dto)
+        );
+        verify(faturamentoRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowWhenDadosInvalidosAoRegistrarConsultaAvulsa() {
+        assertThrows(RegraNegocioException.class, () ->
+                registrarConsultaAvulsaUseCase.executar(null)
+        );
+        assertThrows(RegraNegocioException.class, () ->
+                registrarConsultaAvulsaUseCase.executar(new ConsultaAvulsaDTO(null, new BigDecimal("250.00"), "Consulta"))
+        );
+        assertThrows(RegraNegocioException.class, () ->
+                registrarConsultaAvulsaUseCase.executar(new ConsultaAvulsaDTO(UUID.randomUUID(), null, "Consulta"))
+        );
+        assertThrows(RegraNegocioException.class, () ->
+                registrarConsultaAvulsaUseCase.executar(new ConsultaAvulsaDTO(UUID.randomUUID(), BigDecimal.ZERO, "Consulta"))
+        );
+        assertThrows(RegraNegocioException.class, () ->
+                registrarConsultaAvulsaUseCase.executar(new ConsultaAvulsaDTO(UUID.randomUUID(), new BigDecimal("-50.00"), "Consulta"))
+        );
+        assertThrows(RegraNegocioException.class, () ->
+                registrarConsultaAvulsaUseCase.executar(new ConsultaAvulsaDTO(UUID.randomUUID(), new BigDecimal("250.00"), ""))
+        );
+        assertThrows(RegraNegocioException.class, () ->
+                registrarConsultaAvulsaUseCase.executar(new ConsultaAvulsaDTO(UUID.randomUUID(), new BigDecimal("250.00"), "   "))
+        );
+        verify(faturamentoRepository, never()).save(any());
     }
 }

@@ -2,6 +2,7 @@ package com.sistemajuridico.backend.presentation.dtos;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.sistemajuridico.backend.core.domain.Cliente;
 import com.sistemajuridico.backend.core.domain.Faturamento;
 import com.sistemajuridico.backend.core.domain.enums.NaturezaFaturamentoEnum;
 import com.sistemajuridico.backend.core.domain.enums.OrigemPagamentoEnum;
@@ -41,6 +42,9 @@ public record FaturamentoDTO(
 
         @JsonAlias({"processoId"})
         ProcessoResumoDTO processo,
+
+        @JsonAlias({"clienteId"})
+        ClienteResumoDTO cliente,
 
         Integer numeroParcela,
 
@@ -90,6 +94,7 @@ public record FaturamentoDTO(
                 null,
                 null,
                 null,
+                null,
                 null
         );
     }
@@ -123,7 +128,51 @@ public record FaturamentoDTO(
                 null,
                 null,
                 null,
+                null,
                 null
+        );
+    }
+
+    public FaturamentoDTO(
+            UUID id,
+            String descricao,
+            BigDecimal valor,
+            TipoFaturamentoEnum tipo,
+            StatusFaturamentoEnum status,
+            NaturezaFaturamentoEnum natureza,
+            LocalDate dataVencimento,
+            LocalDate dataPagamento,
+            ProcessoResumoDTO processo,
+            Integer numeroParcela,
+            Integer totalParcelas,
+            OrigemPagamentoEnum origemPagamento,
+            BigDecimal valorHonorariosRetidos,
+            BigDecimal valorRepasseCliente,
+            StatusRepasseEnum statusRepasse,
+            String formaRepasse,
+            String dadosBancariosCliente,
+            LocalDate dataRepasse
+    ) {
+        this(
+                id,
+                descricao,
+                valor,
+                tipo,
+                status,
+                natureza,
+                dataVencimento,
+                dataPagamento,
+                processo,
+                null,
+                numeroParcela,
+                totalParcelas,
+                origemPagamento,
+                valorHonorariosRetidos,
+                valorRepasseCliente,
+                statusRepasse,
+                formaRepasse,
+                dadosBancariosCliente,
+                dataRepasse
         );
     }
 
@@ -157,6 +206,7 @@ public record FaturamentoDTO(
                 dataVencimento,
                 dataPagamento,
                 processoId != null ? new ProcessoResumoDTO(processoId, null, null) : null,
+                null,
                 numeroParcela,
                 totalParcelas,
                 origemPagamento,
@@ -188,6 +238,11 @@ public record FaturamentoDTO(
         faturamento.setFormaRepasse(this.formaRepasse());
         faturamento.setDadosBancariosCliente(this.dadosBancariosCliente());
         faturamento.setDataRepasse(this.dataRepasse());
+        if (this.cliente != null && this.cliente.id() != null) {
+            Cliente c = new Cliente();
+            c.setId(this.cliente.id());
+            faturamento.setCliente(c);
+        }
         return faturamento;
     }
 
@@ -199,6 +254,12 @@ public record FaturamentoDTO(
         if (faturamento.getProcesso() != null) {
             processo = ProcessoResumoDTO.fromEntity(faturamento.getProcesso());
         }
+        ClienteResumoDTO cliente = null;
+        if (faturamento.getCliente() != null) {
+            cliente = ClienteResumoDTO.fromEntity(faturamento.getCliente());
+        } else if (faturamento.getProcesso() != null && faturamento.getProcesso().getCliente() != null) {
+            cliente = ClienteResumoDTO.fromEntity(faturamento.getProcesso().getCliente());
+        }
         return new FaturamentoDTO(
                 faturamento.getId(),
                 faturamento.getDescricao(),
@@ -209,6 +270,7 @@ public record FaturamentoDTO(
                 faturamento.getDataVencimento(),
                 faturamento.getDataPagamento(),
                 processo,
+                cliente,
                 faturamento.getNumeroParcela(),
                 faturamento.getTotalParcelas(),
                 faturamento.getOrigemPagamento(),
@@ -224,5 +286,16 @@ public record FaturamentoDTO(
     @JsonIgnore
     public UUID processoId() {
         return this.processo != null ? this.processo.id() : null;
+    }
+
+    @JsonIgnore
+    public UUID clienteId() {
+        if (this.cliente != null) {
+            return this.cliente.id();
+        }
+        if (this.processo != null) {
+            return this.processo.clienteId();
+        }
+        return null;
     }
 }

@@ -30,6 +30,9 @@ public class Tarefa extends AuditableEntity {
     @Enumerated(EnumType.STRING)
     private TipoTarefaEnum tipo;
 
+    @Column(name = "google_event_id")
+    private String googleEventId;
+
     @ManyToOne(optional = false)
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;

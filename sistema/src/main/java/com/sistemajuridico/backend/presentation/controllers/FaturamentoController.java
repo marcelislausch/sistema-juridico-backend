@@ -34,6 +34,7 @@ public class FaturamentoController implements FaturamentoControllerOpenApi {
     private final RepassarFaturamentoUseCase repassarFaturamentoUseCase;
     private final ListarFaturamentosUseCase listarFaturamentosUseCase;
     private final ObterResumoFinanceiroUseCase obterResumoFinanceiroUseCase;
+    private final RegistrarConsultaAvulsaUseCase registrarConsultaAvulsaUseCase;
 
     public FaturamentoController(CadastrarFaturamentoUseCase cadastrarFaturamentoUseCase,
                                  GerarParcelamentoUseCase gerarParcelamentoUseCase,
@@ -41,7 +42,8 @@ public class FaturamentoController implements FaturamentoControllerOpenApi {
                                  LiquidarParcialFaturamentoUseCase liquidarParcialFaturamentoUseCase,
                                  RepassarFaturamentoUseCase repassarFaturamentoUseCase,
                                  ListarFaturamentosUseCase listarFaturamentosUseCase,
-                                 ObterResumoFinanceiroUseCase obterResumoFinanceiroUseCase) {
+                                 ObterResumoFinanceiroUseCase obterResumoFinanceiroUseCase,
+                                 RegistrarConsultaAvulsaUseCase registrarConsultaAvulsaUseCase) {
         this.cadastrarFaturamentoUseCase = cadastrarFaturamentoUseCase;
         this.gerarParcelamentoUseCase = gerarParcelamentoUseCase;
         this.liquidarFaturamentoUseCase = liquidarFaturamentoUseCase;
@@ -49,6 +51,7 @@ public class FaturamentoController implements FaturamentoControllerOpenApi {
         this.repassarFaturamentoUseCase = repassarFaturamentoUseCase;
         this.listarFaturamentosUseCase = listarFaturamentosUseCase;
         this.obterResumoFinanceiroUseCase = obterResumoFinanceiroUseCase;
+        this.registrarConsultaAvulsaUseCase = registrarConsultaAvulsaUseCase;
     }
 
     @Override
@@ -148,5 +151,12 @@ public class FaturamentoController implements FaturamentoControllerOpenApi {
         }
         Page<FaturamentoDTO> pageDtos = new PageImpl<>(dtos, paginaFaturamentos.getPageable(), paginaFaturamentos.getTotalElements());
         return ResponseEntity.ok(pageDtos);
+    }
+
+    @Override
+    @PostMapping("/consulta-avulsa")
+    public ResponseEntity<FaturamentoDTO> registrarConsultaAvulsa(@RequestBody ConsultaAvulsaDTO dto) {
+        Faturamento faturamento = this.registrarConsultaAvulsaUseCase.executar(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(FaturamentoDTO.fromEntity(faturamento));
     }
 }

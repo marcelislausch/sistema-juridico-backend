@@ -128,11 +128,48 @@ Funcionalidades cujo fluxo inicial e arquitetura base já foram codificados e te
 
 ---
 
-## 3. 📅 Backlog (Próximos Passos)
+## 3. ⏳ Integração Google Calendar & Consultas Avulsas [ ] PENDENTE
+
+Módulo prioritário de expansão funcional solicitado pela banca para integração externa de agenda e simplificação do faturamento operacional.
+
+### 3.1. Sincronização One-Way do Google Calendar (Push Notifications via Webhooks) [ ] PENDENTE
+- **Arquitetura Estritamente One-Way:**
+  - O sistema funciona exclusivamente como receptor passivo de dados originados no Google Calendar (Google -> Sistema Jurídico).
+  - Tarefas, audiências e prazos cadastrados internamente no sistema NUNCA são propagados para o Google Calendar.
+- **Canal de Webhooks:**
+  - Endpoint dedicado `POST /api/integracoes/google-calendar/webhook` para recepção de Push Notifications disparadas pela Google Calendar API v3 (headers `X-Goog-Resource-State`, `X-Goog-Channel-ID`, `X-Goog-Message-Number`).
+- **Mapeamento de Domínio Unificado:**
+  - Todo evento/compromisso recebido é convertido e persistido como uma `Tarefa` (`tb_tarefa`) vinculada ao respectivo `Usuario` (advogado titular da agenda sincronizada).
+  - Inclusão do novo valor `ATENDIMENTO` no `TipoTarefaEnum` (`DILIGENCIA`, `PRAZO`, `CONTATO`, `ATENDIMENTO`).
+- **Idempotência & Versionamento (`googleEventId`):**
+  - Mapeamento da coluna `google_event_id VARCHAR(255)` na entidade `Tarefa` (`tb_tarefa`).
+  - Lógica imperativa de upsert via `SincronizarEventoGoogleCalendarUseCase`:
+    - Consulta de existência por `googleEventId` no `TarefaRepository`.
+    - Se o compromisso já existir, atualiza descrição, data de vencimento e status (inclusive tratando cancelamentos de eventos ocorridos na origem).
+    - Se o compromisso for inédito, realiza o cadastro de uma nova tarefa com o respectivo `googleEventId`.
+    - Prevenção total de duplicações geradas por disparos múltiplos ou reenvios de webhook.
+
+### 3.2. Lançamento e Liquidação de Consultas Avulsas [ ] PENDENTE
+- **Desvinculação Processual:**
+  - Flexibilização do modelo relacional: o relacionamento entre a entidade `Faturamento` e `Processo` torna-se opcional (`processo_id` anulável em `tb_faturamento`), passando a vincular-se unicamente à entidade `Cliente` (`cliente_id`).
+- **Novo Tipo de Faturamento:**
+  - Inclusão do novo valor `CONSULTA_AVULSA` no `TipoFaturamentoEnum` (`HONORARIOS`, `CUSTAS`, `DESPESAS_ESCRITORIO`, `CONSULTA_AVULSA`).
+- **Transação Atômica de Criação e Liquidação:**
+  - Desenvolvimento do caso de uso `RegistrarConsultaAvulsaUseCase` para processamento atômico (`@Transactional`):
+    - Recebe dados essenciais: identificador do cliente (`clienteId`), valor do atendimento (ex: R$ 250,00), descrição da consulta, data de quitação e forma de pagamento.
+    - Validação defensiva imperativa da existência do cliente via `ClienteRepository.findById` (`opt.isEmpty()`).
+    - Criação imediata do faturamento com natureza `A_RECEBER`, tipo `CONSULTA_AVULSA`, `processo = null`, vínculo direto com `Cliente` e `status = PAGO` com `dataPagamento` preenchida na mesma transação.
+  - Eliminação de etapas intermediárias ("criar título pendente" -> "liquidar título"), garantindo rapidez de balcão e consistência contábil sem estados intermediários órfãos.
+- **Exposição REST & Contrato OpenAPI:**
+  - Disponibilização do endpoint `POST /api/faturamentos/consulta-avulsa` com DTO de entrada tipado (`ConsultaAvulsaRequestDTO`), Bean Validation e documentação Swagger com `@Tag`, `@Operation` e `@ApiResponses`.
+
+---
+
+## 4. 📅 Backlog (Próximos Passos)
 
 Grandes iniciativas e automações planejadas para as próximas etapas de desenvolvimento do sistema.
 
-### 3.1. Web Scraping & Integração com Sistemas Judiciais dos Tribunais
+### 4.1. Web Scraping & Integração com Sistemas Judiciais dos Tribunais
 - **Objetivo:** Automatizar a coleta de andamentos e autos processuais diretamente dos portais dos tribunais onde o Dr. Cristhian atua, eliminando a digitação manual de andamentos.
 - **Escopo Inicial dos Tribunais:**
   - **TJRS:** Portais Themis / eproc estadual.
@@ -144,7 +181,7 @@ Grandes iniciativas e automações planejadas para as próximas etapas de desenv
   - **Leitor e Downloader de Peças dos Autos:** Extração de cópias integrais de decisões, sentenças, despachos e notas de expediente, salvando automaticamente os arquivos no Google Drive na pasta do respectivo processo.
   - **Evolução do Status de Tribunais:** Transformar o endpoint `GET /api/integracoes/tribunais/status` (hoje baseado em lista controlada) em um monitor com telemetria real via healthcheck ativo ou integração oficial com a API Pública do **DataJud / CNJ**.
 
-### 3.2. Cron Jobs (`@Scheduled`) & Automações em Segundo Plano
+### 4.2. Cron Jobs (`@Scheduled`) & Automações em Segundo Plano
 - **Objetivo:** Transformar o backend em uma plataforma proativa, executando rotinas automáticas sem dependência de interação humana.
 - **Tarefas Agendadas no Backlog:**
   - **Robôs de Varredura Noturna:**
@@ -156,7 +193,7 @@ Grandes iniciativas e automações planejadas para as próximas etapas de desenv
     - Job diário que identifica títulos de clientes com `dataVencimento < hoje` e status `PENDENTE`.
     - Atualização do status ou flag de cobrança pendente e envio de relatório consolidado para o financeiro do escritório.
 
-### 3.3. Mensageria & Notificações Ativas para Clientes
+### 4.3. Mensageria & Notificações Ativas para Clientes
 - **Integração com WhatsApp:** Envio automatizado de lembretes de audiência para os clientes e notificações amigáveis de movimentação do seu processo via gateway de mensageria (ex: Evolution API ou Z-API).
 - **Assinatura Eletrônica de Documentos:** Integração via webhook com plataformas de assinatura digital (ZapSign, Clicksign ou DocuSign) para envio e colheita de assinatura de Procurações e Contratos de Honorários gerados pelo sistema.
 
@@ -176,6 +213,8 @@ Grandes iniciativas e automações planejadas para as próximas etapas de desenv
 | **Agenda & Tarefas** | `AudienciaController`, `TarefaController` | `CadastrarAudienciaUseCase`, `CriarTarefaUseCase` | `AudienciaRepository`, `TarefaRepository` | ✅ Produção |
 | **Dashboard & Avisos**| `DashboardController`, `NotificacaoController`, `BuscaGlobalController` | `DashboardAdvogadoUseCase`, `ObterResumoNotificacoesUseCase`, `BuscaGlobalUseCase` | Múltiplos Repositories via SQL Nativo | ✅ Produção |
 | **Resumos IA** | `ResumoAudienciaController` | `GerarResumoAudienciaUseCase`, `SpringAIResumoService` | `AudienciaRepository` | 🚧 Em Refinamento |
+| **Google Calendar (Webhooks)** | `GoogleCalendarWebhookController` | `SincronizarEventoGoogleCalendarUseCase` | `TarefaRepository` | [ ] PENDENTE |
+| **Consultas Avulsas** | `FaturamentoController` (`/consulta-avulsa`) | `RegistrarConsultaAvulsaUseCase` | `FaturamentoRepository`, `ClienteRepository` | [ ] PENDENTE |
 | **Robôs / Scraping** | `IntegracaoTribunalController` | *A implementar (Scrapers / DataJud CNJ)* | *A implementar* | 📅 Backlog |
 | **Jobs Agendados** | *Não exposto via HTTP* | *A implementar (`@Scheduled` Cron Services)* | *A implementar* | 📅 Backlog |
 

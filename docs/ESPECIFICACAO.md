@@ -45,14 +45,15 @@ O sistema é estruturado em módulos lógicos de alta coesão e baixo acoplament
     *   Histórico e linha do tempo de andamentos processuais com tipificação (`AUTOMATICO`, `MANUAL`, `IA`).
 
 *   **Financeiro, Agenda & Produtividade:**
-    *   **Faturamento & Fluxo de Caixa:** Controle de receitas e despesas (`A_RECEBER`, `A_PAGAR`), tipos (`HONORARIOS`, `CUSTAS`, `DESPESAS_ESCRITORIO`), suporte a parcelamento (`numeroParcela` e `totalParcelas`) e gestão condicional de repasses a clientes para valores oriundos de sucumbência ou terceiros (`origemPagamento`: `DIRETO_CLIENTE`, `TERCEIRO_SUCUMBENCIA`; `valorHonorariosRetidos`, `valorRepasseCliente`, `statusRepasse`: `PENDENTE`, `REPASSADO`; `formaRepasse`, `dadosBancariosCliente` e `dataRepasse`). Listagem paginada no servidor com filtros combinados: busca textual (`?q=`), status (`?status=`), natureza (`?natureza=`), tipo (`?tipo=`), intervalo de vencimento (`?vencimentoDe=` e `?vencimentoAte=`) e vínculo com processo (`?processoId=`).
+    *   **Faturamento & Fluxo de Caixa:** Controle de receitas e despesas (`A_RECEBER`, `A_PAGAR`), tipos (`HONORARIOS`, `CUSTAS`, `DESPESAS_ESCRITORIO`, `CONSULTA_AVULSA`), suporte a parcelamento (`numeroParcela` e `totalParcelas`) e gestão condicional de repasses a clientes para valores oriundos de sucumbência ou terceiros (`origemPagamento`: `DIRETO_CLIENTE`, `TERCEIRO_SUCUMBENCIA`; `valorHonorariosRetidos`, `valorRepasseCliente`, `statusRepasse`: `PENDENTE`, `REPASSADO`; `formaRepasse`, `dadosBancariosCliente` e `dataRepasse`). Suporte a lançamentos vinculados a processos ou diretamente a clientes (com vínculo processual anulável para consultas avulsas). Listagem paginada no servidor com filtros combinados: busca textual (`?q=`), status (`?status=`), natureza (`?natureza=`), tipo (`?tipo=`), intervalo de vencimento (`?vencimentoDe=` e `?vencimentoAte=`) e vínculo com processo (`?processoId=`).
     *   **Liquidação, Baixas e Repasses:**
         *   **Baixa Integral (`PATCH /api/faturamento/{id}/liquidar`):** Quitação total com registro de data efetiva de pagamento (`dataPagamento`) e atualização de status para `PAGO`.
         *   **Baixa Parcial (`PATCH /api/faturamento/{id}/liquidar-parcial`):** Recebimento parcial onde o sistema registra o valor pago, altera o status do título para `PARCIALMENTE_PAGO` e realiza a criação/desdobramento de um novo registro de faturamento (ou ajuste do saldo devedor e prorrogação da data) com a nova data de vencimento para cobrança da diferença.
         *   **Efetivação de Repasse (`PATCH /api/faturamento/{id}/repassar`):** Baixa e liquidação do repasse de valores ao cliente em receitas com origem `TERCEIRO_SUCUMBENCIA`, registrando `dataRepasse`, `formaRepasse` e alterando `statusRepasse` para `REPASSADO`.
+        *   **Lançamento e Liquidação Rápida de Consulta Avulsa (`POST /api/faturamentos/consulta-avulsa`):** Fluxo financeiro expresso para recebimento de consultas jurídicas (ex: R$ 250,00) sem vínculo processual. O faturamento é associado unicamente ao `Cliente` (com `Processo` nulo), gerando o registro financeiro (`A_RECEBER`, tipo `CONSULTA_AVULSA`), liquidando o pagamento e transicionando o status para `PAGO` de forma atômica (`@Transactional`) via `RegistrarConsultaAvulsaUseCase`.
         *   **Assistente de Parcelamento (`POST /api/faturamento/parcelamento`):** Criação de múltiplos lançamentos financeiros simultâneos a partir da simulação e divisão contratual de parcelas.
     *   **Métricas Financeiras Consolidadas:** Rota de resumo financeiro (`GET /api/faturamentos/resumo`) com totalizadores de a receber, a pagar, saldo previsto e valores vencidos.
-    *   **Gestão de Tarefas (To-Do List):** Tarefas vinculadas a usuários e processos (`DILIGENCIA`, `PRAZO`, `CONTATO`) com CRUD completo, marcação de conclusão e consulta de prazos por período para o calendário (`GET /api/tarefas/agenda`) filtrando por início, fim, conclusão, tipo, processo e responsável.
+    *   **Gestão de Tarefas (To-Do List):** Tarefas vinculadas a usuários e processos (`DILIGENCIA`, `PRAZO`, `CONTATO`, `ATENDIMENTO`) com CRUD completo, marcação de conclusão, suporte a identificador externo do Google Calendar (`googleEventId`) para sincronização e consulta de prazos por período para o calendário (`GET /api/tarefas/agenda`) filtrando por início, fim, conclusão, tipo, processo e responsável.
     *   **Agenda de Audiências:** Agendamento com validação contra datas retroativas, mapeamento obrigatório de `responsavelId`, pauta global harmonizada por período em `LocalDate` (`/api/audiencias/agenda?inicio=&fim=&status=&processoId=&responsavelId=`), edição cadastral, exclusão e alteração de status (`AGENDADA`, `REALIZADA`, `CANCELADA`).
     *   **Dashboard Executiva:** Agregação de métricas em tempo real para o advogado logado (`GET /api/dashboard`) ou por ID específico (`GET /api/dashboard/{usuarioId}`), blindada com construtor defensivo contra valores nulos (números inicializados como `0` e listas como `ArrayList` vazias).
 
@@ -70,6 +71,12 @@ O sistema é estruturado em módulos lógicos de alta coesão e baixo acoplament
 *   **Monitoramento e Integração com Tribunais:**
     *   Endpoint `GET /api/integracoes/tribunais/status`.
     *   Exposição do status operacional das conexões e sincronizações eletrônicas com tribunais (TJRS, TRF4, TRT4, STJ) utilizando o enum `StatusTribunalEnum` (`OPERACIONAL`, `DEGRADADO`, `INDISPONIVEL`).
+
+*   **Integração Google Calendar (Sincronização One-Way via Webhooks):**
+    *   Recepção de notificações push via Webhook (`POST /api/integracoes/google-calendar/webhook`) para sincronização automática de compromissos originados no Google Calendar.
+    *   **Fluxo Estritamente One-Way:** O sistema apenas importa eventos do Google Calendar. Tarefas, audiências e compromissos cadastrados internamente no sistema NUNCA são enviados para o Google Calendar.
+    *   **Tratamento de Domínio como Tarefas:** Os compromissos importados são convertidos diretamente em instâncias da entidade `Tarefa` (`tb_tarefa`) associadas ao respectivo advogado (`Usuario`), com o novo tipo `TipoTarefaEnum.ATENDIMENTO`.
+    *   **Idempotência e Versionamento (`googleEventId`):** Armazenamento do identificador externo `googleEventId` (`VARCHAR(255)`) na entidade `Tarefa`. Disparos subsequentes de notificações para o mesmo evento realizam atualização (upsert) dos atributos (descrição, data de vencimento e status), inclusive tratando cancelamentos na origem sem gerar duplicidade.
 
 *   **GED (Gestão Eletrônica de Documentos) & Motor de Emissão:**
     *   Armazenamento físico de arquivos via `LocalStorageService` (`../uploads/documentos`) vinculado a clientes e processos.
@@ -97,8 +104,8 @@ Todas as entidades de persistência herdam de `AuditableEntity` (ou possuem audi
 | **Cliente** | `id`, `nome`, `tipo` (`FISICA`, `JURIDICA`), `cpfCnpj`, `dataNascimento`, `estadoCivil`, `profissao`, `sexo`, `telefone`, `email`, endereço completo | 1:N Processos, 1:N Documentos (`tb_cliente`) | Validação estrita de CPF/CNPJ. Endpoints: `POST /api/clientes`, `GET /api/clientes` (paginado com `?q=` e `?tipo=`), `GET /api/clientes/{id}`, `PUT /api/clientes/{id}`, emissão de Procuração (`GET /api/clientes/{id}/procuracao`) e Contrato de Honorários (`GET /api/clientes/{id}/contrato-honorarios`). |
 | **Processo** | `id`, `numeroCnj`, `assunto`, `faseAtual`, `parteAdversa`, `cpfCnpjParteAdversa`, `papelCliente` (`AUTOR`, `REU`, `TERCEIRO_INTERESSADO`), `valorCausa`, `comarca`, `dataCriacao`, `arquivado` | N:1 Cliente, N:1 Usuario, 1:N Documentos, 1:N Tarefas, 1:N Andamentos (`tb_processo`) | CNJ único. Qualificação da lide. DTO de resposta aninha `ClienteResumoDTO cliente` e `UsuarioResumoDTO advogado` com retrocompatibilidade (`@JsonAlias({"clienteId", "advogadoId"})`). Validação de pendência financeira para arquivamento. Endpoints: `POST /api/processos`, `GET /api/processos` (paginado), `GET /api/processos/{id}`, `PUT /api/processos/{id}`, `PATCH /api/processos/{id}/arquivar`, `PATCH /api/processos/{id}/desarquivar`. |
 | **Andamento** | `id`, `dataHora`, `descricao`, `tipo` (`AUTOMATICO`, `MANUAL`, `IA`) | N:1 Processo (`tb_andamento`) | Histórico cronológico processual. Endpoints: `POST /api/processos/{processoId}/andamentos`, `GET /api/processos/{processoId}/andamentos`. |
-| **Tarefa** | `id`, `descricao`, `dataVencimento`, `concluida`, `tipo` (`DILIGENCIA`, `PRAZO`, `CONTATO`) | N:1 Usuario, N:1 Processo (Opc) (`tb_tarefa`) | Alimenta To-Do list, Agenda e Dashboard. DTO aninha `UsuarioResumoDTO usuario` (`@JsonAlias({"usuarioId"})`) e `ProcessoResumoDTO processo`. Endpoints: `POST /api/tarefas`, `PUT /api/tarefas/{id}`, `DELETE /api/tarefas/{id}`, `PATCH /api/tarefas/{id}/concluir`, `GET /api/tarefas/dashboard/{usuarioId}`, `GET /api/tarefas/agenda`. |
-| **Faturamento**| `id`, `descricao`, `valor`, `tipo`, `status` (`PENDENTE`, `PAGO`, `PARCIALMENTE_PAGO`, `CANCELADO`), `natureza`, `dataVencimento`, `dataPagamento`, `numeroParcela`, `totalParcelas`, `origemPagamento` (`DIRETO_CLIENTE`, `TERCEIRO_SUCUMBENCIA`), `valorHonorariosRetidos`, `valorRepasseCliente`, `statusRepasse` (`PENDENTE`, `REPASSADO`), `formaRepasse`, `dadosBancariosCliente`, `dataRepasse` | N:1 Processo (Opc) (`tb_faturamento`) | Controle financeiro e parcelamento. DTO aninha `ProcessoResumoDTO processo` contendo `clienteId`. Endpoints: `GET /api/faturamentos/resumo`, `GET /api/faturamentos`, `POST /api/faturamento/parcelamento`, `PATCH /api/faturamento/{id}/liquidar`, `PATCH /api/faturamento/{id}/liquidar-parcial`, `PATCH /api/faturamento/{id}/repassar`. |
+| **Tarefa** | `id`, `descricao`, `dataVencimento`, `concluida`, `tipo` (`DILIGENCIA`, `PRAZO`, `CONTATO`, `ATENDIMENTO`), `googleEventId` | N:1 Usuario, N:1 Processo (Opc) (`tb_tarefa`) | Alimenta To-Do list, Agenda e Dashboard. Armazena `googleEventId` (ID do compromisso externo no Google Calendar) para sincronização One-Way via webhook e garantia de idempotência. Compromissos importados recebem o tipo `ATENDIMENTO`. DTO aninha `UsuarioResumoDTO usuario` (`@JsonAlias({"usuarioId"})`), `ProcessoResumoDTO processo` e `googleEventId`. Endpoints: `POST /api/tarefas`, `PUT /api/tarefas/{id}`, `DELETE /api/tarefas/{id}`, `PATCH /api/tarefas/{id}/concluir`, `GET /api/tarefas/dashboard/{usuarioId}`, `GET /api/tarefas/agenda`, `POST /api/integracoes/google-calendar/webhook`. |
+| **Faturamento**| `id`, `descricao`, `valor`, `tipo` (`HONORARIOS`, `CUSTAS`, `DESPESAS_ESCRITORIO`, `CONSULTA_AVULSA`), `status` (`PENDENTE`, `PAGO`, `PARCIALMENTE_PAGO`, `CANCELADO`), `natureza`, `dataVencimento`, `dataPagamento`, `numeroParcela`, `totalParcelas`, `origemPagamento` (`DIRETO_CLIENTE`, `TERCEIRO_SUCUMBENCIA`), `valorHonorariosRetidos`, `valorRepasseCliente`, `statusRepasse` (`PENDENTE`, `REPASSADO`), `formaRepasse`, `dadosBancariosCliente`, `dataRepasse` | N:1 Processo (Opc), N:1 Cliente (`tb_faturamento`) | Controle financeiro, parcelamento e consultas avulsas. O relacionamento com `Processo` é anulável, vinculando-se unicamente ao `Cliente` nos lançamentos de `CONSULTA_AVULSA`. Processamento atômico de criação, liquidação e status `PAGO` via caso de uso em única transação. DTO aninha `ProcessoResumoDTO processo` (opcional) e `ClienteResumoDTO cliente`. Endpoints: `GET /api/faturamentos/resumo`, `GET /api/faturamentos`, `POST /api/faturamento/parcelamento`, `POST /api/faturamentos/consulta-avulsa`, `PATCH /api/faturamento/{id}/liquidar`, `PATCH /api/faturamento/{id}/liquidar-parcial`, `PATCH /api/faturamento/{id}/repassar`. |
 | **Audiencia** | `id`, `dataHora`, `local`, `observacoes`, `status`, `resumoPreparatorioIa` | N:1 Processo, N:1 Usuario (`tb_audiencia`) | Validação de data futura no agendamento. DTO aninha `ProcessoResumoDTO processo` e `UsuarioResumoDTO responsavel` (`@JsonAlias({"responsavelId"})`). Endpoints: `POST /api/audiencias`, `GET /api/audiencias/{id}`, `PUT /api/audiencias/{id}`, `DELETE /api/audiencias/{id}`, `PATCH /api/audiencias/{id}/status`, `GET /api/audiencias/agenda`, `POST /{id}/gerar-resumo-ia`. |
 | **Documento** | `id`, `nomeArquivo`, `titulo`, `caminhoStorage`, `indexadoIA` | N:1 Processo (Opc), N:1 Cliente (Opc) (`tb_documento`) | GED e armazenamento seguro. DTO aninha `ClienteResumoDTO cliente` (`@JsonAlias({"clienteId"})`) e `ProcessoResumoDTO processo` (`@JsonAlias({"processoId"})`). Upload (`POST /api/documentos/upload`), listagem por cliente (`GET /api/documentos/cliente/{clienteId}`), listagem por processo (`GET /api/documentos/processo/{processoId}`), download (`GET /api/documentos/{id}/download`) e exclusão física/lógica (`DELETE /api/documentos/{id}`). |
 
@@ -165,9 +172,9 @@ Centralizado na classe `GlobalExceptionHandler` (`@RestControllerAdvice`), retor
     *   `UsuarioResumoDTO`: Contém `id`, `nome`, `email`, `oab` e `perfil`.
 *   **Padronização nos DTOs Principais:**
     *   `ProcessoDTO`: Aninha `ClienteResumoDTO cliente` e `UsuarioResumoDTO advogado`.
-    *   `FaturamentoDTO`: Aninha `ProcessoResumoDTO processo` (incluindo `clienteId`).
+    *   `FaturamentoDTO`: Aninha `ProcessoResumoDTO processo` (opcional) e `ClienteResumoDTO cliente`.
     *   `AudienciaDTO`: Aninha `ProcessoResumoDTO processo` e `UsuarioResumoDTO responsavel`.
-    *   `TarefaDTO`: Aninha `UsuarioResumoDTO usuario` e `ProcessoResumoDTO processo`.
+    *   `TarefaDTO`: Aninha `UsuarioResumoDTO usuario`, `ProcessoResumoDTO processo` e expõe `googleEventId`.
     *   `DocumentoDTO`: Aninha `ClienteResumoDTO cliente` e `ProcessoResumoDTO processo`.
 *   **Arquitetura Defensiva e Retrocompatibilidade Absoluta:**
     1.  **Anotações `@JsonAlias`:** Permitem que requisições legadas de clientes que enviem propriedades planas (`clienteId`, `advogadoId`, `usuarioId`, `processoId`, `responsavelId`) continuem sendo mapeadas com perfeição pelo Jackson.
@@ -181,6 +188,26 @@ Centralizado na classe `GlobalExceptionHandler` (`@RestControllerAdvice`), retor
 *   Todos os campos monetários mapeados no banco de dados (`valor`, `valorCausa`, `valorHonorariosRetidos`, `valorRepasseCliente`) utilizam rigorosamente `@Column(precision = 15, scale = 2) private BigDecimal ...` para garantir integridade contábil e evitar imprecisões de arredondamento.
 *   Nas interfaces OpenAPI contratuais, a validação de restrição (`@Valid`) é mantida exclusivamente nas interfaces para evitar conflitos com o Bean Validation (`HV000151`).
 
+### 3.8. Sincronização One-Way do Google Calendar via Push Notifications (Webhooks)
+*   **Fluxo Unidirecional (Google -> Sistema):** O backend atua estritamente como receptor de eventos do Google Calendar. Nenhuma tarefa, audiência ou compromisso criado internamente no sistema jurídico é transmitido para os servidores do Google.
+*   **Processamento de Webhooks:** Endpoint dedicado (`POST /api/integracoes/google-calendar/webhook`) recebe notificações push disparadas pelo canal de sincronização da Google Calendar API v3.
+*   **Mapeamento Unificado de Domínio como Tarefas:** Compromissos externos são transformados em instâncias de `Tarefa` associadas ao respectivo `Usuario` (advogado) e tipadas com `TipoTarefaEnum.ATENDIMENTO`.
+*   **Idempotência e Versionamento (`googleEventId`):**
+    1. A entidade `Tarefa` possui a coluna `google_event_id VARCHAR(255)` indexada.
+    2. Ao processar o webhook via `SincronizarEventoGoogleCalendarUseCase`, o sistema consulta imperativamente `tarefaRepository.findByGoogleEventId(googleEventId)`.
+    3. Caso o evento já exista (`opt.isPresent()`), realiza a atualização dos dados (descrição, data e horário de vencimento, ou tratamento de cancelamento caso o evento tenha sido excluído no Google).
+    4. Caso seja novo (`opt.isEmpty()`), instancia e persiste uma nova tarefa vinculada ao advogado com `tipo = ATENDIMENTO` e `googleEventId`.
+    5. Todo o processamento segue rigorosamente o Paradigma Imperativo Puro (zero lambdas e zero streams).
+
+### 3.9. Lançamento e Liquidação Atômica de Consultas Avulsas (Sem Vínculo Processual)
+*   **Desvinculação Processual:** Para consultas pontuais sem litígio (ex: R$ 250,00), a entidade `Faturamento` passa a ter o relacionamento `Processo` anulável (`processo_id NULL` em `tb_faturamento`), exigindo a vinculação direta à entidade `Cliente` (`cliente_id`).
+*   **Novo Tipo de Faturamento:** Mapeamento de `TipoFaturamentoEnum.CONSULTA_AVULSA`.
+*   **Transação Atômica via Use Case (`RegistrarConsultaAvulsaUseCase`):**
+    1. Validação imperativa da existência do cliente via `ClienteRepository.findById` (`opt.isEmpty()`).
+    2. Instanciação direta da entidade `Faturamento` configurando `natureza = NaturezaFaturamentoEnum.A_RECEBER`, `tipo = TipoFaturamentoEnum.CONSULTA_AVULSA`, valor recebido, `dataVencimento = dataPagamento` (ou data corrente) e `processo = null`.
+    3. Atribuição imediata de `status = StatusFaturamentoEnum.PAGO` e data efetiva de quitação.
+    4. Persistência atômica sob `@Transactional`, eliminando etapas manuais intermediárias de criação seguida de liquidação e prevenindo inconsistências de caixa.
+
 ---
 
 ## 4. Estrutura de Pacotes
@@ -189,7 +216,7 @@ Centralizado na classe `GlobalExceptionHandler` (`@RestControllerAdvice`), retor
 └── src/main/java/com/sistemajuridico/backend/
     ├── core/
     │   ├── domain/
-    │   │   ├── enums/                      # PerfilAcessoEnum, TipoTarefaEnum, StatusAudienciaEnum, StatusTribunalEnum, PapelClienteEnum, OrigemPagamentoEnum, StatusRepasseEnum...
+    │   │   ├── enums/                      # PerfilAcessoEnum, TipoTarefaEnum (ATENDIMENTO), StatusAudienciaEnum, StatusTribunalEnum, PapelClienteEnum, OrigemPagamentoEnum, StatusRepasseEnum, TipoFaturamentoEnum (CONSULTA_AVULSA)...
     │   │   ├── exceptions/                 # RegraNegocioException, RecursoNaoEncontradoException...
     │   │   ├── validators/                 # DocumentoValidator (CPF/CNPJ)
     │   │   └── *.java                      # Usuario, Escritorio, PasswordResetToken, Cliente, Processo, Faturamento...
@@ -203,8 +230,8 @@ Centralizado na classe `GlobalExceptionHandler` (`@RestControllerAdvice`), retor
     │       ├── GerarProcuracaoClienteUseCase.java / GerarContratoHonorariosUseCase.java
     │       ├── CadastrarProcessoUseCase.java / AtualizarProcessoUseCase.java / ArquivarProcessoUseCase.java / DesarquivarProcessoUseCase.java / ListarProcessosUseCase.java
     │       ├── CadastrarAudienciaUseCase.java / AlterarStatusAudienciaUseCase.java / ListarAgendaGlobalUseCase.java
-    │       ├── CriarTarefaUseCase.java / ConcluirTarefaUseCase.java / ListarTarefasPorPeriodoUseCase.java / ListarTarefasDashboardUseCase.java
-    │       ├── CadastrarFaturamentoUseCase.java / GerarParcelamentoUseCase.java / LiquidarFaturamentoUseCase.java / LiquidarParcialFaturamentoUseCase.java / RepassarFaturamentoUseCase.java / ObterResumoFinanceiroUseCase.java / ListarFaturamentosUseCase.java
+    │       ├── CriarTarefaUseCase.java / ConcluirTarefaUseCase.java / ListarTarefasPorPeriodoUseCase.java / ListarTarefasDashboardUseCase.java / SincronizarEventoGoogleCalendarUseCase.java
+    │       ├── CadastrarFaturamentoUseCase.java / GerarParcelamentoUseCase.java / LiquidarFaturamentoUseCase.java / LiquidarParcialFaturamentoUseCase.java / RepassarFaturamentoUseCase.java / RegistrarConsultaAvulsaUseCase.java / ObterResumoFinanceiroUseCase.java / ListarFaturamentosUseCase.java
     │       ├── DashboardAdvogadoUseCase.java
     │       ├── ObterResumoNotificacoesUseCase.java
     │       ├── BuscaGlobalUseCase.java
@@ -216,13 +243,13 @@ Centralizado na classe `GlobalExceptionHandler` (`@RestControllerAdvice`), retor
     │   ├── ai/                             # ResumoAIService, SpringAIResumoService
     │   ├── config/                         # OpenApiConfig, WebConfig (@EnableSpringDataWebSupport VIA_DTO)
     │   ├── document/                       # DocumentGeneratorService, PdfDocumentGeneratorService
-    │   ├── persistence/                    # Repositories JPA com SQL Nativo (UsuarioRepository, ClienteRepository...)
+    │   ├── persistence/                    # Repositories JPA com SQL Nativo (UsuarioRepository, ClienteRepository, TarefaRepository...)
     │   ├── security/                       # SecurityConfig, CorsConfig, TokenService, JwtAuthenticationFilter
-    │   └── storage/                        # StorageService, LocalStorageService
+    │   └── storage/                        # StorageService, LocalStorageService, GoogleDriveStorageService
     │
     └── presentation/
-        ├── controllers/                    # REST Controllers documentados com @Tag, @Operation e @ApiResponses
-        └── dtos/                           # Records de entrada/saída (UsuarioResponseDTO, ErroPadraoDTO, ErroValidacaoDTO...)
+        ├── controllers/                    # REST Controllers documentados com @Tag, @Operation e @ApiResponses (inclui GoogleCalendarWebhookController...)
+        └── dtos/                           # Records de entrada/saída (UsuarioResponseDTO, ErroPadraoDTO, ErroValidacaoDTO, ConsultaAvulsaRequestDTO...)
 ```
 
 ---

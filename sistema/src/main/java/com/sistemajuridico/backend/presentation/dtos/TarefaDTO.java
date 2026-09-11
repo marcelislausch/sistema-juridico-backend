@@ -28,8 +28,31 @@ public record TarefaDTO(
         UsuarioResumoDTO usuario,
 
         @JsonAlias({"processoId"})
-        ProcessoResumoDTO processo
+        ProcessoResumoDTO processo,
+
+        String googleEventId
 ) {
+
+    public TarefaDTO(
+            UUID id,
+            String descricao,
+            LocalDate dataVencimento,
+            Boolean concluida,
+            TipoTarefaEnum tipo,
+            UsuarioResumoDTO usuario,
+            ProcessoResumoDTO processo
+    ) {
+        this(
+                id,
+                descricao,
+                dataVencimento,
+                concluida,
+                tipo,
+                usuario,
+                processo,
+                null
+        );
+    }
 
     public TarefaDTO(
             UUID id,
@@ -47,7 +70,8 @@ public record TarefaDTO(
                 concluida,
                 tipo,
                 usuarioId != null ? new UsuarioResumoDTO(usuarioId) : null,
-                processo
+                processo,
+                null
         );
     }
 
@@ -67,7 +91,8 @@ public record TarefaDTO(
                 concluida,
                 tipo,
                 usuarioId != null ? new UsuarioResumoDTO(usuarioId) : null,
-                processoId != null ? new ProcessoResumoDTO(processoId, null, null) : null
+                processoId != null ? new ProcessoResumoDTO(processoId, null, null) : null,
+                null
         );
     }
 
@@ -87,7 +112,8 @@ public record TarefaDTO(
                 concluida,
                 tipo,
                 usuario,
-                processoId != null ? new ProcessoResumoDTO(processoId, null, null) : null
+                processoId != null ? new ProcessoResumoDTO(processoId, null, null) : null,
+                null
         );
     }
 
@@ -98,6 +124,7 @@ public record TarefaDTO(
         tarefa.setDataVencimento(this.dataVencimento());
         tarefa.setConcluida(this.concluida() != null ? this.concluida() : false);
         tarefa.setTipo(this.tipo());
+        tarefa.setGoogleEventId(this.googleEventId());
         return tarefa;
     }
 
@@ -123,7 +150,8 @@ public record TarefaDTO(
                 tarefa.getConcluida(),
                 tarefa.getTipo(),
                 usuario,
-                processo
+                processo,
+                tarefa.getGoogleEventId()
         );
     }
 

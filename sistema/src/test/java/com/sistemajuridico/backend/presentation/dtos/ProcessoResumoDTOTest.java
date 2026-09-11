@@ -667,4 +667,80 @@ class ProcessoResumoDTOTest {
         assertEquals(clienteId, directDeserialized.clienteId());
         assertEquals(processoId, directDeserialized.processoId());
     }
+
+    @Test
+    void shouldMapTarefaDTOWithGoogleEventIdAndTipoAtendimento() throws Exception {
+        UUID tarefaId = UUID.randomUUID();
+        UUID usuarioId = UUID.randomUUID();
+        com.sistemajuridico.backend.core.domain.Usuario usuario = new com.sistemajuridico.backend.core.domain.Usuario();
+        usuario.setId(usuarioId);
+        usuario.setNome("Dr. Cristhian");
+
+        com.sistemajuridico.backend.core.domain.Tarefa tarefa = new com.sistemajuridico.backend.core.domain.Tarefa();
+        tarefa.setId(tarefaId);
+        tarefa.setDescricao("Atendimento inicial - Consulta Google Calendar");
+        tarefa.setDataVencimento(java.time.LocalDate.now());
+        tarefa.setConcluida(false);
+        tarefa.setTipo(com.sistemajuridico.backend.core.domain.enums.TipoTarefaEnum.ATENDIMENTO);
+        tarefa.setGoogleEventId("gcal-event-98765");
+        tarefa.setUsuario(usuario);
+
+        TarefaDTO dto = TarefaDTO.fromEntity(tarefa);
+
+        assertNotNull(dto);
+        assertEquals(tarefaId, dto.id());
+        assertEquals("Atendimento inicial - Consulta Google Calendar", dto.descricao());
+        assertEquals(com.sistemajuridico.backend.core.domain.enums.TipoTarefaEnum.ATENDIMENTO, dto.tipo());
+        assertEquals("gcal-event-98765", dto.googleEventId());
+        assertNotNull(dto.usuario());
+        assertEquals(usuarioId, dto.usuario().id());
+        assertNull(dto.processo());
+
+        // Test toEntity
+        com.sistemajuridico.backend.core.domain.Tarefa entity = dto.toEntity();
+        assertEquals("gcal-event-98765", entity.getGoogleEventId());
+        assertEquals(com.sistemajuridico.backend.core.domain.enums.TipoTarefaEnum.ATENDIMENTO, entity.getTipo());
+
+        // Test JSON serialization
+        String json = objectMapper.writeValueAsString(dto);
+        assertTrue(json.contains("\"googleEventId\":\"gcal-event-98765\""));
+        assertTrue(json.contains("\"tipo\":\"ATENDIMENTO\""));
+    }
+
+    @Test
+    void shouldMapFaturamentoDTOWithConsultaAvulsaAndClienteSemProcesso() throws Exception {
+        UUID faturamentoId = UUID.randomUUID();
+        UUID clienteId = UUID.randomUUID();
+        Cliente cliente = new Cliente();
+        cliente.setId(clienteId);
+        cliente.setNome("Pedro Alcantara");
+
+        com.sistemajuridico.backend.core.domain.Faturamento faturamento = new com.sistemajuridico.backend.core.domain.Faturamento();
+        faturamento.setId(faturamentoId);
+        faturamento.setDescricao("Consulta Avulsa Cível");
+        faturamento.setValor(new java.math.BigDecimal("250.00"));
+        faturamento.setTipo(com.sistemajuridico.backend.core.domain.enums.TipoFaturamentoEnum.CONSULTA_AVULSA);
+        faturamento.setStatus(com.sistemajuridico.backend.core.domain.enums.StatusFaturamentoEnum.PAGO);
+        faturamento.setNatureza(com.sistemajuridico.backend.core.domain.enums.NaturezaFaturamentoEnum.A_RECEBER);
+        faturamento.setDataVencimento(java.time.LocalDate.now());
+        faturamento.setDataPagamento(java.time.LocalDate.now());
+        faturamento.setCliente(cliente);
+        faturamento.setProcesso(null);
+
+        FaturamentoDTO dto = FaturamentoDTO.fromEntity(faturamento);
+
+        assertNotNull(dto);
+        assertNull(dto.processo());
+        assertNull(dto.processoId());
+        assertNotNull(dto.cliente());
+        assertEquals(clienteId, dto.cliente().id());
+        assertEquals(clienteId, dto.clienteId());
+        assertEquals(com.sistemajuridico.backend.core.domain.enums.TipoFaturamentoEnum.CONSULTA_AVULSA, dto.tipo());
+        assertEquals(com.sistemajuridico.backend.core.domain.enums.StatusFaturamentoEnum.PAGO, dto.status());
+
+        String json = objectMapper.writeValueAsString(dto);
+        assertTrue(json.contains("\"tipo\":\"CONSULTA_AVULSA\""));
+        assertTrue(json.contains("\"status\":\"PAGO\""));
+        assertTrue(json.contains("\"cliente\":{"));
+    }
 }
