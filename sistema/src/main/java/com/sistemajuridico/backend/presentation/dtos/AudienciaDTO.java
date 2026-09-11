@@ -31,7 +31,8 @@ public record AudienciaDTO(
         @JsonAlias({"processoId"})
         ProcessoResumoDTO processo,
 
-        UUID responsavelId
+        @JsonAlias({"responsavelId"})
+        UsuarioResumoDTO responsavel
 ) {
 
     public AudienciaDTO(
@@ -43,7 +44,21 @@ public record AudienciaDTO(
             String resumoPreparatorioIa,
             ProcessoResumoDTO processo
     ) {
-        this(id, dataHora, local, observacoes, status, resumoPreparatorioIa, processo, null);
+        this(id, dataHora, local, observacoes, status, resumoPreparatorioIa, processo, (UsuarioResumoDTO) null);
+    }
+
+    public AudienciaDTO(
+            UUID id,
+            LocalDateTime dataHora,
+            String local,
+            String observacoes,
+            StatusAudienciaEnum status,
+            String resumoPreparatorioIa,
+            ProcessoResumoDTO processo,
+            UUID responsavelId
+    ) {
+        this(id, dataHora, local, observacoes, status, resumoPreparatorioIa, processo,
+                responsavelId != null ? new UsuarioResumoDTO(responsavelId) : null);
     }
 
     public AudienciaDTO(
@@ -56,7 +71,7 @@ public record AudienciaDTO(
             UUID processoId
     ) {
         this(id, dataHora, local, observacoes, status, resumoPreparatorioIa,
-                processoId != null ? new ProcessoResumoDTO(processoId, null, null) : null, null);
+                processoId != null ? new ProcessoResumoDTO(processoId) : null, (UsuarioResumoDTO) null);
     }
 
     public AudienciaDTO(
@@ -70,7 +85,23 @@ public record AudienciaDTO(
             UUID responsavelId
     ) {
         this(id, dataHora, local, observacoes, status, resumoPreparatorioIa,
-                processoId != null ? new ProcessoResumoDTO(processoId, null, null) : null, responsavelId);
+                processoId != null ? new ProcessoResumoDTO(processoId) : null,
+                responsavelId != null ? new UsuarioResumoDTO(responsavelId) : null);
+    }
+
+    public AudienciaDTO(
+            UUID id,
+            LocalDateTime dataHora,
+            String local,
+            String observacoes,
+            StatusAudienciaEnum status,
+            String resumoPreparatorioIa,
+            UUID processoId,
+            UsuarioResumoDTO responsavel
+    ) {
+        this(id, dataHora, local, observacoes, status, resumoPreparatorioIa,
+                processoId != null ? new ProcessoResumoDTO(processoId) : null,
+                responsavel);
     }
 
     public Audiencia toEntity() {
@@ -90,13 +121,13 @@ public record AudienciaDTO(
         }
 
         ProcessoResumoDTO processo = null;
-        UUID responsavelId = null;
-
         if (audiencia.getProcesso() != null) {
             processo = ProcessoResumoDTO.fromEntity(audiencia.getProcesso());
-            if (audiencia.getProcesso().getAdvogado() != null) {
-                responsavelId = audiencia.getProcesso().getAdvogado().getId();
-            }
+        }
+
+        UsuarioResumoDTO responsavel = null;
+        if (audiencia.getResponsavel() != null) {
+            responsavel = UsuarioResumoDTO.fromEntity(audiencia.getResponsavel());
         }
 
         StatusAudienciaEnum status = audiencia.getStatus();
@@ -112,12 +143,17 @@ public record AudienciaDTO(
                 status,
                 audiencia.getResumoPreparatorioIa(),
                 processo,
-                responsavelId
+                responsavel
         );
     }
 
     @JsonIgnore
     public UUID processoId() {
         return this.processo != null ? this.processo.id() : null;
+    }
+
+    @JsonIgnore
+    public UUID responsavelId() {
+        return this.responsavel != null ? this.responsavel.id() : null;
     }
 }

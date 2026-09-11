@@ -1,5 +1,7 @@
 package com.sistemajuridico.backend.presentation.dtos;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sistemajuridico.backend.core.domain.Processo;
 import com.sistemajuridico.backend.core.domain.enums.FaseProcessualEnum;
 import com.sistemajuridico.backend.core.domain.enums.PapelClienteEnum;
@@ -33,10 +35,52 @@ public record ProcessoDTO(
         LocalDate dataCriacao,
 
         @NotNull(message = "O ID do cliente é obrigatório")
-        UUID clienteId,
+        @JsonAlias({"clienteId"})
+        ClienteResumoDTO cliente,
 
-        UUID advogadoId
+        @JsonAlias({"advogadoId"})
+        UsuarioResumoDTO advogado
 ) {
+
+    public ProcessoDTO(
+            UUID id,
+            String numeroCnj,
+            String assunto,
+            FaseProcessualEnum faseAtual,
+            String parteAdversa,
+            String cpfCnpjParteAdversa,
+            PapelClienteEnum papelCliente,
+            BigDecimal valorCausa,
+            String comarca,
+            LocalDate dataCriacao,
+            UUID clienteId,
+            UUID advogadoId
+    ) {
+        this(
+                id,
+                numeroCnj,
+                assunto,
+                faseAtual,
+                parteAdversa,
+                cpfCnpjParteAdversa,
+                papelCliente,
+                valorCausa,
+                comarca,
+                dataCriacao,
+                clienteId != null ? new ClienteResumoDTO(clienteId) : null,
+                advogadoId != null ? new UsuarioResumoDTO(advogadoId) : null
+        );
+    }
+
+    @JsonIgnore
+    public UUID clienteId() {
+        return this.cliente != null ? this.cliente.id() : null;
+    }
+
+    @JsonIgnore
+    public UUID advogadoId() {
+        return this.advogado != null ? this.advogado.id() : null;
+    }
 
     public Processo toEntity() {
         Processo processo = new Processo();
@@ -58,14 +102,14 @@ public record ProcessoDTO(
             return null;
         }
 
-        UUID clienteId = null;
+        ClienteResumoDTO clienteResumo = null;
         if (processo.getCliente() != null) {
-            clienteId = processo.getCliente().getId();
+            clienteResumo = ClienteResumoDTO.fromEntity(processo.getCliente());
         }
 
-        UUID advogadoId = null;
+        UsuarioResumoDTO advogadoResumo = null;
         if (processo.getAdvogado() != null) {
-            advogadoId = processo.getAdvogado().getId();
+            advogadoResumo = UsuarioResumoDTO.fromEntity(processo.getAdvogado());
         }
 
         return new ProcessoDTO(
@@ -79,8 +123,8 @@ public record ProcessoDTO(
                 processo.getValorCausa(),
                 processo.getComarca(),
                 processo.getDataCriacao(),
-                clienteId,
-                advogadoId
+                clienteResumo,
+                advogadoResumo
         );
     }
 }

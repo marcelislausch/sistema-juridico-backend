@@ -24,11 +24,32 @@ public record TarefaDTO(
         TipoTarefaEnum tipo,
 
         @NotNull(message = "O usuário responsável é obrigatório")
-        UUID usuarioId,
+        @JsonAlias({"usuarioId"})
+        UsuarioResumoDTO usuario,
 
         @JsonAlias({"processoId"})
         ProcessoResumoDTO processo
 ) {
+
+    public TarefaDTO(
+            UUID id,
+            String descricao,
+            LocalDate dataVencimento,
+            Boolean concluida,
+            TipoTarefaEnum tipo,
+            UUID usuarioId,
+            ProcessoResumoDTO processo
+    ) {
+        this(
+                id,
+                descricao,
+                dataVencimento,
+                concluida,
+                tipo,
+                usuarioId != null ? new UsuarioResumoDTO(usuarioId) : null,
+                processo
+        );
+    }
 
     public TarefaDTO(
             UUID id,
@@ -45,7 +66,27 @@ public record TarefaDTO(
                 dataVencimento,
                 concluida,
                 tipo,
-                usuarioId,
+                usuarioId != null ? new UsuarioResumoDTO(usuarioId) : null,
+                processoId != null ? new ProcessoResumoDTO(processoId, null, null) : null
+        );
+    }
+
+    public TarefaDTO(
+            UUID id,
+            String descricao,
+            LocalDate dataVencimento,
+            Boolean concluida,
+            TipoTarefaEnum tipo,
+            UsuarioResumoDTO usuario,
+            UUID processoId
+    ) {
+        this(
+                id,
+                descricao,
+                dataVencimento,
+                concluida,
+                tipo,
+                usuario,
                 processoId != null ? new ProcessoResumoDTO(processoId, null, null) : null
         );
     }
@@ -70,9 +111,9 @@ public record TarefaDTO(
             processo = ProcessoResumoDTO.fromEntity(tarefa.getProcesso());
         }
 
-        UUID usuarioId = null;
+        UsuarioResumoDTO usuario = null;
         if (tarefa.getUsuario() != null) {
-            usuarioId = tarefa.getUsuario().getId();
+            usuario = UsuarioResumoDTO.fromEntity(tarefa.getUsuario());
         }
 
         return new TarefaDTO(
@@ -81,7 +122,7 @@ public record TarefaDTO(
                 tarefa.getDataVencimento(),
                 tarefa.getConcluida(),
                 tarefa.getTipo(),
-                usuarioId,
+                usuario,
                 processo
         );
     }
@@ -89,5 +130,10 @@ public record TarefaDTO(
     @JsonIgnore
     public UUID processoId() {
         return this.processo != null ? this.processo.id() : null;
+    }
+
+    @JsonIgnore
+    public UUID usuarioId() {
+        return this.usuario != null ? this.usuario.id() : null;
     }
 }

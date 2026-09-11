@@ -35,4 +35,12 @@ public class Audiencia extends AuditableEntity {
     @ManyToOne
     @JoinColumn(name = "processo_id", nullable = false)
     private Processo processo;
+
+    @Transient
+    public Usuario getResponsavel() {
+        if (this.processo != null) {
+            return this.processo.getAdvogado();
+        }
+        return null;
+    }
 }

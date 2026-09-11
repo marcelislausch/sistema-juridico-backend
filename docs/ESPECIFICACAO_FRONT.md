@@ -174,9 +174,10 @@ Todas as respostas de erro da API seguem schemas canônicos e consistentes:
 *   **Buscar Detalhes por ID:** `GET /api/processos/{id}`
 *   **Criar Processo:** `POST /api/processos`
 *   **Editar Processo:** `PUT /api/processos/{id}`
-    *   **Payload do Processo (`ProcessoDTO`):**
+    *   **Payload e Resposta do Processo (`ProcessoDTO`):**
         ```json
         {
+          "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
           "numeroCnj": "5001234-88.2026.8.21.0016",
           "assunto": "Ação Revisional de Contrato Bancário",
           "faseAtual": "INICIAL",
@@ -185,10 +186,23 @@ Todas as respostas de erro da API seguem schemas canônicos e consistentes:
           "papelCliente": "AUTOR",
           "valorCausa": 75000.00,
           "comarca": "Ijuí/RS",
-          "clienteId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-          "advogadoId": "7b8c9d0e-1234-5678-9abc-def012345678"
+          "dataCriacao": "2026-09-10",
+          "cliente": {
+            "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "nome": "Carlos Silva",
+            "cpfCnpj": "123.456.789-00",
+            "tipo": "FISICA"
+          },
+          "advogado": {
+            "id": "7b8c9d0e-1234-5678-9abc-def012345678",
+            "nome": "Dra. Marceli Lausch",
+            "email": "marceli@escritorio.com",
+            "oab": "RS123456",
+            "perfil": "ADVOGADO"
+          }
         }
         ```
+    *   **Retrocompatibilidade:** O backend aceita tanto o objeto aninhado quanto IDs crus (`clienteId`, `advogadoId`) nas requisições via `@JsonAlias`. Nas respostas (`GET`, `POST`, `PUT`), sempre retorna o objeto resumido preenchido.
     *   **Campos de Qualificação da Lide:**
         *   `parteAdversa` (string, opcional): Nome completo ou razão social da parte contrária.
         *   `cpfCnpjParteAdversa` (string, opcional): CPF ou CNPJ da parte adversa (com máscara no front, gravado limpo).
@@ -218,7 +232,12 @@ Todas as respostas de erro da API seguem schemas canônicos e consistentes:
   "natureza": "A_RECEBER",
   "dataVencimento": "2026-10-15",
   "dataPagamento": null,
-  "processoId": "8f3b49c1-5717-4562-b3fc-2c963f66afa6",
+  "processo": {
+    "id": "8f3b49c1-5717-4562-b3fc-2c963f66afa6",
+    "numeroCnj": "5001234-88.2026.8.21.0016",
+    "clienteId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "nomeCliente": "Carlos Silva"
+  },
   "numeroParcela": 1,
   "totalParcelas": 3,
   "origemPagamento": "TERCEIRO_SUCUMBENCIA",
@@ -230,6 +249,7 @@ Todas as respostas de erro da API seguem schemas canônicos e consistentes:
   "dataRepasse": null
 }
 ```
+*   **Retrocompatibilidade:** O backend aceita `"processoId"` cru na criação via `@JsonAlias({"processoId"})`, e nas respostas retorna o objeto resumido `ProcessoResumoDTO` com os dados essenciais da causa vinculada e do cliente (`clienteId`).
 
 #### Listagem e Lançamentos
 *   **Listar Faturamentos (Paginado com Múltiplos Filtros no Servidor):** `GET /api/faturamentos`
@@ -324,7 +344,31 @@ A tela de liquidação (ação de dar baixa na fatura) deve oferecer ao operador
         *   `status` (Enum `StatusAudienciaEnum`): `AGENDADA`, `REALIZADA`, `CANCELADA`.
         *   `processoId` (UUID).
         *   `responsavelId` (UUID): Filtro por advogado responsável pela audiência.
-*   **Retorno do DTO (`AudienciaDTO`):** Inclui o campo `responsavelId` mapeado para o responsável atribuído.
+*   **Modelo de Retorno do DTO (`AudienciaDTO`):**
+    ```json
+    {
+      "id": "4b2e6f80-...",
+      "dataHora": "2026-09-20T14:30:00",
+      "local": "1ª Vara Cível de Ijuí",
+      "observacoes": "Audiência de Instrução e Julgamento",
+      "status": "AGENDADA",
+      "resumoPreparatorioIa": null,
+      "processo": {
+        "id": "8f3b49c1-...",
+        "numeroCnj": "5001234-88.2026.8.21.0016",
+        "clienteId": "3fa85f64-...",
+        "nomeCliente": "Carlos Silva"
+      },
+      "responsavel": {
+        "id": "7b8c9d0e-...",
+        "nome": "Dra. Marceli Lausch",
+        "email": "marceli@escritorio.com",
+        "oab": "RS123456",
+        "perfil": "ADVOGADO"
+      }
+    }
+    ```
+    *   **Retrocompatibilidade:** `@JsonAlias({"processoId"})` e `@JsonAlias({"responsavelId"})` aceitam IDs crus no envio. O getter `@JsonIgnore responsavelId()` é mantido.
 *   **Operações:** `POST /api/audiencias`, `GET /api/audiencias/{id}`, `PUT /api/audiencias/{id}`, `DELETE /api/audiencias/{id}`, `PATCH /api/audiencias/{id}/status?status=REALIZADA`.
 *   **Resumo IA da Audiência:** `POST /api/audiencias/{id}/gerar-resumo-ia` com body `{ "conteudoPeca": "..." }`.
 
@@ -337,6 +381,30 @@ A tela de liquidação (ação de dar baixa na fatura) deve oferecer ao operador
         *   `tipo` (Enum `TipoTarefaEnum`): `DILIGENCIA`, `PRAZO`, `CONTATO`.
         *   `processoId` (UUID).
         *   `responsavelId` (UUID).
+*   **Modelo de Retorno do DTO (`TarefaDTO`):**
+    ```json
+    {
+      "id": "9a8b7c6d-...",
+      "descricao": "Protocolar contestação",
+      "dataVencimento": "2026-09-22",
+      "concluida": false,
+      "tipo": "PRAZO",
+      "usuario": {
+        "id": "7b8c9d0e-...",
+        "nome": "Dra. Marceli Lausch",
+        "email": "marceli@escritorio.com",
+        "oab": "RS123456",
+        "perfil": "ADVOGADO"
+      },
+      "processo": {
+        "id": "8f3b49c1-...",
+        "numeroCnj": "5001234-88.2026.8.21.0016",
+        "clienteId": "3fa85f64-...",
+        "nomeCliente": "Carlos Silva"
+      }
+    }
+    ```
+    *   **Retrocompatibilidade:** `@JsonAlias({"usuarioId"})` e `@JsonAlias({"processoId"})` aceitam IDs crus no envio. O getter `@JsonIgnore usuarioId()` é mantido.
 *   **Operações:** `POST /api/tarefas`, `PUT /api/tarefas/{id}`, `DELETE /api/tarefas/{id}`, `PATCH /api/tarefas/{id}/concluir`.
 
 ---
@@ -461,6 +529,44 @@ Atende à tela completa de "Equipe & Usuários" que engloba Admins, Advogados e 
 ### 2.10. Configurações do Escritório (`OfficeTab.tsx`)
 *   **Obter Dados:** `GET /api/configuracoes/escritorio`
 *   **Salvar Dados:** `PUT /api/configuracoes/escritorio` com `EscritorioDTO` completo (CNPJ, Razão Social, WhatsApp, Endereço, etc.). O backend higieniza pontuações automaticamente.
+
+---
+
+### 2.11. Gestão Eletrônica de Documentos (GED)
+Atende às operações de upload, visualização e download de arquivos e peças jurídicas:
+*   **Upload de Documento:** `POST /api/documentos/upload` (`multipart/form-data`)
+    *   **Form Parameters:**
+        *   `arquivo` (MultipartFile, obrigatório): Arquivo PDF, DOCX ou imagem.
+        *   `titulo` (string, opcional): Título amigável da peça.
+        *   `clienteId` (UUID, opcional): Vínculo direto ao cliente.
+        *   `processoId` (UUID, opcional): Vínculo direto ao processo judicial.
+*   **Listar por Cliente:** `GET /api/documentos/cliente/{clienteId}`
+*   **Listar por Processo:** `GET /api/documentos/processo/{processoId}`
+*   **Download de Arquivo:** `GET /api/documentos/{id}/download` (Stream binário `application/octet-stream`).
+*   **Excluir Documento:** `DELETE /api/documentos/{id}`
+*   **Modelo de Retorno do DTO (`DocumentoDTO`):**
+    ```json
+    {
+      "id": "5c6d7e8f-...",
+      "nomeArquivo": "procuracao_assinada.pdf",
+      "titulo": "Procuração Ad Judicia",
+      "caminhoStorage": "uploads/ged/2026/09/procuracao_assinada.pdf",
+      "indexadoIA": true,
+      "cliente": {
+        "id": "3fa85f64-...",
+        "nome": "Carlos Silva",
+        "cpfCnpj": "123.456.789-00",
+        "tipo": "FISICA"
+      },
+      "processo": {
+        "id": "8f3b49c1-...",
+        "numeroCnj": "5001234-88.2026.8.21.0016",
+        "clienteId": "3fa85f64-...",
+        "nomeCliente": "Carlos Silva"
+      }
+    }
+    ```
+    *   **Retrocompatibilidade:** `@JsonAlias({"clienteId"})` e `@JsonAlias({"processoId"})` aceitam IDs crus no envio. Os métodos `@JsonIgnore clienteId()` e `@JsonIgnore processoId()` mantêm compatibilidade nos acessos legados.
 
 ---
 
