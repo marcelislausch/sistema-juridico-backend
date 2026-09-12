@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -25,9 +26,6 @@ import java.time.OffsetDateTime;
 public class GoogleCalendarWebhookController implements GoogleCalendarWebhookControllerOpenApi {
 
     private static final Logger log = LoggerFactory.getLogger(GoogleCalendarWebhookController.class);
-
-    private static final String GOOGLE_CALENDAR_EVENTS_URL =
-            "https://www.googleapis.com/calendar/v3/calendars/primary/events?orderBy=updated&maxResults=1&showDeleted=true";
 
     @Value("${google.calendar.api-token:}")
     private String apiToken;
@@ -74,6 +72,9 @@ public class GoogleCalendarWebhookController implements GoogleCalendarWebhookCon
 
         // Padrão Thin Payload do Google Calendar: busca os dados atualizados via Google Calendar API
         try {
+            String updatedMin = Instant.now().minusSeconds(300).toString();
+            String url = "https://www.googleapis.com/calendar/v3/calendars/primary/events?singleEvents=true&showDeleted=true&updatedMin=" + updatedMin;
+
             HttpHeaders headers = new HttpHeaders();
             if (this.apiToken != null && !this.apiToken.trim().isEmpty()) {
                 headers.set("Authorization", "Bearer " + this.apiToken.trim());
@@ -83,7 +84,7 @@ public class GoogleCalendarWebhookController implements GoogleCalendarWebhookCon
 
             HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
             ResponseEntity<String> response = this.restTemplate.exchange(
-                    GOOGLE_CALENDAR_EVENTS_URL,
+                    url,
                     HttpMethod.GET,
                     requestEntity,
                     String.class
@@ -93,42 +94,44 @@ public class GoogleCalendarWebhookController implements GoogleCalendarWebhookCon
                 JsonNode rootNode = this.objectMapper.readTree(response.getBody());
                 JsonNode itemsNode = rootNode.get("items");
 
-                if (itemsNode != null && itemsNode.isArray() && itemsNode.size() > 0) {
-                    JsonNode itemNode = itemsNode.get(0);
+                if (itemsNode != null && itemsNode.isArray()) {
+                    for (int i = 0; i < itemsNode.size(); i++) {
+                        JsonNode itemNode = itemsNode.get(i);
 
-                    String id = null;
-                    JsonNode idNode = itemNode.get("id");
-                    if (idNode != null && !idNode.isNull()) {
-                        id = idNode.asText();
-                    }
-
-                    String summary = null;
-                    JsonNode summaryNode = itemNode.get("summary");
-                    if (summaryNode != null && !summaryNode.isNull()) {
-                        summary = summaryNode.asText();
-                    }
-
-                    String status = null;
-                    JsonNode statusNode = itemNode.get("status");
-                    if (statusNode != null && !statusNode.isNull()) {
-                        status = statusNode.asText();
-                    }
-
-                    LocalDate dataVencimento = extrairDataVencimento(itemNode.get("start"));
-
-                    if (id != null && !id.trim().isEmpty()) {
-                        String descricao = summary;
-                        if (descricao == null || descricao.trim().isEmpty()) {
-                            descricao = "Compromisso Google Calendar";
+                        String id = null;
+                        JsonNode idNode = itemNode.get("id");
+                        if (idNode != null && !idNode.isNull()) {
+                            id = idNode.asText();
                         }
 
-                        GoogleCalendarEventDTO eventDTO = new GoogleCalendarEventDTO(
-                                id.trim(),
-                                descricao.trim(),
-                                dataVencimento,
-                                status
-                        );
-                        this.sincronizarEventoGoogleCalendarUseCase.executar(eventDTO);
+                        String summary = null;
+                        JsonNode summaryNode = itemNode.get("summary");
+                        if (summaryNode != null && !summaryNode.isNull()) {
+                            summary = summaryNode.asText();
+                        }
+
+                        String status = null;
+                        JsonNode statusNode = itemNode.get("status");
+                        if (statusNode != null && !statusNode.isNull()) {
+                            status = statusNode.asText();
+                        }
+
+                        LocalDate dataVencimento = extrairDataVencimento(itemNode.get("start"));
+
+                        if (id != null && !id.trim().isEmpty()) {
+                            String descricao = summary;
+                            if (descricao == null || descricao.trim().isEmpty()) {
+                                descricao = "Compromisso Google Calendar";
+                            }
+
+                            GoogleCalendarEventDTO eventDTO = new GoogleCalendarEventDTO(
+                                    id.trim(),
+                                    descricao.trim(),
+                                    dataVencimento,
+                                    status
+                            );
+                            this.sincronizarEventoGoogleCalendarUseCase.executar(eventDTO);
+                        }
                     }
                 }
             }
