@@ -1,14 +1,24 @@
 package com.sistemajuridico.backend.presentation.controllers;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sistemajuridico.backend.core.usecases.SincronizarEventoGoogleCalendarUseCase;
 import com.sistemajuridico.backend.presentation.dtos.GoogleCalendarEventDTO;
 import com.sistemajuridico.backend.presentation.openapi.GoogleCalendarWebhookControllerOpenApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @RestController
 @RequestMapping("/api/integracoes/google-calendar")
@@ -16,10 +26,29 @@ public class GoogleCalendarWebhookController implements GoogleCalendarWebhookCon
 
     private static final Logger log = LoggerFactory.getLogger(GoogleCalendarWebhookController.class);
 
-    private final SincronizarEventoGoogleCalendarUseCase sincronizarEventoGoogleCalendarUseCase;
+    private static final String GOOGLE_CALENDAR_EVENTS_URL =
+            "https://www.googleapis.com/calendar/v3/calendars/primary/events?orderBy=updated&maxResults=1&showDeleted=true";
 
+    @Value("${google.calendar.api-token:}")
+    private String apiToken;
+
+    private final SincronizarEventoGoogleCalendarUseCase sincronizarEventoGoogleCalendarUseCase;
+    private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
+
+    @Autowired
     public GoogleCalendarWebhookController(SincronizarEventoGoogleCalendarUseCase sincronizarEventoGoogleCalendarUseCase) {
         this.sincronizarEventoGoogleCalendarUseCase = sincronizarEventoGoogleCalendarUseCase;
+        this.restTemplate = new RestTemplate();
+        this.objectMapper = new ObjectMapper();
+    }
+
+    public GoogleCalendarWebhookController(SincronizarEventoGoogleCalendarUseCase sincronizarEventoGoogleCalendarUseCase,
+                                           RestTemplate restTemplate,
+                                           ObjectMapper objectMapper) {
+        this.sincronizarEventoGoogleCalendarUseCase = sincronizarEventoGoogleCalendarUseCase;
+        this.restTemplate = restTemplate;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -37,23 +66,119 @@ public class GoogleCalendarWebhookController implements GoogleCalendarWebhookCon
             return ResponseEntity.ok().build();
         }
 
+        // Se o payload vier diretamente no corpo da requisição (ex: testes manuais/Swagger)
         if (dto != null && dto.googleEventId() != null && !dto.googleEventId().trim().isEmpty()) {
             this.sincronizarEventoGoogleCalendarUseCase.executar(dto);
-        } else if (resourceId != null && !resourceId.trim().isEmpty()) {
-            String status = "confirmed";
-            if (resourceState != null && (resourceState.equalsIgnoreCase("not_exists") || resourceState.equalsIgnoreCase("trash"))) {
-                status = "cancelled";
+            return ResponseEntity.ok().build();
+        }
+
+        // Padrão Thin Payload do Google Calendar: busca os dados atualizados via Google Calendar API
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            if (this.apiToken != null && !this.apiToken.trim().isEmpty()) {
+                headers.set("Authorization", "Bearer " + this.apiToken.trim());
+            } else {
+                log.warn("Token de API do Google Calendar não configurado (google.calendar.api-token)");
             }
-            GoogleCalendarEventDTO fallbackDto = new GoogleCalendarEventDTO(
-                    resourceId.trim(),
-                    "Compromisso Google Calendar",
-                    LocalDate.now(),
-                    status
+
+            HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+            ResponseEntity<String> response = this.restTemplate.exchange(
+                    GOOGLE_CALENDAR_EVENTS_URL,
+                    HttpMethod.GET,
+                    requestEntity,
+                    String.class
             );
-            this.sincronizarEventoGoogleCalendarUseCase.executar(fallbackDto);
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                JsonNode rootNode = this.objectMapper.readTree(response.getBody());
+                JsonNode itemsNode = rootNode.get("items");
+
+                if (itemsNode != null && itemsNode.isArray() && itemsNode.size() > 0) {
+                    JsonNode itemNode = itemsNode.get(0);
+
+                    String id = null;
+                    JsonNode idNode = itemNode.get("id");
+                    if (idNode != null && !idNode.isNull()) {
+                        id = idNode.asText();
+                    }
+
+                    String summary = null;
+                    JsonNode summaryNode = itemNode.get("summary");
+                    if (summaryNode != null && !summaryNode.isNull()) {
+                        summary = summaryNode.asText();
+                    }
+
+                    String status = null;
+                    JsonNode statusNode = itemNode.get("status");
+                    if (statusNode != null && !statusNode.isNull()) {
+                        status = statusNode.asText();
+                    }
+
+                    LocalDate dataVencimento = extrairDataVencimento(itemNode.get("start"));
+
+                    if (id != null && !id.trim().isEmpty()) {
+                        String descricao = summary;
+                        if (descricao == null || descricao.trim().isEmpty()) {
+                            descricao = "Compromisso Google Calendar";
+                        }
+
+                        GoogleCalendarEventDTO eventDTO = new GoogleCalendarEventDTO(
+                                id.trim(),
+                                descricao.trim(),
+                                dataVencimento,
+                                status
+                        );
+                        this.sincronizarEventoGoogleCalendarUseCase.executar(eventDTO);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Erro ao sincronizar evento via API do Google Calendar: {}", e.getMessage(), e);
         }
 
         // Retorno 200 OK mandatório para que o Google não reenvie a notificação
         return ResponseEntity.ok().build();
+    }
+
+    private LocalDate extrairDataVencimento(JsonNode startNode) {
+        if (startNode == null || startNode.isNull()) {
+            return LocalDate.now();
+        }
+
+        JsonNode dateTimeNode = startNode.get("dateTime");
+        if (dateTimeNode != null && !dateTimeNode.isNull() && !dateTimeNode.asText().trim().isEmpty()) {
+            String dtText = dateTimeNode.asText().trim();
+            try {
+                return OffsetDateTime.parse(dtText).toLocalDate();
+            } catch (Exception ignored) {
+            }
+
+            try {
+                return LocalDateTime.parse(dtText).toLocalDate();
+            } catch (Exception ignored) {
+            }
+
+            try {
+                if (dtText.length() >= 10) {
+                    return LocalDate.parse(dtText.substring(0, 10));
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        JsonNode dateNode = startNode.get("date");
+        if (dateNode != null && !dateNode.isNull() && !dateNode.asText().trim().isEmpty()) {
+            String dText = dateNode.asText().trim();
+            try {
+                return LocalDate.parse(dText);
+            } catch (Exception ignored) {
+            }
+        }
+
+        return LocalDate.now();
+    }
+
+    public void setApiToken(String apiToken) {
+        this.apiToken = apiToken;
     }
 }
