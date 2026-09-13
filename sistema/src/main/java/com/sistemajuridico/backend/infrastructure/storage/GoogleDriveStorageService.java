@@ -1,14 +1,14 @@
 package com.sistemajuridico.backend.infrastructure.storage;
 
 import com.google.api.client.auth.oauth2.BearerToken;
-import com.google.api.client.auth.oauth2.ClientParametersAuthentication;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.InputStreamContent;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
-import jakarta.annotation.PostConstruct;
+import com.sistemajuridico.backend.infrastructure.security.GoogleOAuthTokenManager;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
@@ -24,51 +24,42 @@ import java.util.List;
 @Primary
 public class GoogleDriveStorageService implements StorageService {
 
-    @Value("${google.oauth.client.id}")
-    private String clientId;
-
-    @Value("${google.oauth.client.secret}")
-    private String clientSecret;
-
-    @Value("${google.oauth.refresh.token}")
-    private String refreshToken;
-
-    @Value("${google.drive.folder.id}")
+    @Value("${google.drive.folder.id:}")
     private String folderId;
 
-    private Drive driveService;
+    private final GoogleOAuthTokenManager googleOAuthTokenManager;
 
     public GoogleDriveStorageService() {
+        this.googleOAuthTokenManager = new GoogleOAuthTokenManager();
     }
 
-    public GoogleDriveStorageService(String clientId, String clientSecret, String refreshToken, String folderId) {
-        this.clientId = clientId;
-        this.clientSecret = clientSecret;
-        this.refreshToken = refreshToken;
+    @Autowired
+    public GoogleDriveStorageService(GoogleOAuthTokenManager googleOAuthTokenManager) {
+        this.googleOAuthTokenManager = googleOAuthTokenManager;
+    }
+
+    public GoogleDriveStorageService(GoogleOAuthTokenManager googleOAuthTokenManager, String folderId) {
+        this.googleOAuthTokenManager = googleOAuthTokenManager;
         this.folderId = folderId;
-        inicializar();
     }
 
-    @PostConstruct
-    public void inicializar() {
+    private Drive obterDriveService() {
+        String token = this.googleOAuthTokenManager.obterAccessToken();
+        if (token == null || token.trim().isEmpty()) {
+            throw new RuntimeException("Não foi possível obter o token de acesso do Google OAuth para o Google Drive.");
+        }
+
         try {
             Credential credential = new Credential.Builder(BearerToken.authorizationHeaderAccessMethod())
-                    .setTransport(GoogleNetHttpTransport.newTrustedTransport())
-                    .setJsonFactory(GsonFactory.getDefaultInstance())
-                    .setTokenServerEncodedUrl("https://oauth2.googleapis.com/token")
-                    .setClientAuthentication(new ClientParametersAuthentication(this.clientId, this.clientSecret))
                     .build()
-                    .setRefreshToken(this.refreshToken);
+                    .setAccessToken(token.trim());
 
-            credential.refreshToken();
-
-            this.driveService = new Drive.Builder(
+            return new Drive.Builder(
                     GoogleNetHttpTransport.newTrustedTransport(),
                     GsonFactory.getDefaultInstance(),
                     credential)
                     .setApplicationName("Sistema Jurídico - GED")
                     .build();
-
         } catch (IOException e) {
             throw new RuntimeException("Falha de E/S ao inicializar cliente OAuth do Google Drive: " + e.getMessage(), e);
         } catch (GeneralSecurityException e) {
@@ -84,9 +75,7 @@ public class GoogleDriveStorageService implements StorageService {
     }
 
     public String upload(String nomeOriginal, byte[] dados) {
-        if (this.driveService == null) {
-            throw new RuntimeException("O serviço do Google Drive não foi inicializado corretamente.");
-        }
+        Drive driveService = obterDriveService();
 
         if (dados == null || dados.length == 0) {
             throw new RuntimeException("O conteúdo do arquivo para upload não pode ser nulo ou vazio.");
@@ -140,7 +129,7 @@ public class GoogleDriveStorageService implements StorageService {
             ByteArrayInputStream inputStream = new ByteArrayInputStream(dados);
             InputStreamContent mediaContent = new InputStreamContent(mimeType, inputStream);
 
-            Drive.Files.Create createRequest = this.driveService.files().create(metadata, mediaContent);
+            Drive.Files.Create createRequest = driveService.files().create(metadata, mediaContent);
             createRequest.setFields("id");
             createRequest.setSupportsAllDrives(true);
             File arquivoCriado = createRequest.execute();
@@ -162,9 +151,7 @@ public class GoogleDriveStorageService implements StorageService {
     }
 
     public byte[] download(String idArquivo) {
-        if (this.driveService == null) {
-            throw new RuntimeException("O serviço do Google Drive não foi inicializado corretamente.");
-        }
+        Drive driveService = obterDriveService();
 
         if (idArquivo == null || idArquivo.trim().isEmpty()) {
             throw new RuntimeException("O ID do arquivo no Google Drive é obrigatório para download.");
@@ -172,7 +159,7 @@ public class GoogleDriveStorageService implements StorageService {
 
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            Drive.Files.Get getRequest = this.driveService.files().get(idArquivo.trim());
+            Drive.Files.Get getRequest = driveService.files().get(idArquivo.trim());
             getRequest.setSupportsAllDrives(true);
             getRequest.executeMediaAndDownloadTo(outputStream);
             return outputStream.toByteArray();
@@ -187,16 +174,14 @@ public class GoogleDriveStorageService implements StorageService {
     }
 
     public void excluir(String idArquivo) {
-        if (this.driveService == null) {
-            throw new RuntimeException("O serviço do Google Drive não foi inicializado corretamente.");
-        }
+        Drive driveService = obterDriveService();
 
         if (idArquivo == null || idArquivo.trim().isEmpty()) {
             throw new RuntimeException("O ID do arquivo no Google Drive é obrigatório para exclusão.");
         }
 
         try {
-            Drive.Files.Delete deleteRequest = this.driveService.files().delete(idArquivo.trim());
+            Drive.Files.Delete deleteRequest = driveService.files().delete(idArquivo.trim());
             deleteRequest.setSupportsAllDrives(true);
             deleteRequest.execute();
         } catch (IOException e) {
@@ -205,6 +190,6 @@ public class GoogleDriveStorageService implements StorageService {
     }
 
     public Drive getDriveService() {
-        return this.driveService;
+        return obterDriveService();
     }
 }

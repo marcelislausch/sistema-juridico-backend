@@ -3,12 +3,12 @@ package com.sistemajuridico.backend.presentation.controllers;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sistemajuridico.backend.core.usecases.SincronizarEventoGoogleCalendarUseCase;
+import com.sistemajuridico.backend.infrastructure.security.GoogleOAuthTokenManager;
 import com.sistemajuridico.backend.presentation.dtos.GoogleCalendarEventDTO;
 import com.sistemajuridico.backend.presentation.openapi.GoogleCalendarWebhookControllerOpenApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -27,24 +27,26 @@ public class GoogleCalendarWebhookController implements GoogleCalendarWebhookCon
 
     private static final Logger log = LoggerFactory.getLogger(GoogleCalendarWebhookController.class);
 
-    @Value("${google.calendar.api-token:}")
-    private String apiToken;
-
     private final SincronizarEventoGoogleCalendarUseCase sincronizarEventoGoogleCalendarUseCase;
+    private final GoogleOAuthTokenManager googleOAuthTokenManager;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
     @Autowired
-    public GoogleCalendarWebhookController(SincronizarEventoGoogleCalendarUseCase sincronizarEventoGoogleCalendarUseCase) {
+    public GoogleCalendarWebhookController(SincronizarEventoGoogleCalendarUseCase sincronizarEventoGoogleCalendarUseCase,
+                                           GoogleOAuthTokenManager googleOAuthTokenManager) {
         this.sincronizarEventoGoogleCalendarUseCase = sincronizarEventoGoogleCalendarUseCase;
+        this.googleOAuthTokenManager = googleOAuthTokenManager;
         this.restTemplate = new RestTemplate();
         this.objectMapper = new ObjectMapper();
     }
 
     public GoogleCalendarWebhookController(SincronizarEventoGoogleCalendarUseCase sincronizarEventoGoogleCalendarUseCase,
+                                           GoogleOAuthTokenManager googleOAuthTokenManager,
                                            RestTemplate restTemplate,
                                            ObjectMapper objectMapper) {
         this.sincronizarEventoGoogleCalendarUseCase = sincronizarEventoGoogleCalendarUseCase;
+        this.googleOAuthTokenManager = googleOAuthTokenManager;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
     }
@@ -75,12 +77,15 @@ public class GoogleCalendarWebhookController implements GoogleCalendarWebhookCon
             String updatedMin = Instant.now().minusSeconds(300).toString();
             String url = "https://www.googleapis.com/calendar/v3/calendars/primary/events?singleEvents=true&showDeleted=true&updatedMin=" + updatedMin;
 
-            HttpHeaders headers = new HttpHeaders();
-            if (this.apiToken != null && !this.apiToken.trim().isEmpty()) {
-                headers.set("Authorization", "Bearer " + this.apiToken.trim());
-            } else {
-                log.warn("Token de API do Google Calendar não configurado (google.calendar.api-token)");
+            String token = this.googleOAuthTokenManager.obterAccessToken();
+
+            if (token == null || token.trim().isEmpty()) {
+                log.warn("Token de acesso do Google Calendar não disponível para sincronização");
+                return ResponseEntity.ok().build();
             }
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + token);
 
             HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
             ResponseEntity<String> response = this.restTemplate.exchange(
@@ -179,9 +184,5 @@ public class GoogleCalendarWebhookController implements GoogleCalendarWebhookCon
         }
 
         return LocalDate.now();
-    }
-
-    public void setApiToken(String apiToken) {
-        this.apiToken = apiToken;
     }
 }
