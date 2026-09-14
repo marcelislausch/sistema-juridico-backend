@@ -3,7 +3,7 @@
 **Projeto:** Sistema de Gestão Jurídica Inteligente  
 **Perfil:** Guia de Integração e Contratos de API para a Equipe de Front-end  
 **Alinhamento:** Backend Spring Boot v3.3.3 / Java 21 LTS  
-**Versão:** 3.0 (Conformidade com Auditoria de Contratos e Swagger OpenAPI 3)
+**Versão:** 3.2 (Conformidade com Swagger OpenAPI 3, Edição Financeira, Unificação Google Cloud e Blindagem UTF-8)
 
 ---
 
@@ -111,6 +111,15 @@ Todas as respostas de erro da API seguem schemas canônicos e consistentes:
     }
     ```
     *(Ação no Front-end: Utilizar a lista `fieldErrors` para mapear erros diretamente abaixo dos respectivos inputs nos formulários).*
+
+### 1.4. Blindagem de Encoding UTF-8 e Contratos OpenAPI 3
+*   **Encoding HTTP Padronizado em UTF-8:**
+    *   Todas as respostas da API são emitidas com charset UTF-8 estrito (`Content-Type: application/json;charset=UTF-8`), configurado tanto no build Maven quanto nos servlets Spring.
+    *   Eliminação integral de anomalias de codificação (*mojibake*, como `Ã§`, `Ã£`, `Ã©`, `â€"`).
+    *   Textos jurídicos com acentuação, peças, andamentos, notificações, nomes de clientes e descrições financeiras transitam íntegros sem necessidade de decodificação manual no cliente.
+*   **Contratos OpenAPI 3 Higienizados (Swagger):**
+    *   A documentação OpenAPI é gerida por 16 interfaces dedicadas no pacote `presentation.openapi`, mantendo 100% de títulos, tags, resumos e schemas com ortografia técnica em português perfeitamente acentuada.
+    *   Garante total previsibilidade e compatibilidade para geração automatizada de clientes e tipos TypeScript (ex: `openapi-typescript`, `@openapitools/openapi-generator-cli`) sem distorção de enums ou identificadores de propriedades.
 
 ---
 
@@ -257,14 +266,16 @@ Todas as respostas de erro da API seguem schemas canônicos e consistentes:
         *   `q` ou `termoBusca` (string): Busca textual na descrição da fatura.
         *   `status` (Enum `StatusFaturamentoEnum`): `PENDENTE`, `PAGO`, `PARCIALMENTE_PAGO`, `CANCELADO`.
         *   `natureza` (Enum `NaturezaFaturamentoEnum`): `A_RECEBER`, `A_PAGAR`.
-        *   `tipo` (Enum `TipoFaturamentoEnum`): `HONORARIOS`, `CUSTAS`, `DESPESAS_ESCRITORIO`.
+        *   `tipo` (Enum `TipoFaturamentoEnum`): `HONORARIOS`, `CUSTAS`, `DESPESAS_ESCRITORIO`, `CONSULTA_AVULSA`.
         *   `vencimentoDe` (date: `YYYY-MM-DD`): Data inicial do intervalo de vencimento.
         *   `vencimentoAte` (date: `YYYY-MM-DD`): Data final do intervalo de vencimento.
         *   `processoId` (UUID): Filtro por processo judicial.
         *   `page` (int, default = 0), `size` (int, default = 10), `sort`.
 *   **Listar por Processo:** `GET /api/faturamentos/processo/{processoId}`
-*   **Cadastrar Fatura Única:** `POST /api/faturamentos` (faturamento individual).
+*   **Cadastrar Fatura Única:** `POST /api/faturamentos` (faturamento individual com vínculo opcional a processo).
+*   **Editar Faturamento:** `PUT /api/faturamentos/{id}` e `PATCH /api/faturamentos/{id}` (alteração de valor, categoria, vencimento, status e processo).
 *   **Gerar Parcelamento:** `POST /api/faturamento/parcelamento` (gravação de múltiplas parcelas geradas pelo assistente).
+*   **Registrar Consulta Avulsa:** `POST /api/faturamentos/consulta-avulsa` (lançamento e liquidação imediata sem processo judicial).
 
 #### Assistente de Parcelamento (Modal de Faturamento)
 O modal de cadastro e lançamento financeiro dispõe do **Assistente de Parcelamento** para automação de contratos divididos:
@@ -333,6 +344,54 @@ A tela de liquidação (ação de dar baixa na fatura) deve oferecer ao operador
         ```
     *   **Comportamento:** Marca o repasse como `REPASSADO` e registra a data e forma do pagamento ao cliente.
 
+4.  **Edição de Lançamento Financeiro (`EditarFaturamentoModal.tsx`):**
+    *   **Rotas Oficiais:** `PUT /api/faturamentos/{id}` e `PATCH /api/faturamentos/{id}` (suporta também `/api/faturamento/{id}`).
+    *   **Payload de Envio (`EditarFaturamentoDTO`):**
+        ```json
+        {
+          "descricao": "Honorários Contratuais - Reajuste de Parcela",
+          "valor": 3500.00,
+          "categoria": "HONORARIOS",
+          "status": "PENDENTE",
+          "natureza": "A_RECEBER",
+          "dataVencimento": "2026-10-25",
+          "dataPagamento": null,
+          "processoId": "8f3b49c1-5717-4562-b3fc-2c963f66afa6"
+        }
+        ```
+    *   **Regras e Flexibilidade de Parâmetros:**
+        *   `valor` (number/decimal, opcional): Validado com `@Positive(message = "O valor deve ser positivo")`. Deve ser estritamente maior que zero.
+        *   `descricao` (string, opcional): Texto explicativo do faturamento.
+        *   `categoria` ou `tipo` (Enum `TipoFaturamentoEnum`): Aceita `HONORARIOS`, `CUSTAS`, `DESPESAS_ESCRITORIO` ou `CONSULTA_AVULSA`. O backend aceita indistintamente as chaves `"categoria"` ou `"tipo"` via anotação `@JsonAlias`.
+        *   `status` (Enum `StatusFaturamentoEnum`): `PENDENTE`, `PAGO`, `PARCIALMENTE_PAGO`, `CANCELADO`.
+        *   `natureza` (Enum `NaturezaFaturamentoEnum`): `A_RECEBER`, `A_PAGAR`.
+        *   `dataVencimento` (date `YYYY-MM-DD`, opcional): Atualização da data de vencimento.
+        *   `dataPagamento` (date `YYYY-MM-DD`, opcional): Atualização da data em que o pagamento foi realizado.
+        *   `processoId` (UUID, opcional): Permite vincular, desvincular ou transferir o processo associado.
+    *   **Regra Inteligente de Liquidação Automática:**
+        *   Caso o operador altere o `status` para `PAGO` e **não envie** o campo `dataPagamento` (ou passe `null`), o backend atribui automaticamente a data atual (`LocalDate.now()`).
+        *   Se o status for revertido para `PENDENTE` ou `CANCELADO`, a `dataPagamento` é desfeita no banco de dados.
+    *   **Resposta (HTTP 200 OK):** `FaturamentoDTO` com os dados atualizados.
+
+5.  **Lançamento Rápido de Consulta Jurídica Avulsa (`ConsultaAvulsaModal.tsx`):**
+    *   **Rota Oficial:** `POST /api/faturamentos/consulta-avulsa` (suporta também `/api/faturamento/consulta-avulsa`).
+    *   **Objetivo de UX:** Permite aos advogados registrarem honorários de consultas individuais sem a necessidade burocrática de abrir uma ficha de processo judicial para o cliente.
+    *   **Payload de Envio (`ConsultaAvulsaDTO`):**
+        ```json
+        {
+          "clienteId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+          "valor": 250.00,
+          "descricao": "Consulta Jurídica Trabalhista Inicial",
+          "dataPagamento": "2026-09-13",
+          "formaPagamento": "PIX"
+        }
+        ```
+    *   **Comportamento Transacional no Backend:**
+        *   Cria um faturamento de natureza `A_RECEBER` e categoria `CONSULTA_AVULSA`.
+        *   Associa o faturamento unicamente ao `Cliente` (mantendo `processo = null`).
+        *   Realiza a liquidação atômica imediata definindo `status = StatusFaturamentoEnum.PAGO` e data de pagamento (se omitida, assume `LocalDate.now()`).
+    *   **Resposta (HTTP 201 Created):** `FaturamentoDTO` liquidado.
+
 ---
 
 ### 2.5. Agenda Unificada (Audiências e Tarefas)
@@ -378,17 +437,18 @@ A tela de liquidação (ação de dar baixa na fatura) deve oferecer ao operador
         *   `inicio` e `fim` (date: `YYYY-MM-DD`).
         *   `concluida` (boolean): `true` para concluídas, `false` para pendentes.
         *   `status` (string, alias: `"CONCLUIDA"` ou `"PENDENTE"`).
-        *   `tipo` (Enum `TipoTarefaEnum`): `DILIGENCIA`, `PRAZO`, `CONTATO`.
+        *   `tipo` (Enum `TipoTarefaEnum`): `DILIGENCIA`, `PRAZO`, `CONTATO`, `ATENDIMENTO`.
         *   `processoId` (UUID).
         *   `responsavelId` (UUID).
 *   **Modelo de Retorno do DTO (`TarefaDTO`):**
     ```json
     {
       "id": "9a8b7c6d-...",
-      "descricao": "Protocolar contestação",
+      "descricao": "Atendimento ao Cliente - Reunião Google Meet",
       "dataVencimento": "2026-09-22",
       "concluida": false,
-      "tipo": "PRAZO",
+      "tipo": "ATENDIMENTO",
+      "googleEventId": "_60q30c1g60o30c1g60o32c1g60o30c1g",
       "usuario": {
         "id": "7b8c9d0e-...",
         "nome": "Dra. Marceli Lausch",
@@ -405,6 +465,7 @@ A tela de liquidação (ação de dar baixa na fatura) deve oferecer ao operador
     }
     ```
     *   **Retrocompatibilidade:** `@JsonAlias({"usuarioId"})` e `@JsonAlias({"processoId"})` aceitam IDs crus no envio. O getter `@JsonIgnore usuarioId()` é mantido.
+    *   **Sincronização Google Calendar (One-Way):** Compromissos e atendimentos agendados no Google Calendar do advogado são sincronizados automaticamente via webhook para a agenda de tarefas do sistema com `tipo: "ATENDIMENTO"` e o identificador externo `googleEventId`. Na interface, recomenda-se exibir um badge/ícone do Google Calendar para diferenciar esses compromissos de prazos e diligências internas do escritório.
 *   **Operações:** `POST /api/tarefas`, `PUT /api/tarefas/{id}`, `DELETE /api/tarefas/{id}`, `PATCH /api/tarefas/{id}/concluir`.
 
 ---
@@ -584,4 +645,7 @@ Atende às operações de upload, visualização e download de arquivos e peças
 | `ClientsPage.tsx` | `collectAllPages` e filtro em memória | `GET /api/clientes?q=&tipo=&page=&size=` |
 | `ProcessesPage.tsx` | Download de 500 itens e filtro local | `GET /api/processos?q=&fase=&page=&size=` + cadastro/edição com qualificação da lide (`parteAdversa`, `cpfCnpjParteAdversa`, `papelCliente`, `valorCausa`, `comarca`) |
 | `FinanceiroPage.tsx` | Paginação e somatórios no navegador | `GET /api/faturamentos?q=&status=&natureza=` + Assistente de Parcelamento (`/parcelamento` com trava matemática), Repasse condicional (`TERCEIRO_SUCUMBENCIA`), Baixa Integral (`/liquidar`), Baixa Parcial com desdobramento (`/liquidar-parcial`) e Repasse (`/repassar`) |
+| `EditarFaturamentoModal.tsx` | Lançamento com valor ou dados incorretos sem ação de ajuste | `PUT` e `PATCH /api/faturamentos/{id}` (`EditarFaturamentoDTO` com validação `@Positive` e quitação inteligente automática) |
+| `ConsultaAvulsaModal.tsx` | Cobrança de atendimento avulso exigia criação de processo fictício | `POST /api/faturamentos/consulta-avulsa` (`ConsultaAvulsaDTO` com vínculo direto ao cliente, `processo = null` e liquidação atômica) |
+| `AgendaPage.tsx` / Tarefas | Compromissos externos do Google Calendar não eram exibidos | Visualização de tarefas sincronizadas com `tipo = "ATENDIMENTO"` e identificador `googleEventId` via Webhook Push |
 | `Dashboard.tsx` | Erro ao ler campos opcionais nulos | `GET /api/dashboard` (DTO com valores padrão garantidos) |

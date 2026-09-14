@@ -1,4 +1,4 @@
-# Documento de Especificação de Software (PRD) - v3.0
+# Documento de Especificação de Software (PRD) - v3.2
 
 **Projeto:** Sistema de Gestão Jurídica Inteligente  
 **Perfil:** Backend Corporativo / Portfólio  
@@ -46,6 +46,10 @@ O sistema é estruturado em módulos lógicos de alta coesão e baixo acoplament
 
 *   **Financeiro, Agenda & Produtividade:**
     *   **Faturamento & Fluxo de Caixa:** Controle de receitas e despesas (`A_RECEBER`, `A_PAGAR`), tipos (`HONORARIOS`, `CUSTAS`, `DESPESAS_ESCRITORIO`, `CONSULTA_AVULSA`), suporte a parcelamento (`numeroParcela` e `totalParcelas`) e gestão condicional de repasses a clientes para valores oriundos de sucumbência ou terceiros (`origemPagamento`: `DIRETO_CLIENTE`, `TERCEIRO_SUCUMBENCIA`; `valorHonorariosRetidos`, `valorRepasseCliente`, `statusRepasse`: `PENDENTE`, `REPASSADO`; `formaRepasse`, `dadosBancariosCliente` e `dataRepasse`). Suporte a lançamentos vinculados a processos ou diretamente a clientes (com vínculo processual anulável para consultas avulsas). Listagem paginada no servidor com filtros combinados: busca textual (`?q=`), status (`?status=`), natureza (`?natureza=`), tipo (`?tipo=`), intervalo de vencimento (`?vencimentoDe=` e `?vencimentoAte=`) e vínculo com processo (`?processoId=`).
+    *   **Edição de Lançamento Financeiro (`PUT /api/faturamentos/{id}` e `PATCH /api/faturamentos/{id}`):**
+        *   Permite a alteração completa ou parcial dos atributos do lançamento financeiro: `valor` (validação de valor estritamente positivo via `@Positive`), `descricao`, `dataVencimento`, `categoria`/`tipo` (`TipoFaturamentoEnum`), `status` (`StatusFaturamentoEnum`), `natureza` (`NaturezaFaturamentoEnum`), `dataPagamento` e reatribuição de `processoId`.
+        *   Regra de transição inteligente de status: se o faturamento tiver seu status alterado para `PAGO` sem envio explícito da data de quitação, o sistema atribui automaticamente a data atual (`LocalDate.now()`).
+        *   Processamento atômico e transacional imperativo puro via `EditarFaturamentoUseCase`.
     *   **Liquidação, Baixas e Repasses:**
         *   **Baixa Integral (`PATCH /api/faturamento/{id}/liquidar`):** Quitação total com registro de data efetiva de pagamento (`dataPagamento`) e atualização de status para `PAGO`.
         *   **Baixa Parcial (`PATCH /api/faturamento/{id}/liquidar-parcial`):** Recebimento parcial onde o sistema registra o valor pago, altera o status do título para `PARCIALMENTE_PAGO` e realiza a criação/desdobramento de um novo registro de faturamento (ou ajuste do saldo devedor e prorrogação da data) com a nova data de vencimento para cobrança da diferença.
@@ -72,14 +76,17 @@ O sistema é estruturado em módulos lógicos de alta coesão e baixo acoplament
     *   Endpoint `GET /api/integracoes/tribunais/status`.
     *   Exposição do status operacional das conexões e sincronizações eletrônicas com tribunais (TJRS, TRF4, TRT4, STJ) utilizando o enum `StatusTribunalEnum` (`OPERACIONAL`, `DEGRADADO`, `INDISPONIVEL`).
 
-*   **Integração Google Calendar (Sincronização One-Way via Webhooks):**
-    *   Recepção de notificações push via Webhook (`POST /api/integracoes/google-calendar/webhook`) para sincronização automática de compromissos originados no Google Calendar.
-    *   **Fluxo Estritamente One-Way:** O sistema apenas importa eventos do Google Calendar. Tarefas, audiências e compromissos cadastrados internamente no sistema NUNCA são enviados para o Google Calendar.
-    *   **Tratamento de Domínio como Tarefas:** Os compromissos importados são convertidos diretamente em instâncias da entidade `Tarefa` (`tb_tarefa`) associadas ao respectivo advogado (`Usuario`), com o novo tipo `TipoTarefaEnum.ATENDIMENTO`.
-    *   **Idempotência e Versionamento (`googleEventId`):** Armazenamento do identificador externo `googleEventId` (`VARCHAR(255)`) na entidade `Tarefa`. Disparos subsequentes de notificações para o mesmo evento realizam atualização (upsert) dos atributos (descrição, data de vencimento e status), inclusive tratando cancelamentos na origem sem gerar duplicidade.
+*   **Integração Google Cloud & Autenticação OAuth 2.0 Unificada:**
+    *   **Gerenciador Central de Tokens (`GoogleOAuthTokenManager`):** Componente corporativo dedicado na camada de infraestrutura que centraliza as credenciais OAuth 2.0 (`client_id`, `client_secret`, `refresh_token`), executando a renovação automatizada de Access Token via chamada POST à API de autenticação do Google (`https://oauth2.googleapis.com/token`) sem replicação de código.
+    *   **Sincronização One-Way do Google Calendar via Webhook (`POST /api/integracoes/google-calendar/webhook`):**
+        *   Recepção de notificações push do Google Calendar com processamento assíncrono e padrão *Thin Payload* (consulta direta à Google Calendar API v3 utilizando o token renovado pelo `GoogleOAuthTokenManager`).
+        *   **Fluxo Estritamente One-Way:** O sistema apenas importa eventos do Google Calendar. Tarefas, audiências e compromissos internos nunca são exportados para o Google.
+        *   **Tratamento de Domínio como Tarefas:** Compromissos importados convertem-se em instâncias da entidade `Tarefa` (`tb_tarefa`) associadas ao advogado (`Usuario`) com tipo `TipoTarefaEnum.ATENDIMENTO`.
+        *   **Idempotência e Versionamento (`googleEventId`):** Identificador externo indexado que garante operações de *upsert* transparentes e prevenção de duplicidades.
+    *   **Integração com Google Drive (`GoogleDriveStorageService`):** Utiliza o mesmo `GoogleOAuthTokenManager` para geração e injeção do Access Token nas chamadas de persistência e download de arquivos em nuvem.
 
 *   **GED (Gestão Eletrônica de Documentos) & Motor de Emissão:**
-    *   Armazenamento físico de arquivos via `LocalStorageService` (`../uploads/documentos`) vinculado a clientes e processos.
+    *   Armazenamento primário de arquivos em nuvem via Google Drive (`GoogleDriveStorageService`) com suporte alternativo em disco local (`LocalStorageService`) vinculado a clientes e processos.
     *   Upload multipart (`POST /api/documentos/upload`), listagem de anexos por cliente (`GET /api/documentos/cliente/{clienteId}`), listagem por processo (`GET /api/documentos/processo/{processoId}`), download com detecção dinâmica de MediaType (`GET /api/documentos/{id}/download`) e exclusão física/lógica sincronizada (`DELETE /api/documentos/{id}`).
     *   **Motor Oficial de Geração de Documentos (`PdfDocumentGeneratorService`):** Emissão de PDFs com biblioteca iText, embutimento obrigatório de fontes TrueType (`Bookman Old Style` via `BaseFont.EMBEDDED`), cabeçalho e rodapé fixos automatizados via eventos de página:
         *   **Procuração Ad Judicia & Declaração de Hipossuficiência (AJG):** Emissão via `GET /api/clientes/{id}/procuracao` com parametrização dinâmica de ação, vara, comarca e toggle booleano para impressão condicional da página de declaração.
@@ -105,9 +112,9 @@ Todas as entidades de persistência herdam de `AuditableEntity` (ou possuem audi
 | **Processo** | `id`, `numeroCnj`, `assunto`, `faseAtual`, `parteAdversa`, `cpfCnpjParteAdversa`, `papelCliente` (`AUTOR`, `REU`, `TERCEIRO_INTERESSADO`), `valorCausa`, `comarca`, `dataCriacao`, `arquivado` | N:1 Cliente, N:1 Usuario, 1:N Documentos, 1:N Tarefas, 1:N Andamentos (`tb_processo`) | CNJ único. Qualificação da lide. DTO de resposta aninha `ClienteResumoDTO cliente` e `UsuarioResumoDTO advogado` com retrocompatibilidade (`@JsonAlias({"clienteId", "advogadoId"})`). Validação de pendência financeira para arquivamento. Endpoints: `POST /api/processos`, `GET /api/processos` (paginado), `GET /api/processos/{id}`, `PUT /api/processos/{id}`, `PATCH /api/processos/{id}/arquivar`, `PATCH /api/processos/{id}/desarquivar`. |
 | **Andamento** | `id`, `dataHora`, `descricao`, `tipo` (`AUTOMATICO`, `MANUAL`, `IA`) | N:1 Processo (`tb_andamento`) | Histórico cronológico processual. Endpoints: `POST /api/processos/{processoId}/andamentos`, `GET /api/processos/{processoId}/andamentos`. |
 | **Tarefa** | `id`, `descricao`, `dataVencimento`, `concluida`, `tipo` (`DILIGENCIA`, `PRAZO`, `CONTATO`, `ATENDIMENTO`), `googleEventId` | N:1 Usuario, N:1 Processo (Opc) (`tb_tarefa`) | Alimenta To-Do list, Agenda e Dashboard. Armazena `googleEventId` (ID do compromisso externo no Google Calendar) para sincronização One-Way via webhook e garantia de idempotência. Compromissos importados recebem o tipo `ATENDIMENTO`. DTO aninha `UsuarioResumoDTO usuario` (`@JsonAlias({"usuarioId"})`), `ProcessoResumoDTO processo` e `googleEventId`. Endpoints: `POST /api/tarefas`, `PUT /api/tarefas/{id}`, `DELETE /api/tarefas/{id}`, `PATCH /api/tarefas/{id}/concluir`, `GET /api/tarefas/dashboard/{usuarioId}`, `GET /api/tarefas/agenda`, `POST /api/integracoes/google-calendar/webhook`. |
-| **Faturamento**| `id`, `descricao`, `valor`, `tipo` (`HONORARIOS`, `CUSTAS`, `DESPESAS_ESCRITORIO`, `CONSULTA_AVULSA`), `status` (`PENDENTE`, `PAGO`, `PARCIALMENTE_PAGO`, `CANCELADO`), `natureza`, `dataVencimento`, `dataPagamento`, `numeroParcela`, `totalParcelas`, `origemPagamento` (`DIRETO_CLIENTE`, `TERCEIRO_SUCUMBENCIA`), `valorHonorariosRetidos`, `valorRepasseCliente`, `statusRepasse` (`PENDENTE`, `REPASSADO`), `formaRepasse`, `dadosBancariosCliente`, `dataRepasse` | N:1 Processo (Opc), N:1 Cliente (`tb_faturamento`) | Controle financeiro, parcelamento e consultas avulsas. O relacionamento com `Processo` é anulável, vinculando-se unicamente ao `Cliente` nos lançamentos de `CONSULTA_AVULSA`. Processamento atômico de criação, liquidação e status `PAGO` via caso de uso em única transação. DTO aninha `ProcessoResumoDTO processo` (opcional) e `ClienteResumoDTO cliente`. Endpoints: `GET /api/faturamentos/resumo`, `GET /api/faturamentos`, `POST /api/faturamento/parcelamento`, `POST /api/faturamentos/consulta-avulsa`, `PATCH /api/faturamento/{id}/liquidar`, `PATCH /api/faturamento/{id}/liquidar-parcial`, `PATCH /api/faturamento/{id}/repassar`. |
+| **Faturamento**| `id`, `descricao`, `valor`, `tipo` (`HONORARIOS`, `CUSTAS`, `DESPESAS_ESCRITORIO`, `CONSULTA_AVULSA`), `status` (`PENDENTE`, `PAGO`, `PARCIALMENTE_PAGO`, `CANCELADO`), `natureza`, `dataVencimento`, `dataPagamento`, `numeroParcela`, `totalParcelas`, `origemPagamento` (`DIRETO_CLIENTE`, `TERCEIRO_SUCUMBENCIA`), `valorHonorariosRetidos`, `valorRepasseCliente`, `statusRepasse` (`PENDENTE`, `REPASSADO`), `formaRepasse`, `dadosBancariosCliente`, `dataRepasse` | N:1 Processo (Opc), N:1 Cliente (`tb_faturamento`) | Controle financeiro, parcelamento, consultas avulsas e edição cadastral. O relacionamento com `Processo` é anulável, vinculando-se unicamente ao `Cliente` nos lançamentos de `CONSULTA_AVULSA`. Processamento atômico de criação, liquidação e status `PAGO` via caso de uso em única transação. Suporte completo a edição cadastral imperativa via `EditarFaturamentoUseCase` (`EditarFaturamentoDTO`). DTO aninha `ProcessoResumoDTO processo` (opcional) e `ClienteResumoDTO cliente`. Endpoints: `GET /api/faturamentos/resumo`, `GET /api/faturamentos`, `POST /api/faturamentos`, `PUT /api/faturamentos/{id}`, `PATCH /api/faturamentos/{id}`, `POST /api/faturamento/parcelamento`, `POST /api/faturamentos/consulta-avulsa`, `PATCH /api/faturamento/{id}/liquidar`, `PATCH /api/faturamento/{id}/liquidar-parcial`, `PATCH /api/faturamento/{id}/repassar`. |
 | **Audiencia** | `id`, `dataHora`, `local`, `observacoes`, `status`, `resumoPreparatorioIa` | N:1 Processo, N:1 Usuario (`tb_audiencia`) | Validação de data futura no agendamento. DTO aninha `ProcessoResumoDTO processo` e `UsuarioResumoDTO responsavel` (`@JsonAlias({"responsavelId"})`). Endpoints: `POST /api/audiencias`, `GET /api/audiencias/{id}`, `PUT /api/audiencias/{id}`, `DELETE /api/audiencias/{id}`, `PATCH /api/audiencias/{id}/status`, `GET /api/audiencias/agenda`, `POST /{id}/gerar-resumo-ia`. |
-| **Documento** | `id`, `nomeArquivo`, `titulo`, `caminhoStorage`, `indexadoIA` | N:1 Processo (Opc), N:1 Cliente (Opc) (`tb_documento`) | GED e armazenamento seguro. DTO aninha `ClienteResumoDTO cliente` (`@JsonAlias({"clienteId"})`) e `ProcessoResumoDTO processo` (`@JsonAlias({"processoId"})`). Upload (`POST /api/documentos/upload`), listagem por cliente (`GET /api/documentos/cliente/{clienteId}`), listagem por processo (`GET /api/documentos/processo/{processoId}`), download (`GET /api/documentos/{id}/download`) e exclusão física/lógica (`DELETE /api/documentos/{id}`). |
+| **Documento** | `id`, `nomeArquivo`, `titulo`, `caminhoStorage`, `indexadoIA` | N:1 Processo (Opc), N:1 Cliente (Opc) (`tb_documento`) | GED e armazenamento seguro em nuvem ou disco. DTO aninha `ClienteResumoDTO cliente` (`@JsonAlias({"clienteId"})`) e `ProcessoResumoDTO processo` (`@JsonAlias({"processoId"})`). Upload (`POST /api/documentos/upload`), listagem por cliente (`GET /api/documentos/cliente/{clienteId}`), listagem por processo (`GET /api/documentos/processo/{processoId}`), download (`GET /api/documentos/{id}/download`) e exclusão física/lógica (`DELETE /api/documentos/{id}`). |
 
 ---
 
@@ -140,7 +147,7 @@ Todas as entidades de persistência herdam de `AuditableEntity` (ou possuem audi
         ```
     *   As queries com suporte a paginação declaram obrigatoriamente a cláusula `countQuery` correspondente com os mesmos filtros e casts explícitos.
 
-### 3.3. Padronização da Serialização de Paginação (Spring Boot 3.3+)
+### 3.3. Padronização da Serialização de Paginação (Spring Boot 3.3+ `VIA_DTO`)
 *   No Spring Boot 3.3+, a serialização padrão de instâncias de `PageImpl` foi descontinuada para evitar acoplamento interno com classes do framework.
 *   O sistema adota a padronização oficial via Spring Data Web configurada na classe `WebConfig.java`:
     ```java
@@ -158,12 +165,12 @@ Centralizado na classe `GlobalExceptionHandler` (`@RestControllerAdvice`), retor
 *   **`ErroValidacaoDTO`:** Especialização do erro padrão que adiciona o campo `fieldErrors` com uma lista de `CampoErroDTO` (`campo`, `mensagem`).
     *   Retornado para `400 Bad Request` disparado em falhas de validação de argumentos anotados com `@Valid` (`MethodArgumentNotValidException`).
 
-### 3.5. Documentação OpenAPI 3 (Swagger / Springdoc 2.6.0)
-*   Todos os 15 Controllers da API são decorados com:
-    *   `@Tag(name = "...", description = "...")`: Organização lógica e semântica por domínio de negócio.
-    *   `@Operation(summary = "...", description = "...")`: Descrição minuciosa de cada endpoint.
-    *   `@ApiResponses`: Mapeamento explícito dos cenários de sucesso (200, 201, 204) e dos cenários de erro (400, 401, 403, 404, 409, 422) com vínculo ao `@Schema(implementation = ErroPadraoDTO.class)` ou `@Schema(implementation = ErroValidacaoDTO.class)`.
-*   **Anotação `@ParameterObject`:** Aplicada em **todos** os parâmetros do tipo `Pageable` em métodos de controller (`@ParameterObject @PageableDefault(...) Pageable pageable`), garantindo que o Swagger UI gere parâmetros de requisição planos (`page`, `size`, `sort`) sem colapso de objetos aninhados.
+### 3.5. Documentação OpenAPI 3 (Swagger / Springdoc 2.6.0) e Segregação de Contratos
+*   **Arquitetura de Contratos Segregados:** 100% das anotações de documentação OpenAPI (`@Tag`, `@Operation`, `@ApiResponses`, `@ParameterObject`) foram extraídas dos controladores e isoladas em interfaces contratuais no pacote `presentation.openapi` (`AndamentoControllerOpenApi`, `AudienciaControllerOpenApi`, `FaturamentoControllerOpenApi`, etc.).
+*   **Benefícios Arquiteturais:**
+    1. Os controladores Java ficam enxutos, legíveis e focados estritamente na orquestração web e invocação de casos de uso.
+    2. **Isolamento de Validações Bean Validation (`HV000151`):** Anotações de validação como `@Valid` são mantidas exclusivamente nas interfaces contratuais, prevenindo a redefinição de restrições em métodos sobrescritos proibida pela especificação Jakarta Bean Validation.
+    3. Suporte universal a `@ParameterObject` nos parâmetros `Pageable` para geração de parâmetros planos (`page`, `size`, `sort`) no Swagger UI.
 
 ### 3.6. DTOs de Resumo Aninhados e Retrocompatibilidade Total (Ondas 1, 2 e 3)
 *   **Eliminação de IDs Crus nas Respostas:** Para evitar que o front-end precise realizar chamadas adicionais ("round-trips") para buscar nomes ou detalhes básicos de entidades relacionadas em listagens paginadas, todos os DTOs de resposta aninham objetos resumidos de domínio:
@@ -187,6 +194,7 @@ Centralizado na classe `GlobalExceptionHandler` (`@RestControllerAdvice`), retor
 ### 3.7. Precisão e Integridade Financeira
 *   Todos os campos monetários mapeados no banco de dados (`valor`, `valorCausa`, `valorHonorariosRetidos`, `valorRepasseCliente`) utilizam rigorosamente `@Column(precision = 15, scale = 2) private BigDecimal ...` para garantir integridade contábil e evitar imprecisões de arredondamento.
 *   Nas interfaces OpenAPI contratuais, a validação de restrição (`@Valid`) é mantida exclusivamente nas interfaces para evitar conflitos com o Bean Validation (`HV000151`).
+*   **Edição Defensiva de Lançamentos:** A edição de lançamentos financeiros via `EditarFaturamentoUseCase` valida individualmente a presença dos campos alterados sem sobrescrever valores omitidos com nulo, assegura que o valor monetário permaneça estritamente positivo e automatiza a quitação quando o status transiciona para `PAGO`.
 
 ### 3.8. Sincronização One-Way do Google Calendar via Push Notifications (Webhooks)
 *   **Fluxo Unidirecional (Google -> Sistema):** O backend atua estritamente como receptor de eventos do Google Calendar. Nenhuma tarefa, audiência ou compromisso criado internamente no sistema jurídico é transmitido para os servidores do Google.
@@ -207,6 +215,24 @@ Centralizado na classe `GlobalExceptionHandler` (`@RestControllerAdvice`), retor
     2. Instanciação direta da entidade `Faturamento` configurando `natureza = NaturezaFaturamentoEnum.A_RECEBER`, `tipo = TipoFaturamentoEnum.CONSULTA_AVULSA`, valor recebido, `dataVencimento = dataPagamento` (ou data corrente) e `processo = null`.
     3. Atribuição imediata de `status = StatusFaturamentoEnum.PAGO` e data efetiva de quitação.
     4. Persistência atômica sob `@Transactional`, eliminando etapas manuais intermediárias de criação seguida de liquidação e prevenindo inconsistências de caixa.
+
+### 3.10. Unificação da Gestão de Autenticação OAuth 2.0 (Google Cloud)
+*   **Princípio da Responsabilidade Única (SRP):** Toda a lógica de renovação de credenciais OAuth 2.0 do Google foi centralizada no componente corporativo `GoogleOAuthTokenManager` (`infrastructure.security`).
+*   **Desacoplamento de Controladores:** Removeu-se completamente qualquer injeção de credenciais globais (`client_id`, `client_secret`, `refresh_token`), chamadas HTTP de renovação via `RestTemplate` ou manipulação de JSON de tokens de controladores REST.
+*   **Compartilhamento Transversal de Autenticação:** O `GoogleOAuthTokenManager` atende unificadamente:
+    *   **Google Drive:** Injeção do Access Token nas requisições da biblioteca oficial do Google Drive no `GoogleDriveStorageService`.
+    *   **Google Calendar:** Injeção do Access Token nas consultas à API v3 de eventos no `GoogleCalendarWebhookController`.
+*   **Tolerância a Falhas na Inicialização:** As injeções utilizam valores padrão vazios (`@Value("${google.oauth.client.id:}")`, `@Value("${google.oauth.client.secret:}")`, `@Value("${google.oauth.refresh.token:}")`), prevenindo quebras no startup em ambientes de teste ou sem credenciais configuradas.
+
+### 3.11. Blindagem de Encoding UTF-8 e Prevenção de Mojibake
+*   **Padronização no Build Maven:** Configurado explicitamente no `pom.xml`:
+    *   `<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>`
+    *   `<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>`
+    *   `<encoding>UTF-8</encoding>` na configuração do `maven-compiler-plugin`.
+*   **Forçamento de Encoding HTTP no Servlet:** Em `application.properties`:
+    *   `server.servlet.encoding.charset=UTF-8`
+    *   `server.servlet.encoding.force=true`
+*   **Higienização Completa da Documentação OpenAPI:** Todas as 16 interfaces de documentação em `presentation.openapi` foram integralmente limpas de caracteres corrompidos (*mojibake* decorrentes de decodificação Latin-1/Windows-1252), garantindo tags limpas (ex: `"Configurações do Escritório"`, `"Notificações"`, `"Audiências"`, `"Autenticação"`, `"Usuários"`) e descrições técnicas em conformidade gramatical para renderização impecável no Swagger UI.
 
 ---
 
@@ -231,7 +257,7 @@ Centralizado na classe `GlobalExceptionHandler` (`@RestControllerAdvice`), retor
     │       ├── CadastrarProcessoUseCase.java / AtualizarProcessoUseCase.java / ArquivarProcessoUseCase.java / DesarquivarProcessoUseCase.java / ListarProcessosUseCase.java
     │       ├── CadastrarAudienciaUseCase.java / AlterarStatusAudienciaUseCase.java / ListarAgendaGlobalUseCase.java
     │       ├── CriarTarefaUseCase.java / ConcluirTarefaUseCase.java / ListarTarefasPorPeriodoUseCase.java / ListarTarefasDashboardUseCase.java / SincronizarEventoGoogleCalendarUseCase.java
-    │       ├── CadastrarFaturamentoUseCase.java / GerarParcelamentoUseCase.java / LiquidarFaturamentoUseCase.java / LiquidarParcialFaturamentoUseCase.java / RepassarFaturamentoUseCase.java / RegistrarConsultaAvulsaUseCase.java / ObterResumoFinanceiroUseCase.java / ListarFaturamentosUseCase.java
+    │       ├── CadastrarFaturamentoUseCase.java / EditarFaturamentoUseCase.java / GerarParcelamentoUseCase.java / LiquidarFaturamentoUseCase.java / LiquidarParcialFaturamentoUseCase.java / RepassarFaturamentoUseCase.java / RegistrarConsultaAvulsaUseCase.java / ObterResumoFinanceiroUseCase.java / ListarFaturamentosUseCase.java
     │       ├── DashboardAdvogadoUseCase.java
     │       ├── ObterResumoNotificacoesUseCase.java
     │       ├── BuscaGlobalUseCase.java
@@ -244,16 +270,33 @@ Centralizado na classe `GlobalExceptionHandler` (`@RestControllerAdvice`), retor
     │   ├── config/                         # OpenApiConfig, WebConfig (@EnableSpringDataWebSupport VIA_DTO)
     │   ├── document/                       # DocumentGeneratorService, PdfDocumentGeneratorService
     │   ├── persistence/                    # Repositories JPA com SQL Nativo (UsuarioRepository, ClienteRepository, TarefaRepository...)
-    │   ├── security/                       # SecurityConfig, CorsConfig, TokenService, JwtAuthenticationFilter
+    │   ├── security/                       # SecurityConfig, CorsConfig, TokenService, JwtAuthenticationFilter, GoogleOAuthTokenManager
     │   └── storage/                        # StorageService, LocalStorageService, GoogleDriveStorageService
     │
     └── presentation/
-        ├── controllers/                    # REST Controllers documentados com @Tag, @Operation e @ApiResponses (inclui GoogleCalendarWebhookController...)
-        └── dtos/                           # Records de entrada/saída (UsuarioResponseDTO, ErroPadraoDTO, ErroValidacaoDTO, ConsultaAvulsaRequestDTO...)
+        ├── controllers/                    # REST Controllers implementando interfaces *OpenApi (inclui GoogleCalendarWebhookController...)
+        ├── openapi/                        # Interfaces de contrato OpenAPI 3 (@Tag, @Operation, @ApiResponses):
+        │   ├── AndamentoControllerOpenApi.java
+        │   ├── AudienciaControllerOpenApi.java
+        │   ├── AuthControllerOpenApi.java
+        │   ├── BuscaGlobalControllerOpenApi.java
+        │   ├── ClienteControllerOpenApi.java
+        │   ├── DashboardControllerOpenApi.java
+        │   ├── DocumentoControllerOpenApi.java
+        │   ├── EscritorioConfigControllerOpenApi.java
+        │   ├── FaturamentoControllerOpenApi.java
+        │   ├── GoogleCalendarWebhookControllerOpenApi.java
+        │   ├── IntegracaoTribunalControllerOpenApi.java
+        │   ├── NotificacaoControllerOpenApi.java
+        │   ├── ProcessoControllerOpenApi.java
+        │   ├── ResumoAudienciaControllerOpenApi.java
+        │   ├── TarefaControllerOpenApi.java
+        │   └── UsuarioControllerOpenApi.java
+        └── dtos/                           # Records de entrada/saída (UsuarioResponseDTO, ErroPadraoDTO, ErroValidacaoDTO, EditarFaturamentoDTO, GoogleCalendarEventDTO...)
 ```
 
 ---
 
 ## 5. Status de Implementação Backend
 
-*Todas as metas de arquitetura, segurança e funcionalidades das Etapas 1, 2, 3 e 4 do plano de ação da auditoria foram integralmente concluídas, com 100% de adesão ao Paradigma Imperativo Puro, persistência validada no PostgreSQL via SQL nativo, conformidade com OpenAPI 3 e cobertura de testes automatizados com BUILD SUCCESS.*
+*Todas as metas de arquitetura, segurança, unificação OAuth 2.0 (Google Drive + Google Calendar), novas rotas de edição financeira, blindagem de encoding UTF-8 em 100% da especificação OpenAPI, persistência no PostgreSQL via SQL nativo e conformidade com o Paradigma Imperativo Puro foram integralmente concluídas e validadas por testes automatizados com BUILD SUCCESS.*
