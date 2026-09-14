@@ -10,6 +10,7 @@ import com.sistemajuridico.backend.infrastructure.persistence.ClienteRepository;
 import com.sistemajuridico.backend.infrastructure.persistence.FaturamentoRepository;
 import com.sistemajuridico.backend.infrastructure.persistence.ProcessoRepository;
 import com.sistemajuridico.backend.presentation.dtos.ConsultaAvulsaDTO;
+import com.sistemajuridico.backend.presentation.dtos.EditarFaturamentoDTO;
 import com.sistemajuridico.backend.presentation.dtos.FaturamentoDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,6 +47,7 @@ class FaturamentoUseCasesTest {
     private LiquidarParcialFaturamentoUseCase liquidarParcialFaturamentoUseCase;
     private RepassarFaturamentoUseCase repassarFaturamentoUseCase;
     private RegistrarConsultaAvulsaUseCase registrarConsultaAvulsaUseCase;
+    private EditarFaturamentoUseCase editarFaturamentoUseCase;
 
     @BeforeEach
     void setUp() {
@@ -54,6 +56,7 @@ class FaturamentoUseCasesTest {
         this.liquidarParcialFaturamentoUseCase = new LiquidarParcialFaturamentoUseCase(faturamentoRepository);
         this.repassarFaturamentoUseCase = new RepassarFaturamentoUseCase(faturamentoRepository);
         this.registrarConsultaAvulsaUseCase = new RegistrarConsultaAvulsaUseCase(faturamentoRepository, clienteRepository);
+        this.editarFaturamentoUseCase = new EditarFaturamentoUseCase(faturamentoRepository, processoRepository);
     }
 
     @Test
@@ -360,5 +363,76 @@ class FaturamentoUseCasesTest {
                 registrarConsultaAvulsaUseCase.executar(new ConsultaAvulsaDTO(UUID.randomUUID(), new BigDecimal("250.00"), "   "))
         );
         verify(faturamentoRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldEditarFaturamentoComSucesso() {
+        UUID faturamentoId = UUID.randomUUID();
+        Faturamento faturamento = new Faturamento();
+        faturamento.setId(faturamentoId);
+        faturamento.setDescricao("Valor Antigo");
+        faturamento.setValor(new BigDecimal("100.00"));
+        faturamento.setTipo(TipoFaturamentoEnum.CUSTAS);
+        faturamento.setStatus(StatusFaturamentoEnum.PENDENTE);
+        faturamento.setDataVencimento(LocalDate.now().plusDays(5));
+
+        when(faturamentoRepository.findById(faturamentoId)).thenReturn(Optional.of(faturamento));
+        when(faturamentoRepository.save(any(Faturamento.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        EditarFaturamentoDTO dto = new EditarFaturamentoDTO(
+                "Valor Corrigido",
+                new BigDecimal("500.00"),
+                TipoFaturamentoEnum.HONORARIOS,
+                StatusFaturamentoEnum.PAGO,
+                NaturezaFaturamentoEnum.A_RECEBER,
+                LocalDate.now().plusDays(10),
+                LocalDate.now(),
+                null
+        );
+
+        Faturamento resultado = editarFaturamentoUseCase.executar(faturamentoId, dto);
+
+        assertNotNull(resultado);
+        assertEquals("Valor Corrigido", resultado.getDescricao());
+        assertEquals(new BigDecimal("500.00"), resultado.getValor());
+        assertEquals(TipoFaturamentoEnum.HONORARIOS, resultado.getTipo());
+        assertEquals(StatusFaturamentoEnum.PAGO, resultado.getStatus());
+        assertEquals(LocalDate.now().plusDays(10), resultado.getDataVencimento());
+        verify(faturamentoRepository, times(1)).save(faturamento);
+    }
+
+    @Test
+    void shouldThrowWhenFaturamentoNaoEncontradoAoEditar() {
+        UUID faturamentoId = UUID.randomUUID();
+        when(faturamentoRepository.findById(faturamentoId)).thenReturn(Optional.empty());
+
+        EditarFaturamentoDTO dto = new EditarFaturamentoDTO(
+                "Teste",
+                new BigDecimal("100.00"),
+                null, null, null, null, null, null
+        );
+
+        assertThrows(RecursoNaoEncontradoException.class, () ->
+                editarFaturamentoUseCase.executar(faturamentoId, dto)
+        );
+    }
+
+    @Test
+    void shouldThrowWhenValorInvalidoAoEditar() {
+        UUID faturamentoId = UUID.randomUUID();
+        Faturamento faturamento = new Faturamento();
+        faturamento.setId(faturamentoId);
+
+        when(faturamentoRepository.findById(faturamentoId)).thenReturn(Optional.of(faturamento));
+
+        EditarFaturamentoDTO dtoValorZero = new EditarFaturamentoDTO(
+                "Teste",
+                BigDecimal.ZERO,
+                null, null, null, null, null, null
+        );
+
+        assertThrows(RegraNegocioException.class, () ->
+                editarFaturamentoUseCase.executar(faturamentoId, dtoValorZero)
+        );
     }
 }

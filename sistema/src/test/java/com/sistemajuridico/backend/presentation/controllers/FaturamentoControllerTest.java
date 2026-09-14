@@ -7,6 +7,7 @@ import com.sistemajuridico.backend.core.domain.enums.StatusFaturamentoEnum;
 import com.sistemajuridico.backend.core.domain.enums.TipoFaturamentoEnum;
 import com.sistemajuridico.backend.core.usecases.*;
 import com.sistemajuridico.backend.presentation.dtos.ConsultaAvulsaDTO;
+import com.sistemajuridico.backend.presentation.dtos.EditarFaturamentoDTO;
 import com.sistemajuridico.backend.presentation.dtos.FaturamentoDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,8 @@ class FaturamentoControllerTest {
     private ObterResumoFinanceiroUseCase obterResumoFinanceiroUseCase;
     @Mock
     private RegistrarConsultaAvulsaUseCase registrarConsultaAvulsaUseCase;
+    @Mock
+    private EditarFaturamentoUseCase editarFaturamentoUseCase;
 
     private FaturamentoController controller;
 
@@ -49,6 +52,7 @@ class FaturamentoControllerTest {
     void setUp() {
         controller = new FaturamentoController(
                 cadastrarFaturamentoUseCase,
+                editarFaturamentoUseCase,
                 gerarParcelamentoUseCase,
                 liquidarFaturamentoUseCase,
                 liquidarParcialFaturamentoUseCase,
@@ -92,5 +96,41 @@ class FaturamentoControllerTest {
         assertNull(response.getBody().processo());
         assertEquals(clienteId, response.getBody().cliente().id());
         verify(registrarConsultaAvulsaUseCase, times(1)).executar(request);
+    }
+
+    @Test
+    void shouldEditarFaturamentoComSucesso() {
+        UUID id = UUID.randomUUID();
+        EditarFaturamentoDTO request = new EditarFaturamentoDTO(
+                "Honorários Retificados",
+                new BigDecimal("3500.00"),
+                TipoFaturamentoEnum.HONORARIOS,
+                StatusFaturamentoEnum.PENDENTE,
+                NaturezaFaturamentoEnum.A_RECEBER,
+                LocalDate.now().plusDays(15),
+                null,
+                null
+        );
+
+        Faturamento faturamento = new Faturamento();
+        faturamento.setId(id);
+        faturamento.setDescricao("Honorários Retificados");
+        faturamento.setValor(new BigDecimal("3500.00"));
+        faturamento.setTipo(TipoFaturamentoEnum.HONORARIOS);
+        faturamento.setStatus(StatusFaturamentoEnum.PENDENTE);
+        faturamento.setNatureza(NaturezaFaturamentoEnum.A_RECEBER);
+        faturamento.setDataVencimento(LocalDate.now().plusDays(15));
+
+        when(editarFaturamentoUseCase.executar(id, request)).thenReturn(faturamento);
+
+        ResponseEntity<FaturamentoDTO> response = controller.editar(id, request);
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(id, response.getBody().id());
+        assertEquals("Honorários Retificados", response.getBody().descricao());
+        assertEquals(new BigDecimal("3500.00"), response.getBody().valor());
+        verify(editarFaturamentoUseCase, times(1)).executar(id, request);
     }
 }

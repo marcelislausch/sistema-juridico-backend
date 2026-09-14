@@ -9,6 +9,7 @@ import com.sistemajuridico.backend.core.domain.enums.TipoFaturamentoEnum;
 import com.sistemajuridico.backend.core.usecases.*;
 import com.sistemajuridico.backend.presentation.dtos.*;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +29,7 @@ import java.util.UUID;
 public class FaturamentoController implements FaturamentoControllerOpenApi {
 
     private final CadastrarFaturamentoUseCase cadastrarFaturamentoUseCase;
+    private final EditarFaturamentoUseCase editarFaturamentoUseCase;
     private final GerarParcelamentoUseCase gerarParcelamentoUseCase;
     private final LiquidarFaturamentoUseCase liquidarFaturamentoUseCase;
     private final LiquidarParcialFaturamentoUseCase liquidarParcialFaturamentoUseCase;
@@ -35,6 +37,27 @@ public class FaturamentoController implements FaturamentoControllerOpenApi {
     private final ListarFaturamentosUseCase listarFaturamentosUseCase;
     private final ObterResumoFinanceiroUseCase obterResumoFinanceiroUseCase;
     private final RegistrarConsultaAvulsaUseCase registrarConsultaAvulsaUseCase;
+
+    @Autowired
+    public FaturamentoController(CadastrarFaturamentoUseCase cadastrarFaturamentoUseCase,
+                                 EditarFaturamentoUseCase editarFaturamentoUseCase,
+                                 GerarParcelamentoUseCase gerarParcelamentoUseCase,
+                                 LiquidarFaturamentoUseCase liquidarFaturamentoUseCase,
+                                 LiquidarParcialFaturamentoUseCase liquidarParcialFaturamentoUseCase,
+                                 RepassarFaturamentoUseCase repassarFaturamentoUseCase,
+                                 ListarFaturamentosUseCase listarFaturamentosUseCase,
+                                 ObterResumoFinanceiroUseCase obterResumoFinanceiroUseCase,
+                                 RegistrarConsultaAvulsaUseCase registrarConsultaAvulsaUseCase) {
+        this.cadastrarFaturamentoUseCase = cadastrarFaturamentoUseCase;
+        this.editarFaturamentoUseCase = editarFaturamentoUseCase;
+        this.gerarParcelamentoUseCase = gerarParcelamentoUseCase;
+        this.liquidarFaturamentoUseCase = liquidarFaturamentoUseCase;
+        this.liquidarParcialFaturamentoUseCase = liquidarParcialFaturamentoUseCase;
+        this.repassarFaturamentoUseCase = repassarFaturamentoUseCase;
+        this.listarFaturamentosUseCase = listarFaturamentosUseCase;
+        this.obterResumoFinanceiroUseCase = obterResumoFinanceiroUseCase;
+        this.registrarConsultaAvulsaUseCase = registrarConsultaAvulsaUseCase;
+    }
 
     public FaturamentoController(CadastrarFaturamentoUseCase cadastrarFaturamentoUseCase,
                                  GerarParcelamentoUseCase gerarParcelamentoUseCase,
@@ -44,14 +67,17 @@ public class FaturamentoController implements FaturamentoControllerOpenApi {
                                  ListarFaturamentosUseCase listarFaturamentosUseCase,
                                  ObterResumoFinanceiroUseCase obterResumoFinanceiroUseCase,
                                  RegistrarConsultaAvulsaUseCase registrarConsultaAvulsaUseCase) {
-        this.cadastrarFaturamentoUseCase = cadastrarFaturamentoUseCase;
-        this.gerarParcelamentoUseCase = gerarParcelamentoUseCase;
-        this.liquidarFaturamentoUseCase = liquidarFaturamentoUseCase;
-        this.liquidarParcialFaturamentoUseCase = liquidarParcialFaturamentoUseCase;
-        this.repassarFaturamentoUseCase = repassarFaturamentoUseCase;
-        this.listarFaturamentosUseCase = listarFaturamentosUseCase;
-        this.obterResumoFinanceiroUseCase = obterResumoFinanceiroUseCase;
-        this.registrarConsultaAvulsaUseCase = registrarConsultaAvulsaUseCase;
+        this(
+                cadastrarFaturamentoUseCase,
+                null,
+                gerarParcelamentoUseCase,
+                liquidarFaturamentoUseCase,
+                liquidarParcialFaturamentoUseCase,
+                repassarFaturamentoUseCase,
+                listarFaturamentosUseCase,
+                obterResumoFinanceiroUseCase,
+                registrarConsultaAvulsaUseCase
+        );
     }
 
     @Override
@@ -67,6 +93,13 @@ public class FaturamentoController implements FaturamentoControllerOpenApi {
         Faturamento faturamento = dto.toEntity();
         Faturamento faturamentoSalvo = cadastrarFaturamentoUseCase.executar(faturamento, dto.processoId());
         return ResponseEntity.status(HttpStatus.CREATED).body(FaturamentoDTO.fromEntity(faturamentoSalvo));
+    }
+
+    @Override
+    @RequestMapping(value = "/{id}", method = {RequestMethod.PUT, RequestMethod.PATCH})
+    public ResponseEntity<FaturamentoDTO> editar(@PathVariable UUID id, @RequestBody EditarFaturamentoDTO dto) {
+        Faturamento faturamentoAtualizado = this.editarFaturamentoUseCase.executar(id, dto);
+        return ResponseEntity.ok(FaturamentoDTO.fromEntity(faturamentoAtualizado));
     }
 
     @Override

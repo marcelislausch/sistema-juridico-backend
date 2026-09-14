@@ -4,6 +4,7 @@ import com.sistemajuridico.backend.core.domain.enums.NaturezaFaturamentoEnum;
 import com.sistemajuridico.backend.core.domain.enums.StatusFaturamentoEnum;
 import com.sistemajuridico.backend.core.domain.enums.TipoFaturamentoEnum;
 import com.sistemajuridico.backend.presentation.dtos.ConsultaAvulsaDTO;
+import com.sistemajuridico.backend.presentation.dtos.EditarFaturamentoDTO;
 import com.sistemajuridico.backend.presentation.dtos.ErroPadraoDTO;
 import com.sistemajuridico.backend.presentation.dtos.ErroValidacaoDTO;
 import com.sistemajuridico.backend.presentation.dtos.FaturamentoDTO;
@@ -56,6 +57,22 @@ public interface FaturamentoControllerOpenApi {
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<FaturamentoDTO> criar(@Valid FaturamentoDTO dto);
+
+    @Operation(summary = "Editar lançamento financeiro", description = "Atualiza os dados de um lançamento financeiro existente (valor, descrição, data de vencimento, categoria, status)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lançamento financeiro atualizado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados de requisição inválidos",
+                    content = @Content(schema = @Schema(implementation = ErroValidacaoDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
+                    content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
+            @ApiResponse(responseCode = "403", description = "Acesso proibido",
+                    content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Lançamento financeiro não encontrado",
+                    content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
+            @ApiResponse(responseCode = "422", description = "Regra de negócio violada",
+                    content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
+    })
+    ResponseEntity<FaturamentoDTO> editar(UUID id, @Valid EditarFaturamentoDTO dto);
 
     @Operation(summary = "Gerar parcelamento (Assistente de Parcelamento)", description = "Cria múltiplos lançamentos financeiros simultaneamente a partir da simulação de parcelas")
     @ApiResponses(value = {
