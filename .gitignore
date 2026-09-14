@@ -1,14 +1,72 @@
-# Documentos sensíveis e infraestrutura
+# ====================================================================
+# Arquivos de Configuração e Infraestrutura Sensíveis
+# ====================================================================
 INFRAESTRUTURA.md
 docs/INFRAESTRUTURA.md
 *INFRAESTRUTURA.md*
-*~
-*.bak
+*.env
+**/.env
 
-# Maven build
+# Propriedades de aplicação e credenciais locais
+**/src/main/resources/application.properties
+sistema/src/main/resources/application.properties
+**/google-credentials.json
+src/main/resources/google-credentials.json
+sistema/src/main/resources/google-credentials.json
+
+# ====================================================================
+# Compilação e Build (Maven / Gradle)
+# ====================================================================
 target/
-sistema/target/
+**/target/
+!**/src/main/**/target/
+!**/src/test/**/target/
+build/
+**/build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+.mvn/wrapper/maven-wrapper.jar
+**/.mvn/wrapper/maven-wrapper.jar
+HELP.md
+**/HELP.md
 
-# Logs e temporários
+# ====================================================================
+# IDEs e Ferramentas de Desenvolvimento
+# ====================================================================
+### STS / Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+*.iws
+*.ipr
+*.iml
+.idea/workspace.xml
+.idea/shelf/
+.idea/dataSources/
+.idea/dataSources.local.xml
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+# ====================================================================
+# Temporários, Backups e Logs
+# ====================================================================
 *.log
 *.tmp
+*~
+*.bak
+.DS_Store
+Thumbs.db
