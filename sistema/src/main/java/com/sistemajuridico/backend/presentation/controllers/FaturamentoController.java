@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping({"/api/faturamentos", "/api/faturamento"})
+@RequestMapping("/api/faturamento")
 public class FaturamentoController implements FaturamentoControllerOpenApi {
 
     private final CadastrarFaturamentoUseCase cadastrarFaturamentoUseCase;

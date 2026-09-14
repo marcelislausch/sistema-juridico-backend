@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -132,5 +133,12 @@ class FaturamentoControllerTest {
         assertEquals("Honorários Retificados", response.getBody().descricao());
         assertEquals(new BigDecimal("3500.00"), response.getBody().valor());
         verify(editarFaturamentoUseCase, times(1)).executar(id, request);
+    }
+
+    @Test
+    void shouldHaveExclusivelySingularRequestMapping() {
+        RequestMapping requestMapping = FaturamentoController.class.getAnnotation(RequestMapping.class);
+        assertNotNull(requestMapping);
+        assertArrayEquals(new String[]{"/api/faturamento"}, requestMapping.value());
     }
 }
