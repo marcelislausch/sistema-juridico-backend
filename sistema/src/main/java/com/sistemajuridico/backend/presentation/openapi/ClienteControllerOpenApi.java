@@ -16,91 +16,91 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.UUID;
 
-@Tag(name = "Clientes", description = "GestÃ£o cadastral de clientes, procuraÃ§Ãµes e contratos de honorÃ¡rios")
+@Tag(name = "Clientes", description = "Gestão cadastral de clientes, procurações e contratos de honorários")
 public interface ClienteControllerOpenApi {
 
-    @Operation(summary = "Cadastrar novo cliente", description = "Cadastra um novo cliente (pessoa fÃ­sica ou jurÃ­dica) no escritÃ³rio")
+    @Operation(summary = "Cadastrar novo cliente", description = "Cadastra um novo cliente (pessoa física ou jurídica) no escritório")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Cliente cadastrado com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Dados de requisiÃ§Ã£o invÃ¡lidos ou campos nÃ£o atendem as validaÃ§Ãµes",
+            @ApiResponse(responseCode = "400", description = "Dados de requisição inválidos ou campos não atendem as validações",
                     content = @Content(schema = @Schema(implementation = ErroValidacaoDTO.class))),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "409", description = "Conflito de integridade (ex: CPF/CNPJ jÃ¡ cadastrado)",
+            @ApiResponse(responseCode = "409", description = "Conflito de integridade (ex: CPF/CNPJ já cadastrado)",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "422", description = "Regra de negÃ³cio violada",
+            @ApiResponse(responseCode = "422", description = "Regra de negócio violada",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<ClienteDTO> criar(ClienteDTO dto);
 
-    @Operation(summary = "Atualizar dados do cliente", description = "Atualiza as informaÃ§Ãµes cadastrais de um cliente existente")
+    @Operation(summary = "Atualizar dados do cliente", description = "Atualiza as informações cadastrais de um cliente existente")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Cliente atualizado com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Dados de requisiÃ§Ã£o invÃ¡lidos ou campos nÃ£o atendem as validaÃ§Ãµes",
+            @ApiResponse(responseCode = "400", description = "Dados de requisição inválidos ou campos não atendem as validações",
                     content = @Content(schema = @Schema(implementation = ErroValidacaoDTO.class))),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "404", description = "Cliente nÃ£o encontrado",
+            @ApiResponse(responseCode = "404", description = "Cliente não encontrado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "409", description = "Conflito de integridade",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "422", description = "Regra de negÃ³cio violada",
+            @ApiResponse(responseCode = "422", description = "Regra de negócio violada",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<ClienteDTO> atualizar(UUID id, ClienteDTO dto);
 
-    @Operation(summary = "Listar clientes com paginaÃ§Ã£o e filtros", description = "Retorna lista paginada de clientes filtrando por termo de busca ou tipo")
+    @Operation(summary = "Listar clientes com paginação e filtros", description = "Retorna lista paginada de clientes filtrando por termo de busca ou tipo")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "PÃ¡gina de clientes obtida com sucesso"),
-            @ApiResponse(responseCode = "400", description = "ParÃ¢metros de consulta invÃ¡lidos",
+            @ApiResponse(responseCode = "200", description = "Página de clientes obtida com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Parâmetros de consulta inválidos",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<Page<ClienteDTO>> listar(String q, String termoBusca, String termoParam, TipoClienteEnum tipo, Pageable pageable);
 
-    @Operation(summary = "Buscar cliente por ID", description = "Recupera os detalhes de um cliente atravÃ©s do seu identificador Ãºnico")
+    @Operation(summary = "Buscar cliente por ID", description = "Recupera os detalhes de um cliente através do seu identificador único")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Cliente encontrado com sucesso"),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "404", description = "Cliente nÃ£o encontrado",
+            @ApiResponse(responseCode = "404", description = "Cliente não encontrado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<ClienteDTO> buscarPorId(UUID id);
 
-    @Operation(summary = "Gerar procuraÃ§Ã£o em PDF", description = "Gera o arquivo PDF da procuraÃ§Ã£o ad judicia com os dados do cliente")
+    @Operation(summary = "Gerar procuração em PDF", description = "Gera o arquivo PDF da procuração ad judicia com os dados do cliente")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "ProcuraÃ§Ã£o gerada com sucesso"),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "200", description = "Procuração gerada com sucesso"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "404", description = "Cliente nÃ£o encontrado",
+            @ApiResponse(responseCode = "404", description = "Cliente não encontrado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "422", description = "Regra de negÃ³cio violada ao gerar documento",
+            @ApiResponse(responseCode = "422", description = "Regra de negócio violada ao gerar documento",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<byte[]> gerarProcuracao(UUID id, String acao, String varaCivel, String comarca, boolean imprimirDeclaracao);
 
-    @Operation(summary = "Gerar contrato de honorÃ¡rios em PDF", description = "Gera a minuta do contrato de prestaÃ§Ã£o de serviÃ§os advocatÃ­cios em PDF")
+    @Operation(summary = "Gerar contrato de honorários em PDF", description = "Gera a minuta do contrato de prestação de serviços advocatícios em PDF")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Contrato de honorÃ¡rios gerado com sucesso"),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "200", description = "Contrato de honorários gerado com sucesso"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "404", description = "Cliente nÃ£o encontrado",
+            @ApiResponse(responseCode = "404", description = "Cliente não encontrado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "422", description = "Regra de negÃ³cio violada ao gerar documento",
+            @ApiResponse(responseCode = "422", description = "Regra de negócio violada ao gerar documento",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<byte[]> gerarContratoHonorarios(UUID id, String acao, String vara, String comarca, String valorServicos, String objetivoDemanda);

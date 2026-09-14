@@ -13,31 +13,31 @@ import org.springframework.http.ResponseEntity;
 import java.security.Principal;
 import java.util.UUID;
 
-@Tag(name = "Dashboard", description = "MÃ©tricas consolidadas, contadores e visÃ£o geral do advogado")
+@Tag(name = "Dashboard", description = "Métricas consolidadas, contadores e visão geral do advogado")
 public interface DashboardControllerOpenApi {
 
-    @Operation(summary = "Obter dados do dashboard autenticado", description = "Recupera os contadores, audiÃªncias e tarefas do usuÃ¡rio atualmente autenticado")
+    @Operation(summary = "Obter dados do dashboard autenticado", description = "Recupera os contadores, audiências e tarefas do usuário atualmente autenticado")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "MÃ©tricas do dashboard recuperadas com sucesso"),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "200", description = "Métricas do dashboard recuperadas com sucesso"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "404", description = "UsuÃ¡rio da sessÃ£o nÃ£o encontrado",
+            @ApiResponse(responseCode = "404", description = "Usuário da sessão não encontrado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "422", description = "Regra de negÃ³cio violada",
+            @ApiResponse(responseCode = "422", description = "Regra de negócio violada",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<ResumoDashboardDTO> obterDashboardAutenticado(Principal principal);
 
-    @Operation(summary = "Obter dashboard por ID de usuÃ¡rio", description = "Recupera as mÃ©tricas e indicadores de um usuÃ¡rio/advogado especÃ­fico")
+    @Operation(summary = "Obter dashboard por ID de usuário", description = "Recupera as métricas e indicadores de um usuário/advogado específico")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Dashboard recuperado com sucesso"),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "404", description = "UsuÃ¡rio nÃ£o encontrado",
+            @ApiResponse(responseCode = "404", description = "Usuário não encontrado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<ResumoDashboardDTO> obterDashboard(UUID usuarioId);

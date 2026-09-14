@@ -13,15 +13,15 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
-@Tag(name = "Busca Global", description = "Pesquisa unificada em mÃºltiplos domÃ­nios (Processos, Clientes, Equipe)")
+@Tag(name = "Busca Global", description = "Pesquisa unificada em múltiplos domínios (Processos, Clientes, Equipe)")
 public interface BuscaGlobalControllerOpenApi {
 
-    @Operation(summary = "Realiza pesquisa global textual consolidando resultados de processos, clientes e usuÃ¡rios")
+    @Operation(summary = "Realiza pesquisa global textual consolidando resultados de processos, clientes e usuários")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Resultados da pesquisa consolidada retornados com sucesso"),
-            @ApiResponse(responseCode = "400", description = "ParÃ¢metro de busca textual obrigatÃ³rio nÃ£o informado",
+            @ApiResponse(responseCode = "400", description = "Parâmetro de busca textual obrigatório não informado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))

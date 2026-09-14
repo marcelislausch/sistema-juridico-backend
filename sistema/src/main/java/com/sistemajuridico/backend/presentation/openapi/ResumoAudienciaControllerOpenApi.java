@@ -12,17 +12,17 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 
-@Tag(name = "InteligÃªncia Artificial", description = "ServiÃ§os de inteligÃªncia artificial e geraÃ§Ã£o de resumos para peÃ§as e audiÃªncias")
+@Tag(name = "Inteligência Artificial", description = "Serviços de inteligência artificial e geração de resumos para peças e audiências")
 public interface ResumoAudienciaControllerOpenApi {
 
-    @Operation(summary = "Gerar resumo preparatÃ³rio de audiÃªncia via IA a partir de documentos dos autos",
-            description = "Baixa os PDFs anexados no Google Drive, extrai o texto processual e gera um dossiÃª tÃ¡tico estruturado com fatos incontroversos, fatos controvertidos, riscos processuais, roteiro de perguntas e parÃ¢metros de acordo")
+    @Operation(summary = "Gerar resumo preparatório de audiência via IA a partir de documentos dos autos",
+            description = "Baixa os PDFs anexados no Google Drive, extrai o texto processual e gera um dossiê tático estruturado com fatos incontroversos, fatos controvertidos, riscos processuais, roteiro de perguntas e parâmetros de acordo")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Resumo estruturado gerado com sucesso pela inteligÃªncia artificial",
+            @ApiResponse(responseCode = "200", description = "Resumo estruturado gerado com sucesso pela inteligência artificial",
                     content = @Content(schema = @Schema(implementation = ResumoAudienciaEstruturadoDTO.class))),
-            @ApiResponse(responseCode = "400", description = "Lista de identificadores de documentos invÃ¡lida ou vazia",
+            @ApiResponse(responseCode = "400", description = "Lista de identificadores de documentos inválida ou vazia",
                     content = @Content(schema = @Schema(implementation = ErroValidacaoDTO.class))),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),

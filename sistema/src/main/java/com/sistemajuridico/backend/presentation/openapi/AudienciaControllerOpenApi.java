@@ -17,33 +17,33 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-@Tag(name = "AudiÃªncias", description = "GestÃ£o e agendamento de audiÃªncias judiciais e resumos preparatÃ³rios via IA")
+@Tag(name = "Audiências", description = "Gestão e agendamento de audiências judiciais e resumos preparatórios via IA")
 public interface AudienciaControllerOpenApi {
 
-    @Operation(summary = "Agendar nova audiÃªncia", description = "Cadastra uma nova audiÃªncia associada a um processo judicial")
+    @Operation(summary = "Agendar nova audiência", description = "Cadastra uma nova audiência associada a um processo judicial")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "AudiÃªncia agendada com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Dados de requisiÃ§Ã£o invÃ¡lidos ou campos obrigatÃ³rios ausentes",
+            @ApiResponse(responseCode = "201", description = "Audiência agendada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados de requisição inválidos ou campos obrigatórios ausentes",
                     content = @Content(schema = @Schema(implementation = ErroValidacaoDTO.class))),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "404", description = "Processo ou responsÃ¡vel informado nÃ£o encontrado",
+            @ApiResponse(responseCode = "404", description = "Processo ou responsável informado não encontrado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "409", description = "Conflito de integridade",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "422", description = "Regra de negÃ³cio violada",
+            @ApiResponse(responseCode = "422", description = "Regra de negócio violada",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<AudienciaDTO> criar(AudienciaDTO dto);
 
-    @Operation(summary = "Listar agenda de audiÃªncias", description = "Retorna audiÃªncias agendadas com filtros por perÃ­odo, status, processo e responsÃ¡vel")
+    @Operation(summary = "Listar agenda de audiências", description = "Retorna audiências agendadas com filtros por período, status, processo e responsável")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Agenda de audiÃªncias retornada com sucesso"),
-            @ApiResponse(responseCode = "400", description = "ParÃ¢metros de consulta invÃ¡lidos",
+            @ApiResponse(responseCode = "200", description = "Agenda de audiências retornada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Parâmetros de consulta inválidos",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
@@ -56,89 +56,89 @@ public interface AudienciaControllerOpenApi {
             UUID responsavelId
     );
 
-    @Operation(summary = "Listar audiÃªncias por processo", description = "Recupera todas as audiÃªncias vinculadas a um processo especÃ­fico")
+    @Operation(summary = "Listar audiências por processo", description = "Recupera todas as audiências vinculadas a um processo específico")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Lista de audiÃªncias retornada com sucesso"),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "200", description = "Lista de audiências retornada com sucesso"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "404", description = "Processo nÃ£o encontrado",
+            @ApiResponse(responseCode = "404", description = "Processo não encontrado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<List<AudienciaDTO>> listarPorProcesso(UUID processoId);
 
-    @Operation(summary = "Buscar audiÃªncia por ID", description = "Recupera os detalhes de uma audiÃªncia pelo identificador Ãºnico")
+    @Operation(summary = "Buscar audiência por ID", description = "Recupera os detalhes de uma audiência pelo identificador único")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "AudiÃªncia retornada com sucesso"),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "200", description = "Audiência retornada com sucesso"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "404", description = "AudiÃªncia nÃ£o encontrada",
+            @ApiResponse(responseCode = "404", description = "Audiência não encontrada",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<AudienciaDTO> buscarPorId(UUID id);
 
-    @Operation(summary = "Atualizar audiÃªncia", description = "Atualiza os dados de uma audiÃªncia agendada")
+    @Operation(summary = "Atualizar audiência", description = "Atualiza os dados de uma audiência agendada")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "AudiÃªncia atualizada com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Dados de requisiÃ§Ã£o invÃ¡lidos",
+            @ApiResponse(responseCode = "200", description = "Audiência atualizada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados de requisição inválidos",
                     content = @Content(schema = @Schema(implementation = ErroValidacaoDTO.class))),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "404", description = "AudiÃªncia nÃ£o encontrada",
+            @ApiResponse(responseCode = "404", description = "Audiência não encontrada",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "409", description = "Conflito de integridade",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "422", description = "Regra de negÃ³cio violada",
+            @ApiResponse(responseCode = "422", description = "Regra de negócio violada",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<AudienciaDTO> atualizar(UUID id, AudienciaDTO dto);
 
-    @Operation(summary = "Excluir audiÃªncia", description = "Remove um agendamento de audiÃªncia")
+    @Operation(summary = "Excluir audiência", description = "Remove um agendamento de audiência")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "AudiÃªncia excluÃ­da com sucesso"),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "204", description = "Audiência excluída com sucesso"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "404", description = "AudiÃªncia nÃ£o encontrada",
+            @ApiResponse(responseCode = "404", description = "Audiência não encontrada",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "409", description = "Conflito de integridade referencial",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<Void> excluir(UUID id);
 
-    @Operation(summary = "Alterar status da audiÃªncia", description = "Modifica o status de uma audiÃªncia (ex: REALIZADA, CANCELADA)")
+    @Operation(summary = "Alterar status da audiência", description = "Modifica o status de uma audiência (ex: REALIZADA, CANCELADA)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Status alterado com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Status informado invÃ¡lido",
+            @ApiResponse(responseCode = "400", description = "Status informado inválido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "404", description = "AudiÃªncia nÃ£o encontrada",
+            @ApiResponse(responseCode = "404", description = "Audiência não encontrada",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "422", description = "Regra de negÃ³cio violada",
+            @ApiResponse(responseCode = "422", description = "Regra de negócio violada",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<AudienciaDTO> alterarStatus(UUID id, StatusAudienciaEnum status);
 
-    @Operation(summary = "Gerar e anexar resumo preparatÃ³rio por IA a partir de documentos dos autos",
-            description = "Baixa os PDFs anexados no Google Drive, extrai o texto processual via PDFBox e anexa o resumo preparatÃ³rio estruturado Ã  audiÃªncia")
+    @Operation(summary = "Gerar e anexar resumo preparatório por IA a partir de documentos dos autos",
+            description = "Baixa os PDFs anexados no Google Drive, extrai o texto processual via PDFBox e anexa o resumo preparatório estruturado à audiência")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Resumo gerado e anexado com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Lista de identificadores de documentos invÃ¡lida ou vazia",
+            @ApiResponse(responseCode = "400", description = "Lista de identificadores de documentos inválida ou vazia",
                     content = @Content(schema = @Schema(implementation = ErroValidacaoDTO.class))),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "404", description = "AudiÃªncia nÃ£o encontrada",
+            @ApiResponse(responseCode = "404", description = "Audiência não encontrada",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "422", description = "Falha ao processar documentos ou gerar resumo na IA",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))

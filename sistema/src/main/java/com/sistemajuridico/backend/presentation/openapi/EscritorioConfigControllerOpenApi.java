@@ -11,31 +11,31 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 
-@Tag(name = "ConfiguraÃ§Ãµes do EscritÃ³rio", description = "Gerenciamento dos dados cadastrais e institucionais do escritÃ³rio")
+@Tag(name = "Configurações do Escritório", description = "Gerenciamento dos dados cadastrais e institucionais do escritório")
 public interface EscritorioConfigControllerOpenApi {
 
-    @Operation(summary = "Obter dados do escritÃ³rio", description = "Recupera as informaÃ§Ãµes institucionais, endereÃ§o e contatos do escritÃ³rio")
+    @Operation(summary = "Obter dados do escritório", description = "Recupera as informações institucionais, endereço e contatos do escritório")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Dados do escritÃ³rio recuperados com sucesso"),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "200", description = "Dados do escritório recuperados com sucesso"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "404", description = "ConfiguraÃ§Ã£o do escritÃ³rio nÃ£o encontrada",
+            @ApiResponse(responseCode = "404", description = "Configuração do escritório não encontrada",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<EscritorioDTO> obterConfiguracao();
 
-    @Operation(summary = "Atualizar dados do escritÃ³rio", description = "Atualiza os dados institucionais, endereÃ§o e contatos do escritÃ³rio")
+    @Operation(summary = "Atualizar dados do escritório", description = "Atualiza os dados institucionais, endereço e contatos do escritório")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "ConfiguraÃ§Ãµes atualizadas com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Dados cadastrais invÃ¡lidos",
+            @ApiResponse(responseCode = "200", description = "Configurações atualizadas com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados cadastrais inválidos",
                     content = @Content(schema = @Schema(implementation = ErroValidacaoDTO.class))),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "422", description = "Regra de negÃ³cio violada",
+            @ApiResponse(responseCode = "422", description = "Regra de negócio violada",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<EscritorioDTO> atualizarConfiguracao(EscritorioDTO dto);

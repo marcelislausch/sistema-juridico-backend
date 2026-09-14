@@ -134,24 +134,24 @@ public interface FaturamentoControllerOpenApi {
     })
     ResponseEntity<FaturamentoDTO> repassar(UUID id, @Valid RepassarFaturamentoDTO dto);
 
-    @Operation(summary = "Listar faturamentos por processo", description = "Retorna todos os lanÃ§amentos financeiros atrelados a um processo judicial")
+    @Operation(summary = "Listar faturamentos por processo", description = "Retorna todos os lançamentos financeiros atrelados a um processo judicial")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lista de faturamentos retornada com sucesso"),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "404", description = "Processo nÃ£o encontrado",
+            @ApiResponse(responseCode = "404", description = "Processo não encontrado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<List<FaturamentoDTO>> listarPorProcesso(UUID processoId);
 
-    @Operation(summary = "Listar faturamentos com filtros e paginaÃ§Ã£o", description = "Consulta paginada de lanÃ§amentos financeiros com mÃºltiplos filtros")
+    @Operation(summary = "Listar faturamentos com filtros e paginação", description = "Consulta paginada de lançamentos financeiros com múltiplos filtros")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "PÃ¡gina de faturamentos retornada com sucesso"),
-            @ApiResponse(responseCode = "400", description = "ParÃ¢metros de consulta invÃ¡lidos",
+            @ApiResponse(responseCode = "200", description = "Página de faturamentos retornada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Parâmetros de consulta inválidos",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))

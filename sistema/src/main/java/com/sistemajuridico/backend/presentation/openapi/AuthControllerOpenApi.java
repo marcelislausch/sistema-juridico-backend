@@ -11,65 +11,65 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.Map;
 
-@Tag(name = "AutenticaÃ§Ã£o", description = "Login, perfil autenticado, recuperaÃ§Ã£o e alteraÃ§Ã£o de senha")
+@Tag(name = "Autenticação", description = "Login, perfil autenticado, recuperação e alteração de senha")
 public interface AuthControllerOpenApi {
 
-    @Operation(summary = "Efetuar login", description = "Autentica as credenciais do usuÃ¡rio e retorna o token JWT de acesso")
+    @Operation(summary = "Efetuar login", description = "Autentica as credenciais do usuário e retorna o token JWT de acesso")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "AutenticaÃ§Ã£o bem-sucedida"),
-            @ApiResponse(responseCode = "400", description = "Dados da requisiÃ§Ã£o invÃ¡lidos",
+            @ApiResponse(responseCode = "200", description = "Autenticação bem-sucedida"),
+            @ApiResponse(responseCode = "400", description = "Dados da requisição inválidos",
                     content = @Content(schema = @Schema(implementation = ErroValidacaoDTO.class))),
-            @ApiResponse(responseCode = "401", description = "Credenciais invÃ¡lidas (e-mail ou senha incorretos)",
+            @ApiResponse(responseCode = "401", description = "Credenciais inválidas (e-mail ou senha incorretos)",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<TokenDTO> login(LoginDTO dto);
 
-    @Operation(summary = "Obter dados do usuÃ¡rio logado", description = "Recupera os dados de perfil do usuÃ¡rio autenticado no token JWT")
+    @Operation(summary = "Obter dados do usuário logado", description = "Recupera os dados de perfil do usuário autenticado no token JWT")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Perfil do usuÃ¡rio logado retornado com sucesso"),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado ou token invÃ¡lido",
+            @ApiResponse(responseCode = "200", description = "Perfil do usuário logado retornado com sucesso"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado ou token inválido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "404", description = "UsuÃ¡rio associado ao token nÃ£o encontrado",
+            @ApiResponse(responseCode = "404", description = "Usuário associado ao token não encontrado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<UsuarioResponseDTO> me();
 
-    @Operation(summary = "Solicitar recuperaÃ§Ã£o de senha", description = "Inicia o fluxo de recuperaÃ§Ã£o de senha gerando token temporÃ¡rio enviado por e-mail")
+    @Operation(summary = "Solicitar recuperação de senha", description = "Inicia o fluxo de recuperação de senha gerando token temporário enviado por e-mail")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "202", description = "SolicitaÃ§Ã£o aceita; se a conta existir, as instruÃ§Ãµes foram enviadas"),
-            @ApiResponse(responseCode = "400", description = "E-mail invÃ¡lido ou malformatado",
+            @ApiResponse(responseCode = "202", description = "Solicitação aceita; se a conta existir, as instruções foram enviadas"),
+            @ApiResponse(responseCode = "400", description = "E-mail inválido ou malformatado",
                     content = @Content(schema = @Schema(implementation = ErroValidacaoDTO.class))),
-            @ApiResponse(responseCode = "422", description = "Regra de negÃ³cio violada",
+            @ApiResponse(responseCode = "422", description = "Regra de negócio violada",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<Map<String, String>> recuperarSenha(RecuperarSenhaRequest request);
 
-    @Operation(summary = "Redefinir senha com token", description = "Conclui a redefiniÃ§Ã£o de senha utilizando o token recebido por e-mail")
+    @Operation(summary = "Redefinir senha com token", description = "Conclui a redefinição de senha utilizando o token recebido por e-mail")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Senha redefinida com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Dados da requisiÃ§Ã£o invÃ¡lidos",
+            @ApiResponse(responseCode = "400", description = "Dados da requisição inválidos",
                     content = @Content(schema = @Schema(implementation = ErroValidacaoDTO.class))),
-            @ApiResponse(responseCode = "404", description = "Token nÃ£o encontrado ou expirado",
+            @ApiResponse(responseCode = "404", description = "Token não encontrado ou expirado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "422", description = "PolÃ­tica de senha nÃ£o atendida ou token invÃ¡lido",
+            @ApiResponse(responseCode = "422", description = "Política de senha não atendida ou token inválido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<Map<String, String>> redefinirSenha(RedefinirSenhaRequest request);
 
-    @Operation(summary = "Alterar senha autenticada", description = "Altera a senha do usuÃ¡rio logado mediante confirmaÃ§Ã£o da senha atual")
+    @Operation(summary = "Alterar senha autenticada", description = "Altera a senha do usuário logado mediante confirmação da senha atual")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Senha alterada com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Senha atual invÃ¡lida ou dados incorretos",
+            @ApiResponse(responseCode = "400", description = "Senha atual inválida ou dados incorretos",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "404", description = "UsuÃ¡rio nÃ£o encontrado",
+            @ApiResponse(responseCode = "404", description = "Usuário não encontrado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "422", description = "PolÃ­tica de senha nÃ£o atendida",
+            @ApiResponse(responseCode = "422", description = "Política de senha não atendida",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<Void> alterarSenha(AlterarSenhaRequest request);

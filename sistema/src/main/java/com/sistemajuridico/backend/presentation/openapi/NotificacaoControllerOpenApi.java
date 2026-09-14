@@ -13,21 +13,21 @@ import org.springframework.http.ResponseEntity;
 import java.security.Principal;
 import java.time.LocalDate;
 
-@Tag(name = "NotificaÃ§Ãµes", description = "Central de notificaÃ§Ãµes operacionais unificadas do escritÃ³rio")
+@Tag(name = "Notificações", description = "Central de notificações operacionais unificadas do escritório")
 public interface NotificacaoControllerOpenApi {
 
-    @Operation(summary = "ObtÃ©m as notificaÃ§Ãµes operacionais ativas para a data informada a partir do token de sessÃ£o")
+    @Operation(summary = "Obtém as notificações operacionais ativas para a data informada a partir do token de sessão")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Resumo de notificaÃ§Ãµes retornado com sucesso"),
-            @ApiResponse(responseCode = "400", description = "ParÃ¢metros de consulta invÃ¡lidos",
+            @ApiResponse(responseCode = "200", description = "Resumo de notificações retornado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Parâmetros de consulta inválidos",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "401", description = "NÃ£o autenticado",
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "404", description = "UsuÃ¡rio da sessÃ£o nÃ£o encontrado",
+            @ApiResponse(responseCode = "404", description = "Usuário da sessão não encontrado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
-            @ApiResponse(responseCode = "422", description = "Regra de negÃ³cio violada",
+            @ApiResponse(responseCode = "422", description = "Regra de negócio violada",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<NotificacaoResumoDTO> obterResumo(LocalDate data, Principal principal);
