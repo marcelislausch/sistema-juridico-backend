@@ -1,4 +1,4 @@
-# Documento de Especificação de Software (PRD) - v3.2
+# Documento de Especificação de Software (PRD) - v3.3
 
 **Projeto:** Sistema de Gestão Jurídica Inteligente  
 **Perfil:** Backend Corporativo / Portfólio  
@@ -72,9 +72,13 @@ O sistema é estruturado em módulos lógicos de alta coesão e baixo acoplament
     *   Pesquisa textual cross-domain que varre simultaneamente as tabelas de Processos (número CNJ e assunto), Clientes (nome, CPF/CNPJ e e-mail) e Usuários (nome e e-mail).
     *   Filtragem opcional pelo enum `TipoItemBuscaEnum` (`PROCESSO`, `CLIENTE`, `USUARIO`) e limitação de resultados configurável.
 
-*   **Monitoramento e Integração com Tribunais:**
-    *   Endpoint `GET /api/integracoes/tribunais/status`.
-    *   Exposição do status operacional das conexões e sincronizações eletrônicas com tribunais (TJRS, TRF4, TRT4, STJ) utilizando o enum `StatusTribunalEnum` (`OPERACIONAL`, `DEGRADADO`, `INDISPONIVEL`).
+*   **Monitoramento, Automação & Integração com Tribunais (Novo Módulo):**
+    *   **Telemetria de Conectividade:** Endpoint `GET /api/integracoes/tribunais/status` com monitoramento em tempo real da integridade dos serviços judiciais (TJRS, TRF4, TRT4, STJ, DataJud) via enum `StatusTribunalEnum` (`OPERACIONAL`, `DEGRADADO`, `INDISPONIVEL`).
+    *   **Gestão de Certificados Digitais A1:** Upload seguro (`POST /api/certificados/upload`), consulta de vigência (`GET /api/certificados`) e exclusão (`DELETE /api/certificados/{id}`). Criptografia de chave privada e senha mestre com AES-256-GCM e mTLS para handshake HTTPS com tribunais.
+    *   **Espelhamento Automático de Andamentos:** Varredura periódica e assíncrona dos autos processuais, cadastrando movimentações em `tb_andamento` com `tipo = AUTOMATICO` e hash antifalhas/antiduplicidade.
+    *   **Sincronização Sob Demanda:** Rota REST `POST /api/integracoes/tribunais/processos/{id}/sincronizar` para atualização forçada de um processo pelo advogado.
+    *   **Malha de Resiliência:** Padrões Circuit Breaker, Retry com Exponential Backoff e Jitter, e isolamento de falhas (Fail-Safe) para absorver quedas e instabilidades dos portais dos tribunais.
+    *   **Auditoria de Varredura:** Rota paginada `GET /api/integracoes/tribunais/logs` com registro analítico de execuções, latência e eventuais falhas.
 
 *   **Integração Google Cloud & Autenticação OAuth 2.0 Unificada:**
     *   **Gerenciador Central de Tokens (`GoogleOAuthTokenManager`):** Componente corporativo dedicado na camada de infraestrutura que centraliza as credenciais OAuth 2.0 (`client_id`, `client_secret`, `refresh_token`), executando a renovação automatizada de Access Token via chamada POST à API de autenticação do Google (`https://oauth2.googleapis.com/token`) sem replicação de código.
@@ -109,12 +113,15 @@ Todas as entidades de persistência herdam de `AuditableEntity` (ou possuem audi
 | **PasswordResetToken** | `id`, `token`, `usuarioId`, `dataExpiracao`, `usado` | Tabela `tb_password_reset_token` | Token UUID único, expiração de 15 minutos, controle de uso único. Endpoints: `POST /api/auth/recuperar-senha`, `POST /api/auth/redefinir-senha`. |
 | **Escritorio** | `id`, `razaoSocial`, `nomeFantasia`, `cnpj`, `registroOabSociedade`, `telefone`, `whatsapp`, `email`, `cep`, `logradouro`, `numero`, `complemento`, `bairro`, `cidade`, `uf` | Tabela `escritorios` (Singleton/Tenant) | CNPJ único (14 dígitos). Higienização de caracteres não numéricos. Endereço padrão: Rua Tiradentes, 676, Ijuí/RS. OAB: OAB/RS 121.837. Endpoints: `GET /api/configuracoes/escritorio`, `PUT /api/configuracoes/escritorio`. |
 | **Cliente** | `id`, `nome`, `tipo` (`FISICA`, `JURIDICA`), `cpfCnpj`, `dataNascimento`, `estadoCivil`, `profissao`, `sexo`, `telefone`, `email`, endereço completo | 1:N Processos, 1:N Documentos (`tb_cliente`) | Validação estrita de CPF/CNPJ. Endpoints: `POST /api/clientes`, `GET /api/clientes` (paginado com `?q=` e `?tipo=`), `GET /api/clientes/{id}`, `PUT /api/clientes/{id}`, emissão de Procuração (`GET /api/clientes/{id}/procuracao`) e Contrato de Honorários (`GET /api/clientes/{id}/contrato-honorarios`). |
-| **Processo** | `id`, `numeroCnj`, `assunto`, `faseAtual`, `parteAdversa`, `cpfCnpjParteAdversa`, `papelCliente` (`AUTOR`, `REU`, `TERCEIRO_INTERESSADO`), `valorCausa`, `comarca`, `dataCriacao`, `arquivado` | N:1 Cliente, N:1 Usuario, 1:N Documentos, 1:N Tarefas, 1:N Andamentos (`tb_processo`) | CNJ único. Qualificação da lide. DTO de resposta aninha `ClienteResumoDTO cliente` e `UsuarioResumoDTO advogado` com retrocompatibilidade (`@JsonAlias({"clienteId", "advogadoId"})`). Validação de pendência financeira para arquivamento. Endpoints: `POST /api/processos`, `GET /api/processos` (paginado), `GET /api/processos/{id}`, `PUT /api/processos/{id}`, `PATCH /api/processos/{id}/arquivar`, `PATCH /api/processos/{id}/desarquivar`. |
-| **Andamento** | `id`, `dataHora`, `descricao`, `tipo` (`AUTOMATICO`, `MANUAL`, `IA`) | N:1 Processo (`tb_andamento`) | Histórico cronológico processual. Endpoints: `POST /api/processos/{processoId}/andamentos`, `GET /api/processos/{processoId}/andamentos`. |
+| **Processo** | `id`, `numeroCnj`, `assunto`, `faseAtual`, `parteAdversa`, `cpfCnpjParteAdversa`, `papelCliente` (`AUTOR`, `REU`, `TERCEIRO_INTERESSADO`), `valorCausa`, `comarca`, `dataCriacao`, `arquivado`, `dataUltimaSincronizacao`, `statusSincronizacao` (`SINCRONIZADO`, `PENDENTE`, `FALHA`, `EM_ANDAMENTO`), `tribunalOrigem` (`TJRS`, `TRF4`, `TRT4`, `STJ`, `STF`), `grauJurisdicao` | N:1 Cliente, N:1 Usuario, 1:N Documentos, 1:N Tarefas, 1:N Andamentos (`tb_processo`) | CNJ único. Qualificação da lide e rastreador de sincronização com tribunais. DTO aninha `ClienteResumoDTO cliente` e `UsuarioResumoDTO advogado` (`@JsonAlias`). Endpoints: `POST /api/processos`, `GET /api/processos` (paginado), `GET /api/processos/{id}`, `PUT /api/processos/{id}`, `PATCH /api/processos/{id}/arquivar`, `PATCH /api/processos/{id}/desarquivar`, `POST /api/integracoes/tribunais/processos/{id}/sincronizar`. |
+| **Andamento** | `id`, `dataHora`, `descricao`, `tipo` (`AUTOMATICO`, `MANUAL`, `IA`), `codigoMovimentacaoTribunal`, `hashMovimentacao`, `linkPecaTribunal` | N:1 Processo, N:1 Documento (Opc) (`tb_andamento`) | Histórico cronológico processual. Prevenção de duplicidade por `hashMovimentacao` único em varreduras de tribunais. Endpoints: `POST /api/processos/{processoId}/andamentos`, `GET /api/processos/{processoId}/andamentos`. |
 | **Tarefa** | `id`, `descricao`, `dataVencimento`, `concluida`, `tipo` (`DILIGENCIA`, `PRAZO`, `CONTATO`, `ATENDIMENTO`), `googleEventId` | N:1 Usuario, N:1 Processo (Opc) (`tb_tarefa`) | Alimenta To-Do list, Agenda e Dashboard. Armazena `googleEventId` (ID do compromisso externo no Google Calendar) para sincronização One-Way via webhook e garantia de idempotência. Compromissos importados recebem o tipo `ATENDIMENTO`. DTO aninha `UsuarioResumoDTO usuario` (`@JsonAlias({"usuarioId"})`), `ProcessoResumoDTO processo` e `googleEventId`. Endpoints: `POST /api/tarefas`, `PUT /api/tarefas/{id}`, `DELETE /api/tarefas/{id}`, `PATCH /api/tarefas/{id}/concluir`, `GET /api/tarefas/dashboard/{usuarioId}`, `GET /api/tarefas/agenda`, `POST /api/integracoes/google-calendar/webhook`. |
 | **Faturamento**| `id`, `descricao`, `valor`, `tipo` (`HONORARIOS`, `CUSTAS`, `DESPESAS_ESCRITORIO`, `CONSULTA_AVULSA`), `status` (`PENDENTE`, `PAGO`, `PARCIALMENTE_PAGO`, `CANCELADO`), `natureza`, `dataVencimento`, `dataPagamento`, `numeroParcela`, `totalParcelas`, `origemPagamento` (`DIRETO_CLIENTE`, `TERCEIRO_SUCUMBENCIA`), `valorHonorariosRetidos`, `valorRepasseCliente`, `statusRepasse` (`PENDENTE`, `REPASSADO`), `formaRepasse`, `dadosBancariosCliente`, `dataRepasse` | N:1 Processo (Opc), N:1 Cliente (`tb_faturamento`) | Controle financeiro, parcelamento, consultas avulsas e edição cadastral. O relacionamento com `Processo` é anulável, vinculando-se unicamente ao `Cliente` nos lançamentos de `CONSULTA_AVULSA`. Processamento atômico de criação, liquidação e status `PAGO` via caso de uso em única transação. Suporte completo a edição cadastral imperativa via `EditarFaturamentoUseCase` (`EditarFaturamentoDTO`). DTO aninha `ProcessoResumoDTO processo` (opcional) e `ClienteResumoDTO cliente`. Endpoints: `GET /api/faturamentos/resumo`, `GET /api/faturamentos`, `POST /api/faturamentos`, `PUT /api/faturamentos/{id}`, `PATCH /api/faturamentos/{id}`, `POST /api/faturamento/parcelamento`, `POST /api/faturamentos/consulta-avulsa`, `PATCH /api/faturamento/{id}/liquidar`, `PATCH /api/faturamento/{id}/liquidar-parcial`, `PATCH /api/faturamento/{id}/repassar`. |
 | **Audiencia** | `id`, `dataHora`, `local`, `observacoes`, `status`, `resumoPreparatorioIa` | N:1 Processo, N:1 Usuario (`tb_audiencia`) | Validação de data futura no agendamento. DTO aninha `ProcessoResumoDTO processo` e `UsuarioResumoDTO responsavel` (`@JsonAlias({"responsavelId"})`). Endpoints: `POST /api/audiencias`, `GET /api/audiencias/{id}`, `PUT /api/audiencias/{id}`, `DELETE /api/audiencias/{id}`, `PATCH /api/audiencias/{id}/status`, `GET /api/audiencias/agenda`, `POST /{id}/gerar-resumo-ia`. |
 | **Documento** | `id`, `nomeArquivo`, `titulo`, `caminhoStorage`, `indexadoIA` | N:1 Processo (Opc), N:1 Cliente (Opc) (`tb_documento`) | GED e armazenamento seguro em nuvem ou disco. DTO aninha `ClienteResumoDTO cliente` (`@JsonAlias({"clienteId"})`) e `ProcessoResumoDTO processo` (`@JsonAlias({"processoId"})`). Upload (`POST /api/documentos/upload`), listagem por cliente (`GET /api/documentos/cliente/{clienteId}`), listagem por processo (`GET /api/documentos/processo/{processoId}`), download (`GET /api/documentos/{id}/download`) e exclusão física/lógica (`DELETE /api/documentos/{id}`). |
+| **CertificadoDigital**| `id`, `nomeArquivo`, `alias`, `dataEmissao`, `dataExpiracao`, `emissor`, `titular`, `cpf`, `ativo`, `caminhoArquivoCriptografado`, `senhaCriptografada` | N:1 Usuario (`tb_certificado_digital`) | Gestão de certificados ICP-Brasil A1 (PKCS#12) para autenticação mTLS em tribunais. Criptografia AES-256-GCM para arquivo e senha em repouso. Endpoints: `POST /api/certificados/upload`, `GET /api/certificados`, `DELETE /api/certificados/{id}`. |
+| **SincronizacaoTribunalLog** | `id`, `processoId`, `tribunal`, `tipoIntegracao`, `dataHoraInicio`, `dataHoraFim`, `duracaoMs`, `status` (`SUCESSO`, `FALHA_CONEXAO`, `FALHA_AUTENTICACAO`, `RATE_LIMITED`, `CIRCUITO_ABERTO`), `quantidadeMovimentacoesNovas`, `mensagemErro`, `detalhesTecnicos` | N:1 Processo (Opc) (`tb_sincronizacao_tribunal_log`) | Auditoria detalhada de varreduras automáticas e manuais nos portais de tribunais. Endpoint: `GET /api/integracoes/tribunais/logs`. |
+| **TribunalConfig** | `id`, `sigla`, `nome`, `tipoIntegracao` (`DATAJUD_API`, `EPROC_SCRAPER`, `PJE_MNI`), `urlBase`, `ativo`, `intervaloMinimoRequisicoesMs`, `statusCircuito` (`FECHADO`, `ABERTO`, `SEMI_ABERTO`) | Singleton / Parametrização (`tb_tribunal_config`) | Configuração dinâmica de conexões com tribunais e parâmetros de rate limiting e Circuit Breaker. Endpoint: `GET /api/integracoes/tribunais/status`. |
 
 ---
 
@@ -234,6 +241,63 @@ Centralizado na classe `GlobalExceptionHandler` (`@RestControllerAdvice`), retor
     *   `server.servlet.encoding.force=true`
 *   **Higienização Completa da Documentação OpenAPI:** Todas as 16 interfaces de documentação em `presentation.openapi` foram integralmente limpas de caracteres corrompidos (*mojibake* decorrentes de decodificação Latin-1/Windows-1252), garantindo tags limpas (ex: `"Configurações do Escritório"`, `"Notificações"`, `"Audiências"`, `"Autenticação"`, `"Usuários"`) e descrições técnicas em conformidade gramatical para renderização impecável no Swagger UI.
 
+### 3.12. Gestão Segura de Certificados Digitais A1 (PKCS#12) e Autenticação mTLS
+*   **Criptografia em Repouso:** Os certificados A1 (`.pfx` ou `.p12`) e suas senhas de desbloqueio NUNCA são armazenados em texto claro. O sistema emprega criptografia autenticada simétrica **AES-256-GCM** com chave de envelope configurada por variável de ambiente segura (`APP_CERTIFICATE_SECRET_KEY`).
+*   **Carregamento e Validação X.509 em Memória:**
+    *   Parsing defensivo via `KeyStore.getInstance("PKCS12")`.
+    *   Inspeção estrita da cadeia de certificação e extração de atributos públicos (CN do titular, CN da Autoridade Certificadora emissora, período de vigência e CPF do advogado extraído da extensão ICP-Brasil OID `2.16.76.1.3.1`) sem expor nem persistir chaves privadas em logs.
+*   **Fábrica Dinâmica de Conexão Segura (`CustomSSLContextFactory`):**
+    *   Decripta o material criptográfico em memória sob demanda, inicializando instâncias de `SSLContext` configuradas com `KeyManagerFactory` e `TrustManagerFactory` para viabilizar handshake seguro mTLS em clientes HTTP direcionados aos portais judiciais.
+*   **Monitoramento Ativo de Vigência:**
+    *   Geração preventiva de avisos e notificações operacionais na régua de 30 dias e 7 dias antes do vencimento do certificado digital do advogado.
+
+### 3.13. Arquitetura de Resiliência, Circuit Breaker e Tratamento de Falhas com Tribunais
+*   **Padrão Circuit Breaker Aplicado a Serviços Judiciais:**
+    *   Cada tribunal ou serviço integrado (TJRS, TRF4, TRT4, DataJud) possui controle de estado isolado: `FECHADO` (tráfego normal), `ABERTO` (serviço indisponível, requisições abortadas preventivamente) e `SEMI_ABERTO` (testes de contingência).
+    *   Limiar de tolerância: acúmulo de 5 falhas consecutivas de conexão ou HTTP 5xx aciona a abertura do disjuntor por um período de cooldown (15 minutos), prevenindo exaustão de threads por timeouts e refletindo status `INDISPONIVEL` na telemetria da aplicação.
+*   **Retry com Exponential Backoff e Jitter:**
+    *   Retentativas com espaçamento progressivo exponencial ($1\text{s}, 2\text{s}, 4\text{s}$) e fator de dispersão (*jitter*) aplicadas exclusivamente a falhas de transporte transitórias (`SocketTimeoutException`, `ConnectException`, HTTP 502/503/504).
+    *   Falhas de autenticação (`401 Unauthorized`), certificados revogados/vencidos ou números CNJ inválidos abortam no primeiro ciclo sem retentativa inútil.
+*   **Isolamento Fail-Safe e Dead Letter Queue:**
+    *   A varredura de cada processo em lote é executada dentro de bloco de isolamento transacional e captura de exceção. A falha de sincronização de um processo ou tribunal jamais interrompe a rotina dos demais processos da fila.
+    *   Processos que falharem após o ciclo de retry são marcados com `status_sincronizacao = 'FALHA'`, registrados na tabela `tb_sincronizacao_tribunal_log` e redirecionados para reprocessamento na próxima janela de menor carga.
+
+### 3.14. Agendamento Assíncrono com Spring Scheduler e Execução Imperativa Pura
+*   **Pool Dedicado de Execução (`ThreadPoolTaskScheduler`):**
+    *   Habilitação do agendamento via anotação `@EnableScheduling` em classe de configuração dedicada (`SchedulerConfig.java`) com pool dimensionado (`poolSize = 5`).
+    *   Assegura total isolamento entre tarefas agendadas em segundo plano e as threads de atendimento de requisições HTTP da API Web.
+*   **Estratégia de Varredura e Rate Limiting:**
+    *   Cron Noturno (`0 0 2 * * *` — 02h00 da madrugada) percorre imperativamente todos os processos ativos cadastrados.
+    *   Aplicação de atraso obrigatório (*throttling*) entre 1.500 ms e 3.000 ms entre requisições direcionadas ao mesmo tribunal para prevenir bloqueios de IP ou desafios de proteção anti-bot.
+*   **Triagem Imperativa de Tarefas a partir de Intimações (Comunica PJe / DJEN):**
+    *   Para cada lote de intimações inéditas persistidas no banco (`tb_intimacao_pje`), o sistema executa triagem imperativa (`if/else if` com `equalsIgnoreCase`):
+        1. *Descarte de Informativos:* `"Lista de distribuição"` e `"Ata de sessão"` executam `continue` e não poluem a agenda do advogado com tarefas.
+        2. *Alerta de Pauta (Diligência):* `"Pauta de julgamento"` gera tarefa de `tipo = DILIGENCIA` com descrição `"[DILIGÊNCIA - PAUTA] Proc. {numeroProcesso} ({siglaTribunal})"`.
+        3. *Gestão de Prazos (Intimação/Citação):* Gera tarefa de `tipo = PRAZO` com prefixos categorizados pelo `tipoDocumento`:
+           - `"Sentença"`: `"[URGENTE - SENTENÇA]"`
+           - `"DESPACHO/DECISÃO"`: `"[URGENTE - DECISÃO]"`
+           - `"Ato ordinatório"`: `"[PRAZO - ATO ORDINATÓRIO]"`
+           - `"Notificação"`: `"[PRAZO - NOTIFICAÇÃO]"`
+           - Demais tipos: `"[PRAZO - ATENÇÃO]"`
+        4. Vinculação automática com a entidade `Processo` (quando localizado na base) e com o advogado titular da OAB consultada, com persistência em lote via `tarefaRepository.saveAll(...)`.
+*   **Aderência ao Paradigma Imperativo:**
+    *   Toda a orquestração de filas, repasses de lote e tratamento de contingência é codificada exclusivamente com laços `for` clássicos, verificações defensivas `opt.isEmpty()` e instanciação explícita de coleções mutáveis, mantendo 100% de aderência ao princípio arquitetural de Zero Lambdas e Zero Streams.
+
+### 3.15. Sanitização Robusta e Enriquecimento de Andamentos Processuais do PJe
+*   **Desafio dos Dados dos Portais Judiciais:** As publicações extraídas das rotas públicas do DJEN/Comunica PJe contêm fragmentos indesejados de marcação (blocos CSS inline `<style>`, tags `<br>`, entidades HTML como `&ccedil;`, `&ordm;` e `&nbsp;`, tabulações e abismos verticais de quebras repetitivas).
+*   **Pipeline de Higienização com `HtmlUtils` e Regex Defensivo:**
+    1. *Preservação Estrutural de Quebras:* Conversão insensível a maiúsculas/minúsculas de tags `<br>` (com ou sem barra) para quebra de linha simples (`\n`) e tags de fechamento `</p>` para quebra de parágrafo dupla (`\n\n`).
+    2. *Expurgo Integral de CSS:* Remoção completa de blocos `<style.*?>.*?</style>` via regex dotall/case-insensitive (`(?is)`), prevenindo que declarações CSS inline poluam a visualização textual.
+    3. *Eliminação de Tags Remanescentes:* Remoção de qualquer marcação HTML residual (`<[^>]*>`).
+    4. *Decodificação Semântica com `HtmlUtils`:* Tradução de entidades HTML via `HtmlUtils.htmlUnescape(...)` e substituição explícita do caractere não-separável `\u00A0` (`&nbsp;`) por espaço em branco ASCII padrão.
+    5. *Normalização Espacial:* Redução de múltiplos espaços horizontais, tabs (`\t`) e caracteres de controle para um único espaço (`[ \t\x0B\f\r]+` -> `" "`).
+    6. *Normalização de Abismos Verticais:* Limitação de quebras de linha consecutivas a no máximo duas (`\n{3,}` -> `\n\n`), finalizando com `.trim()`.
+*   **Enriquecimento Estruturado da Descrição do Andamento:**
+    *   O andamento gerado automaticamente no processo concatena metadados institucionais com o teor integral limpo:
+        `"[PJe - " + siglaTribunal + "] " + tipoComunicacao + " (" + tipoDocumento + ")\nÓrgão: " + nomeOrgao + "\n\n" + textoSanitizado`
+*   **Persistência Ilimitada no Banco (`columnDefinition = "TEXT"`):**
+    *   O atributo `descricao` na entidade `Andamento` (`tb_andamento`) possui a anotação `@Column(columnDefinition = "TEXT")`, garantindo suporte nativo a decisões e despachos extensos no PostgreSQL sem risco de truncamento ou estouro do limite de `character varying(255)`.
+
 ---
 
 ## 4. Estrutura de Pacotes
@@ -242,10 +306,10 @@ Centralizado na classe `GlobalExceptionHandler` (`@RestControllerAdvice`), retor
 └── src/main/java/com/sistemajuridico/backend/
     ├── core/
     │   ├── domain/
-    │   │   ├── enums/                      # PerfilAcessoEnum, TipoTarefaEnum (ATENDIMENTO), StatusAudienciaEnum, StatusTribunalEnum, PapelClienteEnum, OrigemPagamentoEnum, StatusRepasseEnum, TipoFaturamentoEnum (CONSULTA_AVULSA)...
-    │   │   ├── exceptions/                 # RegraNegocioException, RecursoNaoEncontradoException...
+    │   │   ├── enums/                      # PerfilAcessoEnum, TipoTarefaEnum (ATENDIMENTO, PRAZO, DILIGENCIA), StatusAudienciaEnum, StatusTribunalEnum, PapelClienteEnum, OrigemPagamentoEnum, StatusRepasseEnum, TipoFaturamentoEnum (CONSULTA_AVULSA), StatusSincronizacaoEnum, TribunalOrigemEnum, StatusCircuitoEnum...
+    │   │   ├── exceptions/                 # RegraNegocioException, RecursoNaoEncontradoException, IntegracaoTribunalException, CertificadoDigitalException...
     │   │   ├── validators/                 # DocumentoValidator (CPF/CNPJ)
-    │   │   └── *.java                      # Usuario, Escritorio, PasswordResetToken, Cliente, Processo, Faturamento...
+    │   │   └── *.java                      # Usuario, Escritorio, PasswordResetToken, Cliente, Processo, Andamento, IntimacaoPje, Tarefa, Faturamento, CertificadoDigital, SincronizacaoTribunalLog, TribunalConfig...
     │   ├── service/                        # Serviços de domínio com lógica imperativa clássica
     │   │   ├── AuthService.java            # Recuperação SMTP, redefinição e alteração de senha
     │   │   └── EscritorioService.java       # Gestão cadastral e higienização dos dados do escritório
@@ -258,6 +322,8 @@ Centralizado na classe `GlobalExceptionHandler` (`@RestControllerAdvice`), retor
     │       ├── CadastrarAudienciaUseCase.java / AlterarStatusAudienciaUseCase.java / ListarAgendaGlobalUseCase.java
     │       ├── CriarTarefaUseCase.java / ConcluirTarefaUseCase.java / ListarTarefasPorPeriodoUseCase.java / ListarTarefasDashboardUseCase.java / SincronizarEventoGoogleCalendarUseCase.java
     │       ├── CadastrarFaturamentoUseCase.java / EditarFaturamentoUseCase.java / GerarParcelamentoUseCase.java / LiquidarFaturamentoUseCase.java / LiquidarParcialFaturamentoUseCase.java / RepassarFaturamentoUseCase.java / RegistrarConsultaAvulsaUseCase.java / ObterResumoFinanceiroUseCase.java / ListarFaturamentosUseCase.java
+    │       ├── CadastrarCertificadoUseCase.java / ListarCertificadosUseCase.java / ExcluirCertificadoUseCase.java
+    │       ├── SincronizarIntimacoesPjeUseCase.java / SincronizarProcessoTribunalUseCase.java / ObterLogsSincronizacaoUseCase.java / ObterStatusTribunaisUseCase.java
     │       ├── DashboardAdvogadoUseCase.java
     │       ├── ObterResumoNotificacoesUseCase.java
     │       ├── BuscaGlobalUseCase.java
@@ -266,20 +332,27 @@ Centralizado na classe `GlobalExceptionHandler` (`@RestControllerAdvice`), retor
     │       └── ListarDocumentosPorClienteUseCase.java / ListarDocumentosPorProcessoUseCase.java / BuscarDocumentoPorIdUseCase.java
     │
     ├── infrastructure/
-    │   ├── ai/                             # ResumoAIService, SpringAIResumoService
-    │   ├── config/                         # OpenApiConfig, WebConfig (@EnableSpringDataWebSupport VIA_DTO)
-    │   ├── document/                       # DocumentGeneratorService, PdfDocumentGeneratorService
-    │   ├── persistence/                    # Repositories JPA com SQL Nativo (UsuarioRepository, ClienteRepository, TarefaRepository...)
+    │   ├── ai/                             # ResumoAIService, SpringAIResumoService, TextoChunkingService
+    │   ├── config/                         # OpenApiConfig, WebConfig (@EnableSpringDataWebSupport VIA_DTO), SchedulerConfig (@EnableScheduling)
+    │   ├── document/                       # DocumentGeneratorService, PdfDocumentGeneratorService, PdfExtractionService
+    │   ├── integrations/
+    │   │   ├── pje/                        # ComunicaPjeClient (DJEN / PJe Público por OAB com Throttling Defensivo)
+    │   │   └── tribunais/                  # DataJudClient, EprocAdapter, PjeMniClient
+    │   ├── persistence/                    # Repositories JPA com SQL Nativo (UsuarioRepository, ClienteRepository, ProcessoRepository, AndamentoRepository, IntimacaoPjeRepository, TarefaRepository...)
+    │   ├── resilience/                     # TribunalCircuitBreakerRegistry, RetryExponentialBackoffService
+    │   ├── scheduling/                     # VarreduraPjeScheduler (cron diário 02h00), VarreduraTribunaisScheduler, FilaSincronizacaoService
     │   ├── security/                       # SecurityConfig, CorsConfig, TokenService, JwtAuthenticationFilter, GoogleOAuthTokenManager
+    │   │   └── certificados/               # CertificadoCryptoService (AES-256-GCM), CustomSSLContextFactory (mTLS)
     │   └── storage/                        # StorageService, LocalStorageService, GoogleDriveStorageService
     │
     └── presentation/
-        ├── controllers/                    # REST Controllers implementando interfaces *OpenApi (inclui GoogleCalendarWebhookController...)
+        ├── controllers/                    # REST Controllers implementando interfaces *OpenApi (inclui GoogleCalendarWebhookController, IntegracaoTribunalController, CertificadoDigitalController...)
         ├── openapi/                        # Interfaces de contrato OpenAPI 3 (@Tag, @Operation, @ApiResponses):
         │   ├── AndamentoControllerOpenApi.java
         │   ├── AudienciaControllerOpenApi.java
         │   ├── AuthControllerOpenApi.java
         │   ├── BuscaGlobalControllerOpenApi.java
+        │   ├── CertificadoDigitalControllerOpenApi.java
         │   ├── ClienteControllerOpenApi.java
         │   ├── DashboardControllerOpenApi.java
         │   ├── DocumentoControllerOpenApi.java
@@ -292,11 +365,13 @@ Centralizado na classe `GlobalExceptionHandler` (`@RestControllerAdvice`), retor
         │   ├── ResumoAudienciaControllerOpenApi.java
         │   ├── TarefaControllerOpenApi.java
         │   └── UsuarioControllerOpenApi.java
-        └── dtos/                           # Records de entrada/saída (UsuarioResponseDTO, ErroPadraoDTO, ErroValidacaoDTO, EditarFaturamentoDTO, GoogleCalendarEventDTO...)
+        └── dtos/                           # Records de entrada/saída (UsuarioResponseDTO, ErroPadraoDTO, EditarFaturamentoDTO, CertificadoDigitalDTO, SincronizacaoLogDTO, TribunalStatusDTO...)
 ```
 
 ---
 
 ## 5. Status de Implementação Backend
 
-*Todas as metas de arquitetura, segurança, unificação OAuth 2.0 (Google Drive + Google Calendar), novas rotas de edição financeira, blindagem de encoding UTF-8 em 100% da especificação OpenAPI, persistência no PostgreSQL via SQL nativo e conformidade com o Paradigma Imperativo Puro foram integralmente concluídas e validadas por testes automatizados com BUILD SUCCESS.*
+*Todas as metas anteriores de arquitetura, segurança, unificação OAuth 2.0 (Google Drive + Google Calendar), lançamento e liquidação de consultas avulsas, novas rotas de edição financeira, IA de resumos de audiência em dois estágios com chunking, blindagem de encoding UTF-8 em 100% da especificação OpenAPI, persistência no PostgreSQL via SQL nativo e conformidade com o Paradigma Imperativo Puro foram integralmente concluídas e validadas em produção.*
+
+*O projeto inicia formalmente a Fase 3.3 focada no módulo corporativo de **Integração com Sistemas Judiciais dos Tribunais**, contemplando a gestão criptográfica de certificados A1, varredura periódica e sob demanda de processos, conectores DataJud e eproc/PJe, e malha de alta resiliência (Circuit Breaker e Exponential Backoff).*

@@ -21,6 +21,7 @@ public class Andamento extends AuditableEntity {
     @Column(name = "data_hora")
     private LocalDateTime dataHora = LocalDateTime.now();
 
+    @Column(columnDefinition = "TEXT")
     private String descricao;
 
     @Enumerated(EnumType.STRING)

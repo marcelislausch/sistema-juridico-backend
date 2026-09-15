@@ -20,6 +20,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
     List<Usuario> findByPerfilAndAtivoTrue(PerfilAcessoEnum perfil);
     List<Usuario> findByPerfilInAndAtivoTrue(List<PerfilAcessoEnum> perfis);
 
+    @Query(value = "SELECT u.* FROM tb_usuario u WHERE u.ativo = true AND u.oab IS NOT NULL AND TRIM(u.oab) != ''", nativeQuery = true)
+    List<Usuario> buscarAdvogadosComOabAtiva();
+
     @Query(value = "SELECT u.* FROM tb_usuario u WHERE " +
                    "(CAST(:ativo AS boolean) IS NULL OR u.ativo = CAST(:ativo AS boolean)) AND " +
                    "(CAST(:termo AS text) IS NULL OR (" +

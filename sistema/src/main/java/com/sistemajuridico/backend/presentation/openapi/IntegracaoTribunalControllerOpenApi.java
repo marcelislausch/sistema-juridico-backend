@@ -22,4 +22,18 @@ public interface IntegracaoTribunalControllerOpenApi {
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
     ResponseEntity<TribunalStatusDTO> verificarStatusTribunais();
+
+    @Operation(summary = "Sincroniza sob demanda as intimações do Comunica PJe para o advogado autenticado")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Sincronização executada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Advogado sem OAB válida cadastrada",
+                    content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Não autenticado",
+                    content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
+            @ApiResponse(responseCode = "403", description = "Acesso proibido",
+                    content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Usuário não localizado",
+                    content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
+    })
+    ResponseEntity<com.sistemajuridico.backend.presentation.dtos.pje.SincronizacaoPjeResultadoDTO> sincronizarIntimacoesPje(java.security.Principal principal);
 }

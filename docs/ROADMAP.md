@@ -13,7 +13,7 @@ Este documento consolida o **cérebro externo** e o estado de maturidade arquite
 - **Banco de Dados:** PostgreSQL 15+ (Consultas otimizadas em SQL Nativo com binding tipado de parâmetros).
 - **Inteligência Artificial:** Spring AI (OpenAI Starter conectado aos modelos Google Gemini via Google AI Studio).
 - **Nuvem & Armazenamento:** Google Drive API v3 (OAuth 2.0) com fallback para armazenamento local.
-- **Ambiente de Produção & DevOps:** VPS Ubuntu LTS (Hostinger), Nginx com SSL Let's Encrypt, firewall UFW, Fail2Ban, CI/CD via GitHub Actions e gerenciamento de serviço systemd.
+- **Ambiente de Produção & DevOps:** VPS Ubuntu LTS (Oracle Cloud), Nginx com SSL Let's Encrypt, firewall UFW, Fail2Ban, CI/CD via GitHub Actions e gerenciamento de serviço systemd.
 
 ---
 
@@ -98,104 +98,162 @@ Módulos, fluxos e infraestruturas 100% implementados, testados, blindados contr
 - **Central de Notificações do Dia:** Endpoint consolidado `GET /api/notificacoes/resumo?data=YYYY-MM-DD` que centraliza audiências do dia, prazos fatais de tarefas e faturamentos a receber vencidos para o usuário logado via JWT.
 - **Dashboard do Advogado:** `GET /api/dashboard` com agregações métricas em tempo real, blindado por construtor defensivo que anula referências nulas para garantir estabilidade no frontend.
 - **Busca Global Multidomínio:** `GET /api/busca` com varredura concorrente em Processos, Clientes e Usuários.
+- **[X] CONCLUÍDO - Inteligência Artificial para Resumo de Audiências (Dois Estágios & Chunking):**
+  - Integração com `gemini-3.6-flash` via Spring AI OpenAI Starter conectado ao Google AI Studio.
+  - Engenharia de prompt especializada estruturada em seções táticas: Fatos Incontroversos, Fatos Controvertidos, Riscos Processuais/Preliminares, Roteiro de Perguntas e Parâmetros de Acordo.
+  - Resposta tipada e estrita via `ResumoAudienciaEstruturadoDTO` (`core/domain/dto`) utilizando `BeanOutputConverter` do Spring AI.
+  - Ingestão direta de PDFs dos autos via Apache PDFBox (`PdfExtractionService`) e `GoogleDriveStorageService` em laços imperativos clássicos, eliminando recorte e colagem manual de petições.
+  - Controle de janela de contexto com `TextoChunkingService` (blocos de até 18.000 caracteres respeitando quebras de parágrafo e pontuações) e síntese progressiva em dois estágios no `GerarResumoAudienciaUseCase` e `GerarEAnexarResumoAudienciaUseCase` (resumo de chunks individuais e síntese tática final consolidada).
+
+### 1.12. Integração Google Calendar (Sincronização One-Way via Webhooks Push)
+- **Arquitetura Estritamente One-Way:** O sistema opera como receptor passivo de eventos da Google Calendar API v3 (Google -> Sistema Jurídico). Tarefas, audiências e prazos internos nunca são transmitidos para os servidores do Google.
+- **Canal de Webhooks:** Endpoint dedicado `POST /api/integracoes/google-calendar/webhook` para recepção assíncrona de notificações push (headers `X-Goog-Resource-State`, `X-Goog-Channel-ID`, `X-Goog-Message-Number`).
+- **Mapeamento Unificado de Domínio como Tarefas:** Compromissos externos são transformados em instâncias de `Tarefa` (`tb_tarefa`) associadas ao advogado (`Usuario`) com tipo `TipoTarefaEnum.ATENDIMENTO`.
+- **Idempotência & Versionamento (`googleEventId`):** Coluna `google_event_id VARCHAR(255)` indexada em `tb_tarefa`. Lógica imperativa de upsert via `SincronizarEventoGoogleCalendarUseCase`: se existir, atualiza dados ou trata exclusão; se inédito, cria nova tarefa, prevenindo duplicações por disparos múltiplos.
+- **Unificação OAuth 2.0 (`GoogleOAuthTokenManager`):** Componente centralizado em `infrastructure/security` que renova automaticamente Access Tokens para Google Drive e Google Calendar sem duplicidade de código.
+
+### 1.13. Lançamento e Liquidação Atômica de Consultas Avulsas
+- **Desvinculação Processual:** O relacionamento entre a entidade `Faturamento` e `Processo` tornou-se opcional (`processo_id` anulável em `tb_faturamento`), vinculando-se unicamente à entidade `Cliente` (`cliente_id`).
+- **Novo Tipo de Faturamento:** Mapeamento do valor `TipoFaturamentoEnum.CONSULTA_AVULSA`.
+- **Transação Atômica via Use Case (`RegistrarConsultaAvulsaUseCase`):**
+  - Endpoint dedicado `POST /api/faturamentos/consulta-avulsa` (com suporte retrocompatível a `/api/faturamento/consulta-avulsa`).
+  - Criação do faturamento com natureza `A_RECEBER`, tipo `CONSULTA_AVULSA`, `processo = null`, vínculo direto com `Cliente`, status `PAGO` e data de pagamento registrada na mesma transação sob `@Transactional`.
+  - Elimina etapas manuais intermediárias de criação seguida de liquidação, garantindo consistência contábil instantânea.
+
+### 1.14. Edição Cadastral de Lançamentos Financeiros & Unificação de Rotas
+- **Endpoints Oficiais de Edição:** Suporte completo a `PUT /api/faturamentos/{id}` e `PATCH /api/faturamentos/{id}` (com alias `/api/faturamento/{id}`).
+- **Eliminação de Duplicidades:** Unificação definitiva da nomenclatura das rotas financeiras, removendo inconsistências entre `/faturamento` e `/faturamentos`.
+- **Edição Defensiva via `EditarFaturamentoUseCase`:**
+  - Alteração flexível de valor, descrição, vencimento, categoria/tipo, status, natureza, data de pagamento e reatribuição de processo sem sobrescrever campos omitidos com nulo.
+  - Validação estrita de valor estritamente positivo com Bean Validation `@Positive`.
+  - Regra de transição inteligente: se o status for alterado para `PAGO` sem envio explícito da data de quitação, o sistema atribui automaticamente a data corrente (`LocalDate.now()`).
+
+### 1.15. Segregação de Contratos OpenAPI 3, DTOs Aninhados e Blindagem UTF-8
+- **Isolamento de Contratos OpenAPI:** 16 interfaces segregadas no pacote `presentation.openapi` (`*OpenApi.java`), isolando as anotações `@Tag`, `@Operation`, `@ApiResponses` e prevenindo o erro `HV000151` de validação em métodos sobrescritos.
+- **DTOs de Resumo Aninhados:** Substituição de IDs planos por objetos resumidos (`ProcessoResumoDTO`, `ClienteResumoDTO`, `UsuarioResumoDTO`) em `ProcessoDTO`, `FaturamentoDTO`, `AudienciaDTO`, `TarefaDTO` e `DocumentoDTO`.
+- **Retrocompatibilidade Absoluta:** Suporte a requisições legadas com propriedades planas via `@JsonAlias`, getters `@JsonIgnore` para preservação das assinaturas de use cases e desserializadores delegados `@JsonCreator`.
+- **Construção Defensiva Anti-Nulo (`ResumoDashboardDTO`):** Contadores padronizados em `0`, valores monetários em `0.00` e coleções vazias instanciadas, blindando o front-end contra exceções de leitura de propriedades indefinidas.
+- **Blindagem UTF-8:** Configuração estrita de encoding UTF-8 no build Maven e no servlet Spring Boot, com higienização completa de caracteres corrompidos (*mojibake*) na documentação do Swagger UI.
 
 ---
 
-## 2. 🚧 Em Refinamento (WIP)
+## 2. 🚧 Em Desenvolvimento / Novo Épico (WIP): Integração com Sistemas Judiciais dos Tribunais
 
-Funcionalidades cujo fluxo inicial e arquitetura base já foram codificados e testados tecnicamente, mas que necessitam de evolução estrutural e de produto para entregar valor prático ao advogado.
+Módulo corporativo para automação de captura, leitura e espelhamento de andamentos processuais e publicações do Diário de Justiça Eletrônico Nacional (DJEN / Comunica PJe) e tribunais onde a banca atua (TJRS, TRF4, TRT4, STJ, TST), eliminando a digitação manual de movimentações judiciais.
 
-### 2.1. Inteligência Artificial para Resumo e Preparação de Audiências
-- **Situação Atual do Código:**
-  - O fluxo base está implementado através de `ResumoAudienciaController`, `GerarResumoAudienciaUseCase`, `GerarEAnexarResumoAudienciaUseCase` e `SpringAIResumoService`.
-  - Conexão ativa com o modelo `gemini-3.6-flash` através do starter OpenAI do Spring AI apontando para o Google AI Studio.
-  - O endpoint `POST /api/audiencias/{id}/gerar-resumo-ia` aceita um texto de peça e anexa o resultado à coluna `resumo_preparatorio_ia` da audiência.
-- **Diagnóstico das Limitações Atuais:**
-  - *Prompt Simplista e Monolítico:* O system prompt atual solicita apenas um resumo genérico dos pontos da lide, sem divisão tática ou direcionamento para a condução da audiência.
-  - *Saída Não Estruturada:* Retorna texto corrido simples (Markdown não tipado), o que impede o frontend de exibir blocos interativos (cards separados por tópicos).
-  - *Dependência de Recorte Manual:* O endpoint atual exige que o advogado copie e cole manualmente o texto da petição inicial ou contestação (`conteudoPeca`), em vez de ler automaticamente os arquivos PDF já anexados ao processo no Google Drive.
-- **Plano de Evolução e Refinamento:**
-  1. **✅ Engenharia de Prompt Especializada (Concluído):**
-     - Estruturação em seções táticas claras: Fatos Incontroversos, Fatos Controvertidos, Riscos Processuais/Preliminares, Roteiro de Perguntas para testemunhas/depoimento e Parâmetros de Acordo.
-  2. **✅ Estruturação de Resposta com JSON Schema / DTO (Concluído):**
-     - Criação do record `ResumoAudienciaEstruturadoDTO` (`core/domain/dto`) e integração com `BeanOutputConverter` do Spring AI em `SpringAIResumoService`, propagado para `GerarResumoAudienciaUseCase`, `GerarEAnexarResumoAudienciaUseCase` e `ResumoAudienciaController`.
-  3. **✅ Ingestão Automática de Documentos dos Autos (Concluído):**
-     - Extração de texto de arquivos PDF via Apache PDFBox (`PdfExtractionService`), download de documentos via `GoogleDriveStorageService` em laços imperativos clássicos e concatenação estruturada de peças antes do envio ao modelo LLM, eliminando a dependência de recorte e colagem manual de texto.
-  4. **✅ Controle de Janela de Contexto & Tokenização (Concluído):**
-     - Fatiamento inteligente de peças volumosas através do `TextoChunkingService` com cortes defensivos respeitando parágrafos (`\n\n`, `\n`) e pontuação final (`. `) em blocos de até 18.000 caracteres.
-     - Resumo progressivo em dois estágios no `GerarResumoAudienciaUseCase` e `GerarEAnexarResumoAudienciaUseCase`: blocos múltiplos são sintetizados individualmente via `resumoAIService.resumirChunk` e consolidados em um dossiê preliminar antes da estruturação final no `ResumoAudienciaEstruturadoDTO`.
-     - Execução direta com zero overhead para documentos que cabem em um único chunk. Tudo implementado no paradigma imperativo estrito (zero streams, zero lambdas).
+> [!IMPORTANT]
+> **Decisão de Arquitetura — Restrição Absoluta Zero Certificado (Token A3):**  
+> Como os advogados da banca utilizam certificado digital do tipo **A3 (Token USB físico)** conectado localmente às suas máquinas, está **estritamente vedado** o uso de mTLS, KeyStores no servidor ou qualquer fluxo dependente de certificado digital na VPS. A integração opera **100% sobre as rotas públicas de consulta por OAB do Comunica PJe** (`https://comunicaapi.pje.jus.br/api/v1/comunicacao`).
+
+### 2.1. Cliente Comunica PJe e Throttling Anti-Ban (Rate Limiting)
+- **Cliente REST (`ComunicaPjeClient`):** Consumo público dos endpoints do DJEN via `RestTemplate` filtrando por `numeroOab`, `ufOab`, `dataDisponibilizacaoInicio`, `dataDisponibilizacaoFim` e paginação (`pagina`, `itensPorPagina`).
+- **Proteção de IP da VPS (Oracle Cloud) & Throttling Defensivo:**
+  - Inserção de delays imperativos (`Thread.sleep` de 2.500 ms a 3.500 ms) entre páginas e entre diferentes OABs para prevenção de HTTP 429 (Too Many Requests) e banimento de IP.
+  - Tratamento defensivo de erro 429 com backoff estendido de 10 segundos.
+- **Modelagem de Intimações (`IntimacaoPje` / `tb_intimacao_pje`):**
+  - Armazenamento completo dos metadados recebidos (`comunicacaoId`, `hash`, `numeroProcesso`, `numeroProcessoMascara`, `siglaTribunal`, `tipoComunicacao`, `tipoDocumento`, `nomeOrgao`, `dataDisponibilizacao`, `texto`, `link`, `numeroOab`, `ufOab`).
+  - Prevenção de duplicatas via `existsByComunicacaoId`.
+  - Vinculação automática a processo existente (`Processo`) e geração atômica de `Andamento` (`TipoAndamentoEnum.AUTOMATICO`).
+- **Triagem Inteligente de Tarefas na Agenda (Opção B):**
+  - Injeção direta de novas intimações na agenda do advogado como `Tarefa` com blindagem imperativa (`equalsIgnoreCase`):
+    1. **Descarte de Informativos (`continue`):** `"Lista de distribuição"` e `"Ata de sessão"` (preservados no histórico sem gerar tarefas na agenda).
+    2. **Alerta de Pauta:** `"Pauta de julgamento"` -> Tarefa `TipoTarefaEnum.DILIGENCIA`, descrição `"[DILIGÊNCIA - PAUTA] Proc. {numeroProcesso} ({siglaTribunal})"`.
+    3. **Gestão de Prazos:** `"Intimação"` / `"Citação"` -> Tarefa `TipoTarefaEnum.PRAZO`, com prefixos conforme `tipoDocumento`:
+       - `"Sentença"` -> `"[URGENTE - SENTENÇA] Proc. {numeroProcesso} ({siglaTribunal})"`
+       - `"DESPACHO/DECISÃO"` -> `"[URGENTE - DECISÃO] Proc. {numeroProcesso} ({siglaTribunal})"`
+       - `"Ato ordinatório"` -> `"[PRAZO - ATO ORDINATÓRIO] Proc. {numeroProcesso} ({siglaTribunal})"`
+       - `"Notificação"` -> `"[PRAZO - NOTIFICAÇÃO] Proc. {numeroProcesso} ({siglaTribunal})"`
+       - Outros -> `"[PRAZO - ATENÇÃO] Proc. {numeroProcesso} ({siglaTribunal})"`
+    - Persistência em lote via `tarefaRepository.saveAll(...)` sob transação atômica.
+
+### 2.2. Motor Híbrido de Sincronização (Automático + Manual)
+- **Varredura Noturna Automática (`VarreduraPjeScheduler`):**
+  - Agendamento cron diário às **02h00 da madrugada** (`0 0 2 * * *`).
+  - Varredura em lote iterando imperativamente sobre todos os advogados com OAB ativa (`usuarioRepository.buscarAdvogadosComOabAtiva()`), consultando publicações dos últimos 3 dias para cobrir finais de semana e feriados.
+- **Sincronização Sob Demanda (`POST /api/integracoes/pje/sincronizar`):**
+  - Endpoint REST autenticado no `IntegracaoTribunalController` permitindo que o advogado force a atualização de suas próprias intimações a qualquer momento na interface.
+- **Caso de Uso Centralizado (`SincronizarIntimacoesPjeUseCase`):**
+  - Orquestração da paginação, parsing da OAB, delays de throttling e persistência atômica.
+  - Implementado estritamente no **Paradigma Imperativo Puro** (Zero Lambdas, Zero Streams).
+
+### 2.3. Modelagem de Dados e Espelhamento dos Autos Processuais
+- **Extensão da Entidade `Processo` (`tb_processo`):**
+  - Mapeamento das colunas de telemetria de sincronização:
+    - `data_ultima_sincronizacao` (LocalDateTime, opcional).
+    - `status_sincronizacao` (Enum `StatusSincronizacaoEnum`: `SINCRONIZADO`, `PENDENTE`, `FALHA`, `EM_ANDAMENTO`).
+    - `tribunal_origem` (Enum `TribunalOrigemEnum`: `TJRS`, `TRF4`, `TRT4`, `STJ`, `STF`).
+    - `grau_jurisdicao` (Enum: `PRIMEIRO_GRAU`, `SEGUNDO_GRAU`, `SUPERIOR`).
+- **Enriquecimento da Entidade `Andamento` (`tb_andamento`):**
+  - Preservação da coluna `tipo = 'AUTOMATICO'`.
+  - Inclusão de `codigo_movimentacao_tribunal` (código oficial da tabela unificada do CNJ).
+  - Inclusão de `hash_movimentacao` (SHA-256 gerado a partir de `numeroCnj + dataHora + descricao + codigo`), com constraint de unicidade para prevenção estrita de duplicidade de andamentos em sucessivas varreduras.
+  - Vínculo opcional com `Documento` (`documento_id`) para peças, despachos e sentenças cujo PDF foi baixado pelo robô e arquivado automaticamente no GED (Google Drive).
+- **Entidade de Auditoria `SincronizacaoTribunalLog` (`tb_sincronizacao_tribunal_log`):**
+  - Rastreamento completo de cada tentativa de varredura: `id`, `processoId`, `tribunal`, `tipoIntegracao`, `dataHoraInicio`, `dataHoraFim`, `duracaoMs`, `status` (`SUCESSO`, `FALHA_CONEXAO`, `FALHA_AUTENTICACAO`, `RATE_LIMITED`, `CIRCUITO_ABERTO`), `quantidadeMovimentacoesNovas`, `mensagemErro` e `detalhesTecnicos`.
+- **Entidade de Configuração `TribunalConfig` (`tb_tribunal_config`):**
+  - Parametrizador de endpoints, credenciais de integração, tipo de conector (`DATAJUD_API`, `EPROC_SCRAPER`, `PJE_MNI`), intervalo mínimo entre requisições (`intervaloMinimoRequisicoesMs`) e toggle de ativação.
+
+### 2.4. Agendamento de Tarefas & Varredura Assíncrona (Schedulers & Workers)
+- **Configuração do Spring Scheduler (`@EnableScheduling`):**
+  - Configuração de `ThreadPoolTaskScheduler` isolado com pool dedicado de threads de background (`poolSize = 5`), garantindo que rotinas pesadas de sincronização nunca disputem recursos nem degradem as threads HTTP do Tomcat.
+- **Estratégias de Varredura:**
+  1. **Varredura Noturna em Lote (Batch Cron):**
+     - Execução diária na madrugada (ex: `0 0 2 * * *` — 02h00), varrendo em lotes controlados todos os processos ativos do escritório (`arquivado = false`).
+  2. **Sincronização Sob Demanda (On-Demand):**
+     - Endpoint REST `POST /api/integracoes/tribunais/processos/{id}/sincronizar` permitindo que o advogado force a atualização de um processo diretamente na tela do processo.
+  3. **Varredura Prioritária (Near-Real-Time para Audiências e Prazos):**
+     - Processos com audiências agendadas para os próximos 3 dias ou tarefas de prazo iminente são verificados com periodicidade reforçada.
+- **Fila com Rate Limiting e Throttling:**
+  - Aplicação de espaçamento imperativo mínimo entre chamadas sucessivas ao mesmo tribunal (ex: delay de 1.500 ms a 3.000 ms), evitando bloqueios de IP, acionamento de WAFs governamentais ou desafios de captcha.
+- **Mecanismo de Lock Defensivo:**
+  - Controle atômico via flag ou trava temporal na entidade `Processo` (`status_sincronizacao = 'EM_ANDAMENTO'`) para impedir que dois jobs simultâneos (cron noturno e disparo manual) acessem o mesmo processo concorrentemente.
+
+### 2.5. Resiliência e Tratamento de Falhas com Serviços Externos
+Portais de tribunais e web services judiciais sofrem de alta volatilidade, lentidões imprevisíveis, janelas de manutenção de fim de semana e erros HTTP 500/502/503/504 recorrentes. A arquitetura implementa uma malha defensiva de resiliência:
+- **Padrão Circuit Breaker (Disjuntor de Falhas):**
+  - Cada tribunal possui seu estado de circuito monitorado (`FECHADO`, `ABERTO`, `SEMI_ABERTO`).
+  - Se um tribunal acumular consecutivamente $N$ falhas (ex: 5 falhas sucessivas de conexão), o circuito **abre** (`ABERTO`), suspendendo temporariamente novas requisições àquele tribunal por um período de cooldown configurável (ex: 15 minutos).
+  - Atualização automática do status exposto no endpoint `GET /api/integracoes/tribunais/status` para `DEGRADADO` ou `INDISPONIVEL`, alertando a banca.
+  - Após o cooldown, o circuito transiciona para `SEMI_ABERTO`, permitindo uma requisição de teste para avaliar se o serviço do tribunal foi restabelecido.
+- **Retry com Exponential Backoff e Jitter:**
+  - Retentativas com espaçamento exponencial progressivo ($1\text{s}, 2\text{s}, 4\text{s}$) e fator aleatório de dispersão (*jitter*) exclusivamente para falhas transitórias (`SocketTimeoutException`, `ConnectException`, HTTP 502/503/504).
+  - Erros definitivos (ex: `401 Unauthorized` por certificado expirado, `404 Not Found` por processo inexistente ou `400 Bad Request` por CNJ inválido) **não sofrem retry**, abortando imediatamente e registrando a causa no log.
+- **Dead Letter Queue / Fila de Contingência:**
+  - Processos cuja sincronização falhou após as tentativas de retry são enfileirados com status `FALHA` e reagendados para processamento em janela de menor carga.
+- **Isolamento de Falhas (Fail-Safe Isolation):**
+  - O processamento de cada processo no lote ocorre em bloco `try/catch` isolado. A falha em um processo NUNCA interrompe a varredura dos demais processos da fila.
+
+### 2.6. Adaptadores Complementares (DataJud CNJ e Portais)
+- **Adaptador 1: API Pública do DataJud (CNJ):**
+  - Consulta padronizada e autenticada via chave pública de API do DataJud/CNJ pelo número CNJ unificado.
+  - Vantagem: Cobertura universal de metadados e histórico básico de movimentações sem necessidade de certificado digital.
+- **Adaptador 2: eproc e PJe Externos:**
+  - Consulta complementar direta em casos específicos autorizados.
+- **Adaptador 3: PJe (TRT4):**
+  - Conector de interoperabilidade via Modelo Nacional de Interoperabilidade (MNI) / Web Services do CNJ.
+
+### 2.6. Telemetria, Observabilidade e Endpoints de Gestão
+- **Monitoramento Ativo de Status (`GET /api/integracoes/tribunais/status`):**
+  - Evolução do endpoint para refletir a telemetria real dos Circuit Breakers, latência média observada, status operacional por tribunal e data/hora da última sincronização bem-sucedida.
+- **Sincronização Sob Demanda (`POST /api/integracoes/tribunais/processos/{id}/sincronizar`):**
+  - Disparo manual de varredura atômica para o processo, retornando a quantidade de novos andamentos localizados.
+- **Auditoria e Logs de Integração (`GET /api/integracoes/tribunais/logs`):**
+  - Listagem paginada dos logs de sincronização com filtros por processo, tribunal, status e intervalo de datas.
 
 ---
 
-## 3. ⏳ Integração Google Calendar & Consultas Avulsas [ ] PENDENTE
+## 3. 📅 Backlog Futuro (Próximos Passos)
 
-Módulo prioritário de expansão funcional solicitado pela banca para integração externa de agenda e simplificação do faturamento operacional.
+Grandes iniciativas e automações planejadas para as próximas etapas de desenvolvimento do sistema:
 
-### 3.1. Sincronização One-Way do Google Calendar (Push Notifications via Webhooks) [ ] PENDENTE
-- **Arquitetura Estritamente One-Way:**
-  - O sistema funciona exclusivamente como receptor passivo de dados originados no Google Calendar (Google -> Sistema Jurídico).
-  - Tarefas, audiências e prazos cadastrados internamente no sistema NUNCA são propagados para o Google Calendar.
-- **Canal de Webhooks:**
-  - Endpoint dedicado `POST /api/integracoes/google-calendar/webhook` para recepção de Push Notifications disparadas pela Google Calendar API v3 (headers `X-Goog-Resource-State`, `X-Goog-Channel-ID`, `X-Goog-Message-Number`).
-- **Mapeamento de Domínio Unificado:**
-  - Todo evento/compromisso recebido é convertido e persistido como uma `Tarefa` (`tb_tarefa`) vinculada ao respectivo `Usuario` (advogado titular da agenda sincronizada).
-  - Inclusão do novo valor `ATENDIMENTO` no `TipoTarefaEnum` (`DILIGENCIA`, `PRAZO`, `CONTATO`, `ATENDIMENTO`).
-- **Idempotência & Versionamento (`googleEventId`):**
-  - Mapeamento da coluna `google_event_id VARCHAR(255)` na entidade `Tarefa` (`tb_tarefa`).
-  - Lógica imperativa de upsert via `SincronizarEventoGoogleCalendarUseCase`:
-    - Consulta de existência por `googleEventId` no `TarefaRepository`.
-    - Se o compromisso já existir, atualiza descrição, data de vencimento e status (inclusive tratando cancelamentos de eventos ocorridos na origem).
-    - Se o compromisso for inédito, realiza o cadastro de uma nova tarefa com o respectivo `googleEventId`.
-    - Prevenção total de duplicações geradas por disparos múltiplos ou reenvios de webhook.
-
-### 3.2. Lançamento e Liquidação de Consultas Avulsas [ ] PENDENTE
-- **Desvinculação Processual:**
-  - Flexibilização do modelo relacional: o relacionamento entre a entidade `Faturamento` e `Processo` torna-se opcional (`processo_id` anulável em `tb_faturamento`), passando a vincular-se unicamente à entidade `Cliente` (`cliente_id`).
-- **Novo Tipo de Faturamento:**
-  - Inclusão do novo valor `CONSULTA_AVULSA` no `TipoFaturamentoEnum` (`HONORARIOS`, `CUSTAS`, `DESPESAS_ESCRITORIO`, `CONSULTA_AVULSA`).
-- **Transação Atômica de Criação e Liquidação:**
-  - Desenvolvimento do caso de uso `RegistrarConsultaAvulsaUseCase` para processamento atômico (`@Transactional`):
-    - Recebe dados essenciais: identificador do cliente (`clienteId`), valor do atendimento (ex: R$ 250,00), descrição da consulta, data de quitação e forma de pagamento.
-    - Validação defensiva imperativa da existência do cliente via `ClienteRepository.findById` (`opt.isEmpty()`).
-    - Criação imediata do faturamento com natureza `A_RECEBER`, tipo `CONSULTA_AVULSA`, `processo = null`, vínculo direto com `Cliente` e `status = PAGO` com `dataPagamento` preenchida na mesma transação.
-  - Eliminação de etapas intermediárias ("criar título pendente" -> "liquidar título"), garantindo rapidez de balcão e consistência contábil sem estados intermediários órfãos.
-- **Exposição REST & Contrato OpenAPI:**
-  - Disponibilização do endpoint `POST /api/faturamentos/consulta-avulsa` com DTO de entrada tipado (`ConsultaAvulsaRequestDTO`), Bean Validation e documentação Swagger com `@Tag`, `@Operation` e `@ApiResponses`.
-
----
-
-## 4. 📅 Backlog (Próximos Passos)
-
-Grandes iniciativas e automações planejadas para as próximas etapas de desenvolvimento do sistema.
-
-### 4.1. Web Scraping & Integração com Sistemas Judiciais dos Tribunais
-- **Objetivo:** Automatizar a coleta de andamentos e autos processuais diretamente dos portais dos tribunais onde o Dr. Cristhian atua, eliminando a digitação manual de andamentos.
-- **Escopo Inicial dos Tribunais:**
-  - **TJRS:** Portais Themis / eproc estadual.
-  - **TRF4:** Sistema eproc da Justiça Federal da 4ª Região.
-  - **TRT4:** Sistema PJe da Justiça do Trabalho.
-  - **Tribunais Superiores:** STJ e STF.
-- **Funcionalidades a Desenvolver:**
-  - **Robô Extrator de Andamentos:** Varredura periódica pelo número CNJ ou OAB para identificar novas movimentações e registrar automaticamente em `tb_andamento` com `tipo = 'AUTOMATICO'`.
-  - **Leitor e Downloader de Peças dos Autos:** Extração de cópias integrais de decisões, sentenças, despachos e notas de expediente, salvando automaticamente os arquivos no Google Drive na pasta do respectivo processo.
-  - **Evolução do Status de Tribunais:** Transformar o endpoint `GET /api/integracoes/tribunais/status` (hoje baseado em lista controlada) em um monitor com telemetria real via healthcheck ativo ou integração oficial com a API Pública do **DataJud / CNJ**.
-
-### 4.2. Cron Jobs (`@Scheduled`) & Automações em Segundo Plano
-- **Objetivo:** Transformar o backend em uma plataforma proativa, executando rotinas automáticas sem dependência de interação humana.
-- **Tarefas Agendadas no Backlog:**
-  - **Robôs de Varredura Noturna:**
-    - Agendamento cron (ex: `0 0 2 * * *` — 02h00 da madrugada) para acionar os scrapers judiciais e sincronizar movimentações ocorridas no dia anterior.
-  - **Sentinela de Prazos Fatais & Alertas Preventivos:**
-    - Job executado no início da manhã (ex: `0 0 7 * * *`) para identificar tarefas pendentes com vencimento nas próximas 24/48 horas e audiências agendadas para o dia seguinte.
-    - Disparo de e-mails de alerta com prioridade alta para os advogados responsáveis.
-  - **Monitor de Inadimplência e Faturamentos Vencidos:**
-    - Job diário que identifica títulos de clientes com `dataVencimento < hoje` e status `PENDENTE`.
-    - Atualização do status ou flag de cobrança pendente e envio de relatório consolidado para o financeiro do escritório.
-
-### 4.3. Mensageria & Notificações Ativas para Clientes
+### 3.1. Mensageria & Notificações Ativas para Clientes
 - **Integração com WhatsApp:** Envio automatizado de lembretes de audiência para os clientes e notificações amigáveis de movimentação do seu processo via gateway de mensageria (ex: Evolution API ou Z-API).
-- **Assinatura Eletrônica de Documentos:** Integração via webhook com plataformas de assinatura digital (ZapSign, Clicksign ou DocuSign) para envio e colheita de assinatura de Procurações e Contratos de Honorários gerados pelo sistema.
+
+### 3.2. Assinatura Eletrônica de Documentos
+- **Plataformas de Assinatura:** Integração via webhook com plataformas de assinatura digital (ZapSign, Clicksign ou DocuSign) para envio e colheita de assinatura de Procurações e Contratos de Honorários gerados pelo sistema.
+
+### 3.3. Download em Lote e OCR de Peças Históricas
+- **Digitalização e OCR:** Processamento de cópias integrais de autos digitalizados com OCR em lote e indexação vetorial com Spring AI para pesquisa semântica nos autos.
 
 ---
 
@@ -209,14 +267,20 @@ Grandes iniciativas e automações planejadas para as próximas etapas de desenv
 | **Documentos PDF** | `ClienteController` (Rotas PDF) | `PdfDocumentGeneratorService` (iText) | `ClienteRepository`, `EscritorioRepository` | ✅ Produção |
 | **GED & Storage** | `DocumentoController` | `UploadDocumentoUseCase`, `GoogleDriveStorageService` | `DocumentoRepository` | ✅ Produção |
 | **Processos** | `ProcessoController`, `AndamentoController` | `CadastrarProcessoUseCase`, `AtualizarProcessoUseCase`, `ArquivarProcessoUseCase` | `ProcessoRepository`, `AndamentoRepository` | ✅ Produção |
-| **Financeiro** | `FaturamentoController` | `GerarParcelamentoUseCase`, `LiquidarFaturamentoUseCase`, `LiquidarParcialFaturamentoUseCase`, `RepassarFaturamentoUseCase`, `ObterResumoFinanceiroUseCase` | `FaturamentoRepository` | ✅ Produção |
+| **Financeiro & Parcelamento**| `FaturamentoController` | `GerarParcelamentoUseCase`, `LiquidarFaturamentoUseCase`, `LiquidarParcialFaturamentoUseCase`, `RepassarFaturamentoUseCase`, `ObterResumoFinanceiroUseCase` | `FaturamentoRepository` | ✅ Produção |
+| **Edição Financeira** | `FaturamentoController` (`PUT/PATCH /{id}`) | `EditarFaturamentoUseCase` | `FaturamentoRepository` | ✅ Produção |
+| **Consultas Avulsas** | `FaturamentoController` (`/consulta-avulsa`) | `RegistrarConsultaAvulsaUseCase` | `FaturamentoRepository`, `ClienteRepository` | ✅ Produção |
 | **Agenda & Tarefas** | `AudienciaController`, `TarefaController` | `CadastrarAudienciaUseCase`, `CriarTarefaUseCase` | `AudienciaRepository`, `TarefaRepository` | ✅ Produção |
+| **Google Calendar (Webhooks)** | `GoogleCalendarWebhookController` | `SincronizarEventoGoogleCalendarUseCase`, `GoogleOAuthTokenManager` | `TarefaRepository` | ✅ Produção |
 | **Dashboard & Avisos**| `DashboardController`, `NotificacaoController`, `BuscaGlobalController` | `DashboardAdvogadoUseCase`, `ObterResumoNotificacoesUseCase`, `BuscaGlobalUseCase` | Múltiplos Repositories via SQL Nativo | ✅ Produção |
-| **Resumos IA** | `ResumoAudienciaController` | `GerarResumoAudienciaUseCase`, `SpringAIResumoService` | `AudienciaRepository` | 🚧 Em Refinamento |
-| **Google Calendar (Webhooks)** | `GoogleCalendarWebhookController` | `SincronizarEventoGoogleCalendarUseCase` | `TarefaRepository` | [ ] PENDENTE |
-| **Consultas Avulsas** | `FaturamentoController` (`/consulta-avulsa`) | `RegistrarConsultaAvulsaUseCase` | `FaturamentoRepository`, `ClienteRepository` | [ ] PENDENTE |
-| **Robôs / Scraping** | `IntegracaoTribunalController` | *A implementar (Scrapers / DataJud CNJ)* | *A implementar* | 📅 Backlog |
-| **Jobs Agendados** | *Não exposto via HTTP* | *A implementar (`@Scheduled` Cron Services)* | *A implementar* | 📅 Backlog |
+| **Resumos IA** | `ResumoAudienciaController` | `GerarResumoAudienciaUseCase`, `SpringAIResumoService`, `TextoChunkingService` | `AudienciaRepository` | ✅ Produção |
+| **Comunica PJe (Zero Certificado A3)** | `IntegracaoTribunalController` (`/pje/sincronizar`) | `SincronizarIntimacoesPjeUseCase`, `VarreduraPjeScheduler` (cron 02h00) | `IntimacaoPjeRepository`, `TarefaRepository`, `AndamentoRepository` | ✅ Produção |
+| **Certificados Digitais (A1/mTLS)** | `CertificadoDigitalController` | `CadastrarCertificadoUseCase`, `CustomSSLContextFactory` | `CertificadoDigitalRepository` | 🚧 Novo Épico (WIP) |
+| **Sincronização Tribunais** | `IntegracaoTribunalController` | `SincronizarProcessoTribunalUseCase`, `DataJudClient`, `EprocAdapter` | `ProcessoRepository`, `AndamentoRepository` | 🚧 Novo Épico (WIP) |
+| **Schedulers & Varredura** | *Execução em Background* | `VarreduraProcessosScheduler`, `FilaSincronizacaoService` | `ProcessoRepository`, `SincronizacaoTribunalLogRepository` | 🚧 Novo Épico (WIP) |
+| **Resiliência & Circuit Breaker** | `IntegracaoTribunalController` (`/status`, `/logs`)| `TribunalCircuitBreakerRegistry`, `RetryExponentialBackoffService`| `SincronizacaoTribunalLogRepository`, `TribunalConfigRepository` | 🚧 Novo Épico (WIP) |
+| **Mensageria (WhatsApp)** | *A implementar* | *A implementar (Evolution API / Z-API)* | *A implementar* | 📅 Backlog |
+| **Assinatura Eletrônica** | *A implementar* | *A implementar (Clicksign / ZapSign)* | *A implementar* | 📅 Backlog |
 
 ---
 

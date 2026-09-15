@@ -70,4 +70,11 @@ public interface ProcessoRepository extends JpaRepository<Processo, UUID> {
                                     @Param("clienteId") UUID clienteId,
                                     @Param("advogadoId") UUID advogadoId,
                                     Pageable pageable);
+
+    @Query(value = "SELECT * FROM tb_processo WHERE numero_cnj = :numeroCnj LIMIT 1", nativeQuery = true)
+    java.util.Optional<Processo> findByNumeroCnjExato(@Param("numeroCnj") String numeroCnj);
+
+    @Query(value = "SELECT * FROM tb_processo WHERE regexp_replace(numero_cnj, '\\D', '', 'g') = :numeroLimpo LIMIT 1", nativeQuery = true)
+    java.util.Optional<Processo> findByNumeroCnjLimpo(@Param("numeroLimpo") String numeroLimpo);
 }
+

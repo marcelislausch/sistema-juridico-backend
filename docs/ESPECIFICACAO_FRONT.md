@@ -3,7 +3,7 @@
 **Projeto:** Sistema de Gestão Jurídica Inteligente  
 **Perfil:** Guia de Integração e Contratos de API para a Equipe de Front-end  
 **Alinhamento:** Backend Spring Boot v3.3.3 / Java 21 LTS  
-**Versão:** 3.2 (Conformidade com Swagger OpenAPI 3, Edição Financeira, Unificação Google Cloud e Blindagem UTF-8)
+**Versão:** 3.3 (Conformidade com Swagger OpenAPI 3, Edição Financeira, Unificação Google Cloud, Blindagem UTF-8 e Módulo de Tribunais/Certificados Digitais)
 
 ---
 
@@ -527,26 +527,101 @@ Atende ao campo de busca textual no Topbar da aplicação:
 
 ---
 
-### 2.8. Status de Integração com Tribunais (P1)
-Alimenta o badge/indicador "Tribunais Sincronizados" no Topbar:
+### 2.8. Status e Gestão de Integração com Tribunais (Novo Módulo)
+
+#### 2.8.1. Status de Conectividade com Tribunais
+Alimenta o badge/indicador "Tribunais Sincronizados" no Topbar e o modal de telemetria de conectividade:
 *   **Rota:** `GET /api/integracoes/tribunais/status`
 *   **Retorno (`TribunalStatusDTO`):**
     ```json
     {
       "status": "OPERACIONAL",
-      "atualizadoEm": "2026-09-08T22:45:00",
+      "atualizadoEm": "2026-09-14T21:30:00",
       "mensagem": "Todos os serviços judiciais operando com sincronização regular.",
       "tribunaisSincronizados": [
         "TJRS - Tribunal de Justiça do Rio Grande do Sul",
         "TRF4 - Tribunal Regional Federal da 4ª Região",
         "TRT4 - Tribunal Regional do Trabalho da 4ª Região",
-        "STJ - Superior Tribunal de Justiça"
+        "STJ - Superior Tribunal de Justiça",
+        "DataJud - Conselho Nacional de Justiça"
       ]
     }
     ```
 *   **Tipagem Forte:** O campo `status` é estritamente tipado com o enum `StatusTribunalEnum` (`OPERACIONAL`, `DEGRADADO`, `INDISPONIVEL`).
 
----
+#### 2.8.2. Sincronização Sob Demanda de Processo
+Permite ao advogado acionar o botão "Sincronizar com Tribunal" diretamente no cabeçalho ou aba de andamentos da tela de Detalhes do Processo (`ProcessDetailsModal.tsx`):
+*   **Rota:** `POST /api/integracoes/tribunais/processos/{processoId}/sincronizar`
+*   **Headers:** `Authorization: Bearer <token>`
+*   **Resposta (HTTP 200 OK - `SincronizacaoProcessoResponseDTO`):**
+    ```json
+    {
+      "processoId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "numeroCnj": "5001234-88.2026.8.21.0016",
+      "novasMovimentacoes": 3,
+      "status": "SINCRONIZADO",
+      "mensagem": "Sincronização concluída com sucesso. 3 novos andamentos foram importados.",
+      "dataHora": "2026-09-14T21:35:00"
+    }
+    ```
+*   *(Ação no Front-end: Exibir feedback via toast de sucesso e disparar automaticamente o refetch da lista de andamentos do processo).*
+
+#### 2.8.3. Histórico e Logs de Auditoria de Sincronização
+Exibe o histórico de varreduras na aba de integrações ou no histórico do processo:
+*   **Rota:** `GET /api/integracoes/tribunais/logs`
+*   **Query Parameters:**
+    *   `processoId` (UUID, opcional): Filtro por processo específico.
+    *   `tribunal` (Enum `TribunalOrigemEnum`, opcional): `TJRS`, `TRF4`, `TRT4`, `STJ`.
+    *   `status` (Enum `StatusSincronizacaoLogEnum`, opcional): `SUCESSO`, `FALHA_CONEXAO`, `FALHA_AUTENTICACAO`, `RATE_LIMITED`, `CIRCUITO_ABERTO`.
+    *   `page` (int, default = 0), `size` (int, default = 10).
+*   **Retorno:** Envelope paginado com `content: List<SincronizacaoLogDTO>`:
+    ```json
+    {
+      "content": [
+        {
+          "id": "7b8c9d0e-...",
+          "processoId": "3fa85f64-...",
+          "numeroCnj": "5001234-88.2026.8.21.0016",
+          "tribunal": "TJRS",
+          "tipoIntegracao": "EPROC_SCRAPER",
+          "dataHoraInicio": "2026-09-14T02:00:15",
+          "dataHoraFim": "2026-09-14T02:00:18",
+          "duracaoMs": 3200,
+          "status": "SUCESSO",
+          "quantidadeMovimentacoesNovas": 2,
+          "mensagemErro": null
+        }
+      ]
+    }
+    ```
+
+#### 2.8.4. Gestão de Certificados Digitais A1 (Aba Configurações / Segurança do Advogado)
+Permite aos advogados o upload do arquivo `.pfx`/`.p12` para viabilizar consultas autenticadas (mTLS) em tribunais que exigem assinatura:
+*   **Listar Certificados do Usuário Logado:** `GET /api/certificados`
+    *   **Retorno (`List<CertificadoDigitalDTO>`):**
+        ```json
+        [
+          {
+            "id": "2c3d4e5f-...",
+            "nomeArquivo": "certificado_advogado.pfx",
+            "alias": "DR CARLOS SILVA:12345678900",
+            "titular": "CARLOS EDUARDO DA SILVA",
+            "cpf": "123.456.789-00",
+            "emissor": "AC VALID BRASIL v5",
+            "dataEmissao": "2026-01-10",
+            "dataExpiracao": "2027-01-10",
+            "diasRestantes": 118,
+            "ativo": true
+          }
+        ]
+        ```
+    *   *(Nota de Segurança: O backend nunca expõe a chave privada nem a senha criptografada).*
+*   **Upload de Certificado A1:** `POST /api/certificados/upload` (`multipart/form-data`)
+    *   **Form Parameters:**
+        *   `arquivo` (MultipartFile, obrigatório): Arquivo com extensão `.pfx` ou `.p12`.
+        *   `senha` (string, obrigatório): Senha do certificado informada pelo usuário.
+    *   **Retorno (HTTP 201 Created):** `CertificadoDigitalDTO` com dados validados.
+*   **Revogar / Excluir Certificado:** `DELETE /api/certificados/{id}` (HTTP 204 No Content).
 
 ### 2.9. Gestão de Equipe e Usuários (`TeamTab.tsx`)
 Atende à tela completa de "Equipe & Usuários" que engloba Admins, Advogados e Secretárias:
@@ -631,6 +706,40 @@ Atende às operações de upload, visualização e download de arquivos e peças
 
 ---
 
+### 2.12. Integração Comunica PJe / DJEN (Zero Certificado A3)
+Módulo público de captura de intimações judiciais e injeção automática de prazos na agenda do advogado:
+*   **Sincronização Sob Demanda:** `POST /api/integracoes/pje/sincronizar`
+    *   **Headers:** `Authorization: Bearer <token_jwt>`
+    *   **Query Params Opcionais:** `dataInicio=YYYY-MM-DD` e `dataFim=YYYY-MM-DD` (default: últimos 3 dias).
+    *   **Comportamento:** O backend extrai a OAB cadastrada no perfil do advogado logado (`Usuario.oab`), consulta a API oficial do Comunica PJe com rate limiting defensivo, persiste as publicações em `tb_intimacao_pje`, vincula processos existentes e gera tarefas triadas na agenda.
+    *   **Payload de Resposta (`SincronizacaoPjeResultadoDTO`):**
+        ```json
+        {
+          "totalEncontradas": 12,
+          "novasIntimacoes": 4,
+          "andamentosCriados": 3,
+          "numeroOabConsultada": "121837",
+          "ufOabConsultada": "RS",
+          "mensagem": "Sincronização concluída para OAB 121837/RS. Total consultado: 12, novas intimações: 4, andamentos vinculados: 3.",
+          "executadoEm": "2026-09-15T00:05:00"
+        }
+        ```
+*   **Reflexos na Agenda (`AgendaPage.tsx`):**
+    *   As intimações geram tarefas com triagem inteligente automática:
+        *   `DILIGENCIA`: Pautas de julgamento (`[DILIGÊNCIA - PAUTA] Proc. {cnj} ({tribunal})`).
+        *   `PRAZO`: Intimações e citações com prefixos claros de prioridade (`[URGENTE - SENTENÇA]`, `[URGENTE - DECISÃO]`, `[PRAZO - ATO ORDINATÓRIO]`, `[PRAZO - NOTIFICAÇÃO]`, `[PRAZO - ATENÇÃO]`).
+        *   *Informativos:* Listas de distribuição e atas de sessão são descartadas da agenda para evitar poluição visual.
+*   **Reflexos na Linha do Tempo do Processo (`ProcessDetailsModal.tsx`):**
+    *   Os andamentos automáticos vinculados exibem a descrição estruturada e limpa de tags HTML/CSS inline:
+        ```text
+        [PJe - TJRS] Intimação (DESPACHO/DECISÃO)
+        Órgão: 1ª Vara Cível de Ijuí
+
+        Fica intimada a parte autora para manifestação no prazo legal.
+        ```
+
+---
+
 ## 3. Checklist de Integração e Eliminação de Mocks
 
 | Componente Front-end | Situação Anterior | Integração Efetiva com a API |
@@ -640,12 +749,15 @@ Atende às operações de upload, visualização e download de arquivos e peças
 | `OfficeTab.tsx` | State local com dados fictícios | `GET` e `PUT /api/configuracoes/escritorio` |
 | `Topbar.tsx` (Notificações) | 4 requisições manuais e filtros no front | `GET /api/notificacoes/resumo` |
 | `Topbar.tsx` (Busca) | Campo sem ação vinculada | `GET /api/busca?q=&tipos=&limit=` |
-| `Topbar.tsx` (Tribunais) | Texto estático "Tribunais Sincronizados" | `GET /api/integracoes/tribunais/status` |
+| `Topbar.tsx` (Tribunais) | Texto estático "Tribunais Sincronizados" | `GET /api/integracoes/tribunais/status` (telemetria em tempo real) + `POST /api/integracoes/pje/sincronizar` (sincronização de intimações PJe/DJEN) |
+| `ProcessDetailsModal.tsx` | Andamentos cadastrados apenas manualmente | `POST /api/integracoes/tribunais/processos/{processoId}/sincronizar` e andamentos automáticos PJe com descrição estruturada e teor limpo de HTML |
+| `ProcessHistoryTab.tsx` | Sem visualização de status de varredura | `GET /api/integracoes/tribunais/logs?processoId=` (histórico e status de auditoria) |
+| `CertificatesTab.tsx` | Sem suporte a certificado digital | `GET /api/certificados`, `POST /api/certificados/upload` e `DELETE /api/certificados/{id}` (gestão de certificados A1 ICP-Brasil) |
 | `TeamTab.tsx` | Chamava `/usuarios/advogados` e mockava perfil | `GET /api/usuarios?page=0&size=20&ativo=true` |
 | `ClientsPage.tsx` | `collectAllPages` e filtro em memória | `GET /api/clientes?q=&tipo=&page=&size=` |
 | `ProcessesPage.tsx` | Download de 500 itens e filtro local | `GET /api/processos?q=&fase=&page=&size=` + cadastro/edição com qualificação da lide (`parteAdversa`, `cpfCnpjParteAdversa`, `papelCliente`, `valorCausa`, `comarca`) |
 | `FinanceiroPage.tsx` | Paginação e somatórios no navegador | `GET /api/faturamentos?q=&status=&natureza=` + Assistente de Parcelamento (`/parcelamento` com trava matemática), Repasse condicional (`TERCEIRO_SUCUMBENCIA`), Baixa Integral (`/liquidar`), Baixa Parcial com desdobramento (`/liquidar-parcial`) e Repasse (`/repassar`) |
 | `EditarFaturamentoModal.tsx` | Lançamento com valor ou dados incorretos sem ação de ajuste | `PUT` e `PATCH /api/faturamentos/{id}` (`EditarFaturamentoDTO` com validação `@Positive` e quitação inteligente automática) |
 | `ConsultaAvulsaModal.tsx` | Cobrança de atendimento avulso exigia criação de processo fictício | `POST /api/faturamentos/consulta-avulsa` (`ConsultaAvulsaDTO` com vínculo direto ao cliente, `processo = null` e liquidação atômica) |
-| `AgendaPage.tsx` / Tarefas | Compromissos externos do Google Calendar não eram exibidos | Visualização de tarefas sincronizadas com `tipo = "ATENDIMENTO"` e identificador `googleEventId` via Webhook Push |
+| `AgendaPage.tsx` / Tarefas | Compromissos externos do Google Calendar não eram exibidos | Visualização de tarefas sincronizadas com `tipo = "ATENDIMENTO"` (Google Calendar) e prazos processuais automáticos triados (`DILIGENCIA`, `PRAZO` do Comunica PJe) |
 | `Dashboard.tsx` | Erro ao ler campos opcionais nulos | `GET /api/dashboard` (DTO com valores padrão garantidos) |
