@@ -63,7 +63,17 @@ public class LiquidarParcialFaturamentoUseCase {
         BigDecimal saldoRemanescente = valorOriginal.subtract(valorPago);
 
         Faturamento desdobrado = new Faturamento();
-        desdobrado.setDescricao(original.getDescricao() + " (Saldo Remanescente)");
+
+        String descricaoOriginal = original.getDescricao();
+        if (descricaoOriginal == null) {
+            descricaoOriginal = "";
+        }
+        String sufixo = " (Saldo Remanescente)";
+        if (descricaoOriginal.endsWith(sufixo)) {
+            desdobrado.setDescricao(descricaoOriginal);
+        } else {
+            desdobrado.setDescricao(descricaoOriginal + sufixo);
+        }
         desdobrado.setValor(saldoRemanescente);
         desdobrado.setTipo(original.getTipo());
         desdobrado.setStatus(StatusFaturamentoEnum.PENDENTE);
