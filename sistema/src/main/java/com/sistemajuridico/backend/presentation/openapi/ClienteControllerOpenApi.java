@@ -10,8 +10,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.data.domain.Page;
+import com.sistemajuridico.backend.presentation.dtos.ClientePageResponse;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
 import java.util.UUID;
@@ -55,7 +56,9 @@ public interface ClienteControllerOpenApi {
 
     @Operation(summary = "Listar clientes com paginação e filtros", description = "Retorna lista paginada de clientes filtrando por termo de busca ou tipo")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Página de clientes obtida com sucesso"),
+            @ApiResponse(responseCode = "200", description = "Página de clientes obtida com sucesso",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ClientePageResponse.class))),
             @ApiResponse(responseCode = "400", description = "Parâmetros de consulta inválidos",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "401", description = "Não autenticado",
@@ -63,7 +66,7 @@ public interface ClienteControllerOpenApi {
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
-    ResponseEntity<Page<ClienteDTO>> listar(String q, String termoBusca, String termoParam, TipoClienteEnum tipo, Pageable pageable);
+    ResponseEntity<ClientePageResponse> listar(String q, String termoBusca, String termoParam, TipoClienteEnum tipo, Pageable pageable);
 
     @Operation(summary = "Buscar cliente por ID", description = "Recupera os detalhes de um cliente através do seu identificador único")
     @ApiResponses(value = {

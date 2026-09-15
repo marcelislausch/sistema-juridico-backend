@@ -16,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -154,8 +155,8 @@ public class FaturamentoController implements FaturamentoControllerOpenApi {
     }
 
     @Override
-    @GetMapping
-    public ResponseEntity<Page<FaturamentoDTO>> listarTodos(
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<FaturamentoPageResponse> listarTodos(
             @RequestParam(name = "q", required = false) String q,
             @RequestParam(name = "termoBusca", required = false) String termoBusca,
             @RequestParam(name = "termo", required = false) String termoParam,
@@ -183,7 +184,7 @@ public class FaturamentoController implements FaturamentoControllerOpenApi {
             dtos.add(FaturamentoDTO.fromEntity(faturamento));
         }
         Page<FaturamentoDTO> pageDtos = new PageImpl<>(dtos, paginaFaturamentos.getPageable(), paginaFaturamentos.getTotalElements());
-        return ResponseEntity.ok(pageDtos);
+        return ResponseEntity.ok(FaturamentoPageResponse.from(pageDtos));
     }
 
     @Override

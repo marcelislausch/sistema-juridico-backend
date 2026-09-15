@@ -10,8 +10,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.data.domain.Page;
+import com.sistemajuridico.backend.presentation.dtos.ProcessoPageResponse;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
 import java.util.UUID;
@@ -39,7 +40,9 @@ public interface ProcessoControllerOpenApi {
 
     @Operation(summary = "Listar processos com paginação e filtros", description = "Consulta paginada de processos com suporte a filtros dinâmicos por termo, fase, cliente, advogado e status de arquivamento")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Página de processos retornada com sucesso"),
+            @ApiResponse(responseCode = "200", description = "Página de processos retornada com sucesso",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ProcessoPageResponse.class))),
             @ApiResponse(responseCode = "400", description = "Parâmetros de consulta inválidos",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "401", description = "Não autenticado",
@@ -47,7 +50,7 @@ public interface ProcessoControllerOpenApi {
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
-    ResponseEntity<Page<ProcessoDTO>> listar(String q, String termoBusca, String termoParam, FaseProcessualEnum fase, Boolean arquivado, UUID clienteId, UUID advogadoId, Pageable pageable);
+    ResponseEntity<ProcessoPageResponse> listar(String q, String termoBusca, String termoParam, FaseProcessualEnum fase, Boolean arquivado, UUID clienteId, UUID advogadoId, Pageable pageable);
 
     @Operation(summary = "Buscar processo por ID", description = "Recupera os detalhes completos de um processo através do seu identificador único")
     @ApiResponses(value = {
@@ -63,7 +66,9 @@ public interface ProcessoControllerOpenApi {
 
     @Operation(summary = "Listar processos por cliente", description = "Retorna os processos vinculados a um cliente de forma paginada")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Processos do cliente retornados com sucesso"),
+            @ApiResponse(responseCode = "200", description = "Processos do cliente retornados com sucesso",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ProcessoPageResponse.class))),
             @ApiResponse(responseCode = "401", description = "Não autenticado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
@@ -71,7 +76,7 @@ public interface ProcessoControllerOpenApi {
             @ApiResponse(responseCode = "404", description = "Cliente não encontrado",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
-    ResponseEntity<Page<ProcessoDTO>> listarPorCliente(UUID clienteId, Pageable pageable);
+    ResponseEntity<ProcessoPageResponse> listarPorCliente(UUID clienteId, Pageable pageable);
 
     @Operation(summary = "Atualizar processo", description = "Atualiza os dados de um processo judicial existente")
     @ApiResponses(value = {

@@ -11,6 +11,7 @@ import com.sistemajuridico.backend.core.usecases.GerarContratoHonorariosUseCase;
 import com.sistemajuridico.backend.core.usecases.GerarProcuracaoClienteUseCase;
 import com.sistemajuridico.backend.core.usecases.ListarClientesUseCase;
 import com.sistemajuridico.backend.presentation.dtos.ClienteDTO;
+import com.sistemajuridico.backend.presentation.dtos.ClientePageResponse;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
@@ -68,8 +69,8 @@ public class ClienteController implements ClienteControllerOpenApi {
     }
 
     @Override
-    @GetMapping
-    public ResponseEntity<Page<ClienteDTO>> listar(
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ClientePageResponse> listar(
             @RequestParam(name = "q", required = false) String q,
             @RequestParam(name = "termoBusca", required = false) String termoBusca,
             @RequestParam(name = "termo", required = false) String termoParam,
@@ -90,7 +91,7 @@ public class ClienteController implements ClienteControllerOpenApi {
             dtos.add(ClienteDTO.fromEntity(cliente));
         }
         Page<ClienteDTO> pageDtos = new PageImpl<>(dtos, paginaClientes.getPageable(), paginaClientes.getTotalElements());
-        return ResponseEntity.ok(pageDtos);
+        return ResponseEntity.ok(ClientePageResponse.from(pageDtos));
     }
 
     @Override

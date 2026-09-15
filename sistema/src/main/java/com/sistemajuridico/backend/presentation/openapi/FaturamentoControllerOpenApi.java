@@ -19,8 +19,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
+import com.sistemajuridico.backend.presentation.dtos.FaturamentoPageResponse;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDate;
@@ -148,7 +149,9 @@ public interface FaturamentoControllerOpenApi {
 
     @Operation(summary = "Listar faturamentos com filtros e paginação", description = "Consulta paginada de lançamentos financeiros com múltiplos filtros")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Página de faturamentos retornada com sucesso"),
+            @ApiResponse(responseCode = "200", description = "Página de faturamentos retornada com sucesso",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = FaturamentoPageResponse.class))),
             @ApiResponse(responseCode = "400", description = "Parâmetros de consulta inválidos",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "401", description = "Não autenticado",
@@ -156,7 +159,7 @@ public interface FaturamentoControllerOpenApi {
             @ApiResponse(responseCode = "403", description = "Acesso proibido",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
-    ResponseEntity<Page<FaturamentoDTO>> listarTodos(
+    ResponseEntity<FaturamentoPageResponse> listarTodos(
             String q,
             String termoBusca,
             String termoParam,

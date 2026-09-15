@@ -8,6 +8,7 @@ import com.sistemajuridico.backend.core.usecases.CadastrarUsuarioUseCase;
 import com.sistemajuridico.backend.core.usecases.ListarAdvogadosUseCase;
 import com.sistemajuridico.backend.core.usecases.ListarUsuariosUseCase;
 import com.sistemajuridico.backend.presentation.dtos.CriarUsuarioRequest;
+import com.sistemajuridico.backend.presentation.dtos.UsuarioPageResponse;
 import com.sistemajuridico.backend.presentation.dtos.UsuarioResponseDTO;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
@@ -16,6 +17,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -44,9 +46,9 @@ public class UsuarioController implements UsuarioControllerOpenApi {
     }
 
     @Override
-    @GetMapping
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN', 'ADVOGADO')")
-    public ResponseEntity<Page<UsuarioResponseDTO>> listar(
+    public ResponseEntity<UsuarioPageResponse> listar(
             @RequestParam(name = "ativo", required = false) Boolean ativo,
             @RequestParam(name = "q", required = false) String q,
             @RequestParam(name = "termoBusca", required = false) String termoBusca,
@@ -67,7 +69,7 @@ public class UsuarioController implements UsuarioControllerOpenApi {
             dtos.add(UsuarioResponseDTO.fromEntity(u));
         }
         Page<UsuarioResponseDTO> response = new PageImpl<>(dtos, pageable, pagina.getTotalElements());
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(UsuarioPageResponse.from(response));
     }
 
     @Override

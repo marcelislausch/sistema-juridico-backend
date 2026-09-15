@@ -3,6 +3,7 @@ package com.sistemajuridico.backend.presentation.openapi;
 import com.sistemajuridico.backend.presentation.dtos.CriarUsuarioRequest;
 import com.sistemajuridico.backend.presentation.dtos.ErroPadraoDTO;
 import com.sistemajuridico.backend.presentation.dtos.ErroValidacaoDTO;
+import com.sistemajuridico.backend.presentation.dtos.UsuarioPageResponse;
 import com.sistemajuridico.backend.presentation.dtos.UsuarioResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -10,8 +11,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
@@ -22,7 +23,9 @@ public interface UsuarioControllerOpenApi {
 
     @Operation(summary = "Listagem paginada dos membros da equipe", description = "Retorna lista paginada de usuários da equipe com filtros por status ativo e termo textual")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Página de usuários retornada com sucesso"),
+            @ApiResponse(responseCode = "200", description = "Página de usuários retornada com sucesso",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = UsuarioPageResponse.class))),
             @ApiResponse(responseCode = "400", description = "Parâmetros de consulta inválidos",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class))),
             @ApiResponse(responseCode = "401", description = "Não autenticado",
@@ -30,7 +33,7 @@ public interface UsuarioControllerOpenApi {
             @ApiResponse(responseCode = "403", description = "Acesso proibido para o perfil atual",
                     content = @Content(schema = @Schema(implementation = ErroPadraoDTO.class)))
     })
-    ResponseEntity<Page<UsuarioResponseDTO>> listar(
+    ResponseEntity<UsuarioPageResponse> listar(
             Boolean ativo,
             String q,
             String termoBusca,

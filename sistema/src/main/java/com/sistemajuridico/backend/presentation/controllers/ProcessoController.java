@@ -6,6 +6,7 @@ import com.sistemajuridico.backend.core.domain.Processo;
 import com.sistemajuridico.backend.core.domain.enums.FaseProcessualEnum;
 import com.sistemajuridico.backend.core.usecases.*;
 import com.sistemajuridico.backend.presentation.dtos.ProcessoDTO;
+import com.sistemajuridico.backend.presentation.dtos.ProcessoPageResponse;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -57,8 +59,8 @@ public class ProcessoController implements ProcessoControllerOpenApi {
     }
 
     @Override
-    @GetMapping
-    public ResponseEntity<Page<ProcessoDTO>> listar(
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ProcessoPageResponse> listar(
             @RequestParam(name = "q", required = false) String q,
             @RequestParam(name = "termoBusca", required = false) String termoBusca,
             @RequestParam(name = "termo", required = false) String termoParam,
@@ -82,7 +84,7 @@ public class ProcessoController implements ProcessoControllerOpenApi {
             dtos.add(ProcessoDTO.fromEntity(processo));
         }
         Page<ProcessoDTO> pageDtos = new PageImpl<>(dtos, paginaProcessos.getPageable(), paginaProcessos.getTotalElements());
-        return ResponseEntity.ok(pageDtos);
+        return ResponseEntity.ok(ProcessoPageResponse.from(pageDtos));
     }
 
     @Override
@@ -93,8 +95,8 @@ public class ProcessoController implements ProcessoControllerOpenApi {
     }
 
     @Override
-    @GetMapping("/cliente/{clienteId}")
-    public ResponseEntity<Page<ProcessoDTO>> listarPorCliente(
+    @GetMapping(value = "/cliente/{clienteId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ProcessoPageResponse> listarPorCliente(
             @PathVariable UUID clienteId,
             @ParameterObject Pageable pageable) {
         Page<Processo> paginaProcessos = listarProcessosPorClienteUseCase.executar(clienteId, pageable);
@@ -103,7 +105,7 @@ public class ProcessoController implements ProcessoControllerOpenApi {
             dtoList.add(ProcessoDTO.fromEntity(processo));
         }
         Page<ProcessoDTO> response = new PageImpl<>(dtoList, pageable, paginaProcessos.getTotalElements());
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ProcessoPageResponse.from(response));
     }
 
     @Override
