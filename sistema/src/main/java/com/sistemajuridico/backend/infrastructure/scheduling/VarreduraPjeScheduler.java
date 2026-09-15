@@ -24,7 +24,7 @@ public class VarreduraPjeScheduler {
      * Consulta publicacoes e intimacoes disponibilizadas nos ultimos 3 dias no DJEN/PJe
      * cobrindo finais de semana e feriados com rate limiting defensivo.
      */
-    @Scheduled(cron = "0 0 2 * * *")
+    @Scheduled(cron = "0 0 2 * * *", zone = "America/Sao_Paulo")
     public void executarVarreduraNoturna() {
         log.info("Iniciando varredura noturna agendada de intimacoes do Comunica PJe (02h00)...");
 
